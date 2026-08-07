@@ -97,7 +97,13 @@ class ThresholdEvaluationTest extends TestCase
         app(RegionScoringService::class)->calculate($index, $region, Carbon::parse('2026-07-26'), Carbon::parse('2026-08-01'));
 
         $this->assertDatabaseHas('alerts', ['region_id' => $region->region_id, 'index_id' => $index->index_id, 'status' => 'OPEN']);
-        Notification::assertNothingSent();
+
+        // In-app still records (it's the always-on baseline channel) — only email is gated.
+        Notification::assertSentTo(
+            $user,
+            ThresholdBreachedNotification::class,
+            fn ($notification, $channels) => ! in_array('mail', $channels, true)
+        );
     }
 
     public function test_a_threshold_below_the_breach_value_does_not_alert(): void

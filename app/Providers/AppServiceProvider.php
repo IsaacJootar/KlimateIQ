@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Services\Ai\AiChatClient;
 use App\Services\Ai\OpenAiClient;
+use App\Services\Sms\SmsClient;
+use App\Services\Sms\TermiiSmsClient;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -16,6 +18,10 @@ class AppServiceProvider extends ServiceProvider
         // AI summaries use OpenAI (ChatGPT), bound behind a provider-agnostic interface so it
         // can be swapped without touching RegionScoreSummaryService.
         $this->app->singleton(AiChatClient::class, fn () => OpenAiClient::fromConfig());
+
+        // SMS alerts use Termii, bound the same way — SmsChannel never knows which provider
+        // is behind SmsClient.
+        $this->app->singleton(SmsClient::class, fn () => TermiiSmsClient::fromConfig());
     }
 
     /**

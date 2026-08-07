@@ -16,11 +16,20 @@ class UserDashboardPreference extends Model
     protected $fillable = [
         'user_id',
         'default_view',
-        'preferred_alert_channel',
+        'alert_channels',
+    ];
+
+    protected $casts = [
+        'alert_channels' => 'array',
     ];
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function wantsChannel(string $channel): bool
+    {
+        return in_array($channel, $this->alert_channels ?? ['in_app'], true);
     }
 }

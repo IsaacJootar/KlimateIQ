@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\PlatformSettingController;
 use App\Http\Controllers\AlertController;
+use App\Http\Controllers\InAppNotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegionController;
 use App\Http\Controllers\ReportRequestController;
@@ -18,6 +19,7 @@ Route::get('/dashboard', function () {
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::patch('/profile/notifications', [ProfileController::class, 'updateNotifications'])->name('profile.notifications.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::get('/alerts', [AlertController::class, 'index'])->name('alerts.index');
@@ -40,6 +42,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/reports', [ReportRequestController::class, 'index'])->name('reports.index');
     Route::post('/reports', [ReportRequestController::class, 'store'])->name('reports.store');
     Route::get('/reports/{reportRequest}/download', [ReportRequestController::class, 'download'])->name('reports.download');
+
+    Route::get('/notifications', [InAppNotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{notification}/read', [InAppNotificationController::class, 'markRead'])->name('notifications.read');
 });
 
 Route::middleware(['auth', 'platform.admin'])->prefix('admin')->name('admin.')->group(function () {

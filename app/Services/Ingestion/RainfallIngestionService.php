@@ -6,7 +6,7 @@ use App\Events\RegionSignalIngested;
 use App\Models\Region;
 use App\Models\RegionSignal;
 use App\Models\SignalType;
-use App\Services\Ingestion\Concerns\ResolvesCaBundle;
+use App\Support\Concerns\ResolvesCaBundle;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
