@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\IndexActionRecommendation;
 use App\Models\Region;
 use App\Models\RegionScore;
 use App\Models\ScoringIndex;
 use App\Services\Ai\RegionScoreSummaryService;
+use App\Support\RiskBand;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -32,7 +34,7 @@ class RegionController extends Controller
             ->map(function (Region $region) use ($latestByRegion) {
                 $score = $latestByRegion->get($region->region_id);
                 $region->setAttribute('current_score', $score?->score);
-                $region->setAttribute('risk_band', $this->riskBand($score?->score));
+                $region->setAttribute('risk_band', RiskBand::forScore($score?->score));
 
                 return $region;
             });
@@ -65,6 +67,7 @@ class RegionController extends Controller
             'latest' => $latest,
             'breakdown' => $latest?->breakdown ?? [],
             'aiAvailable' => app(RegionScoreSummaryService::class)->isAvailable(),
+            'recommendedAction' => IndexActionRecommendation::textFor($index->index_id, $latest?->score),
         ]);
     }
 
@@ -105,15 +108,5 @@ class RegionController extends Controller
             ]);
 
         return back()->with('success', 'AI summary generated.');
-    }
-
-    private function riskBand(?float $score): string
-    {
-        return match (true) {
-            $score === null => 'none',
-            $score < 34 => 'green',
-            $score < 67 => 'amber',
-            default => 'red',
-        };
     }
 }

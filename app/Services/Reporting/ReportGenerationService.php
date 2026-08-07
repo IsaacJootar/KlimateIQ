@@ -2,6 +2,7 @@
 
 namespace App\Services\Reporting;
 
+use App\Models\IndexActionRecommendation;
 use App\Models\Region;
 use App\Models\RegionScore;
 use App\Models\ReportRequest;
@@ -71,10 +72,16 @@ class ReportGenerationService
         $relativePath = "reports/{$reportRequest->report_request_id}.pdf";
         Storage::makeDirectory('reports');
 
+        // Keyed by band (3 rows max) rather than queried per report row.
+        $actionsByBand = IndexActionRecommendation::query()
+            ->where('index_id', $reportRequest->index_id)
+            ->pluck('action_text', 'risk_band');
+
         Pdf::loadView('reports.pdf', [
             'reportRequest' => $reportRequest,
             'rows' => $rows,
             'regions' => Region::query()->whereIn('region_id', $reportRequest->region_ids)->get()->keyBy('region_id'),
+            'actionsByBand' => $actionsByBand,
         ])->save(Storage::path($relativePath));
 
         return $relativePath;

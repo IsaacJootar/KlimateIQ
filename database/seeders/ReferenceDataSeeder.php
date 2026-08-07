@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Agency;
+use App\Models\IndexActionRecommendation;
 use App\Models\Region;
 use App\Models\RegionScoringConfig;
 use App\Models\ScoringCalibrationParameter;
@@ -16,6 +17,7 @@ class ReferenceDataSeeder extends Seeder
     {
         $this->seedSignalTypes();
         $this->seedIndices();
+        $this->seedActionRecommendations();
         $this->seedRegions();
         $this->seedCalibrationParameters();
         $this->seedScoringConfigs();
@@ -71,6 +73,56 @@ class ReferenceDataSeeder extends Seeder
 
         foreach ($indices as $index) {
             ScoringIndex::query()->updateOrCreate(['code' => $index['code']], $index);
+        }
+    }
+
+    /**
+     * Rule-based, not AI — a lookup table an officer can act on immediately.
+     * Same 34/67 bands as App\Support\RiskBand, applied per index.
+     */
+    private function seedActionRecommendations(): void
+    {
+        $actions = [
+            'MALARIA_RISK' => [
+                'green' => 'No action needed. Continue routine surveillance.',
+                'amber' => 'Increase vector surveillance and pre-position rapid diagnostic tests (RDTs) at nearby health facilities.',
+                'red' => 'Distribute RDTs and pre-position ACTs (artemisinin-based combination therapies) in this LGA. Notify the state malaria programme within 48 hours.',
+            ],
+            'FLOOD_RISK' => [
+                'green' => 'No action needed. Continue routine monitoring.',
+                'amber' => 'Alert the LGA emergency management focal point. Review evacuation routes and shelter capacity.',
+                'red' => 'Activate the flood emergency response plan. Pre-position emergency shelter and clean water supplies, and issue a public evacuation advisory.',
+            ],
+            'COMPOSITE_PRESSURE' => [
+                'green' => 'No cross-cutting concern. Continue routine monitoring across all indices.',
+                'amber' => 'Review the index breakdown for this region — one or more signals are elevated. Brief the LGA health officer.',
+                'red' => 'Convene a multi-sectoral response review (health, water, emergency management) for this LGA within the week.',
+            ],
+            'HEAT_STRESS_RISK' => [
+                'green' => 'No action needed.',
+                'amber' => 'Issue a heat advisory to outdoor workers and schools. Confirm health facilities are stocked for heat-related illness.',
+                'red' => 'Issue a public heat warning. Open cooling centres where available and suspend non-essential outdoor activity during peak hours.',
+            ],
+            'DROUGHT_RISK' => [
+                'green' => 'No action needed. Continue routine monitoring.',
+                'amber' => 'Alert agricultural extension officers and water resource managers. Begin water-conservation messaging.',
+                'red' => 'Activate the drought contingency plan: prioritise water rationing for vulnerable communities and notify the state agriculture/water ministry.',
+            ],
+        ];
+
+        foreach ($actions as $indexCode => $bands) {
+            $index = ScoringIndex::query()->where('code', $indexCode)->first();
+
+            if (! $index) {
+                continue;
+            }
+
+            foreach ($bands as $band => $text) {
+                IndexActionRecommendation::query()->updateOrCreate(
+                    ['index_id' => $index->index_id, 'risk_band' => $band],
+                    ['action_text' => $text]
+                );
+            }
         }
     }
 

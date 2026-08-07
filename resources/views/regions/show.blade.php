@@ -1,10 +1,5 @@
 @php
-    $riskBand = match (true) {
-        $latest === null || $latest->score === null => 'none',
-        $latest->score < 34 => 'green',
-        $latest->score < 67 => 'amber',
-        default => 'red',
-    };
+    $riskBand = \App\Support\RiskBand::forScore($latest?->score);
     $metricClass = ['green' => 'metric-green', 'amber' => 'metric-amber', 'red' => 'metric-red', 'none' => 'metric-slate'][$riskBand];
 
     // Inline SVG trend line — no charting dependency for a handful of weekly points.
@@ -58,6 +53,13 @@
                     <div class="metric-card-sub">{{ $latest?->scoring_strategy ?? '' }}</div>
                 </div>
             </div>
+
+            @if ($recommendedAction)
+                <div class="section-card p-4 border-l-4 {{ ['amber' => 'border-amber-500', 'red' => 'border-red-500'][$riskBand] ?? 'border-gano-500' }}">
+                    <div class="text-xs font-semibold uppercase text-gray-500 mb-1">Recommended action</div>
+                    <p class="text-sm text-gray-800 dark:text-gray-200">{{ $recommendedAction }}</p>
+                </div>
+            @endif
 
             <div class="section-card">
                 <div class="section-card-header">

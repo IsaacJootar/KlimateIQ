@@ -23,6 +23,7 @@
                 <th>Period</th>
                 <th>Score</th>
                 <th>Strategy</th>
+                <th>Recommended Action</th>
             </tr>
         </thead>
         <tbody>
@@ -33,9 +34,10 @@
                     <td>{{ $row->period_start->toDateString() }} – {{ $row->period_end->toDateString() }}</td>
                     <td>{{ $row->score ?? '—' }}</td>
                     <td>{{ $row->scoring_strategy }}</td>
+                    <td>{{ $actionsByBand[\App\Support\RiskBand::forScore($row->score)] ?? '—' }}</td>
                 </tr>
             @empty
-                <tr><td colspan="5">No scores in this range.</td></tr>
+                <tr><td colspan="6">No scores in this range.</td></tr>
             @endforelse
         </tbody>
     </table>

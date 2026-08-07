@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Alert;
+use App\Models\IndexActionRecommendation;
 use App\Models\PlatformSetting;
 use App\Notifications\Channels\SmsChannel;
 use App\Services\Sms\SmsClient;
@@ -15,6 +16,19 @@ class ThresholdBreachedNotification extends Notification
     use Queueable;
 
     public function __construct(public readonly Alert $alert) {}
+
+    /**
+     * Null when the alert targets a raw signal rather than a named index — the
+     * recommendation table is keyed by index, not signal type.
+     */
+    private function recommendedAction(): ?string
+    {
+        if ($this->alert->index_id === null) {
+            return null;
+        }
+
+        return IndexActionRecommendation::textFor($this->alert->index_id, (float) $this->alert->score_at_trigger);
+    }
 
     /**
      * @param  \App\Models\User  $notifiable
@@ -51,12 +65,18 @@ class ThresholdBreachedNotification extends Notification
         $target = $this->alert->index?->name ?? $this->alert->signalType?->name ?? 'a signal';
         $region = $this->alert->region->name;
 
-        return (new MailMessage)
+        $mail = (new MailMessage)
             ->subject("Threshold breached — {$target} in {$region}")
             ->greeting('Hi '.$notifiable->name.',')
             ->line("{$target} in {$region} has crossed a threshold you set.")
             ->line("Value at trigger: {$this->alert->score_at_trigger}".
-                ($this->alert->threshold_value !== null ? " (threshold: {$this->alert->threshold_value})" : ' (anomaly vs. its own recent baseline)'))
+                ($this->alert->threshold_value !== null ? " (threshold: {$this->alert->threshold_value})" : ' (anomaly vs. its own recent baseline)'));
+
+        if ($action = $this->recommendedAction()) {
+            $mail->line("Recommended action: {$action}");
+        }
+
+        return $mail
             ->action('View alert', route('alerts.index'))
             ->line('Log in to Gano.ai to acknowledge or resolve this alert.');
     }
@@ -66,11 +86,16 @@ class ThresholdBreachedNotification extends Notification
         $this->alert->loadMissing(['region', 'index', 'signalType']);
 
         $target = $this->alert->index?->name ?? $this->alert->signalType?->name ?? 'a signal';
+        $body = "{$target} in {$this->alert->region->name} crossed a threshold you set.";
+
+        if ($action = $this->recommendedAction()) {
+            $body .= " Recommended action: {$action}";
+        }
 
         return [
             'type' => 'threshold_breached',
             'title' => "Threshold breached — {$target}",
-            'body' => "{$target} in {$this->alert->region->name} crossed a threshold you set.",
+            'body' => $body,
             'alert_id' => $this->alert->alert_id,
             'url' => route('alerts.index'),
         ];
@@ -82,7 +107,13 @@ class ThresholdBreachedNotification extends Notification
 
         $target = $this->alert->index?->name ?? $this->alert->signalType?->name ?? 'a signal';
 
-        return "Gano.ai alert: {$target} in {$this->alert->region->name} crossed your threshold ".
-            "(value: {$this->alert->score_at_trigger}). Details: ".route('alerts.index');
+        $message = "Gano.ai alert: {$target} in {$this->alert->region->name} crossed your threshold ".
+            "(value: {$this->alert->score_at_trigger}).";
+
+        if ($action = $this->recommendedAction()) {
+            $message .= " Recommended: {$action}";
+        }
+
+        return $message.' Details: '.route('alerts.index');
     }
 }
