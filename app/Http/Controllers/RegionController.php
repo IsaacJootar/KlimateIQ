@@ -8,6 +8,7 @@ use App\Models\RegionScore;
 use App\Models\ScoringIndex;
 use App\Services\Ai\RegionScoreSummaryService;
 use App\Support\RiskBand;
+use App\Support\TrendSummary;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -25,16 +26,31 @@ class RegionController extends Controller
             ->unique('region_id')
             ->keyBy('region_id');
 
+        // Most recent score at or before 2 weeks ago, per region — the "where were we" side
+        // of the trend sentence. Same shape query as $latestByRegion, just an older cutoff.
+        $priorByRegion = RegionScore::query()
+            ->where('index_id', $index->index_id)
+            ->where('period_start', '<=', now()->subDays(14))
+            ->orderByDesc('period_start')
+            ->get()
+            ->unique('region_id')
+            ->keyBy('region_id');
+
         $regionIds = array_filter(explode(',', (string) request('regions', '')));
 
         $regions = Region::query()
             ->when($regionIds !== [], fn ($q) => $q->whereIn('region_id', $regionIds))
             ->orderBy('name')
             ->get()
-            ->map(function (Region $region) use ($latestByRegion) {
+            ->map(function (Region $region) use ($latestByRegion, $priorByRegion) {
                 $score = $latestByRegion->get($region->region_id);
+                $prior = $priorByRegion->get($region->region_id);
                 $region->setAttribute('current_score', $score?->score);
                 $region->setAttribute('risk_band', RiskBand::forScore($score?->score));
+                $region->setAttribute('trend', TrendSummary::describe(
+                    $score?->score !== null ? (float) $score->score : null,
+                    $prior?->score !== null ? (float) $prior->score : null,
+                ));
 
                 return $region;
             });
@@ -58,6 +74,7 @@ class RegionController extends Controller
             ->get();
 
         $latest = $scores->last();
+        $prior = $scores->where('period_start', '<=', now()->subDays(14))->last();
 
         return view('regions.show', [
             'region' => $region,
@@ -68,6 +85,10 @@ class RegionController extends Controller
             'breakdown' => $latest?->breakdown ?? [],
             'aiAvailable' => app(RegionScoreSummaryService::class)->isAvailable(),
             'recommendedAction' => IndexActionRecommendation::textFor($index->index_id, $latest?->score),
+            'trend' => TrendSummary::describe(
+                $latest?->score !== null ? (float) $latest->score : null,
+                $prior?->score !== null ? (float) $prior->score : null,
+            ),
         ]);
     }
 

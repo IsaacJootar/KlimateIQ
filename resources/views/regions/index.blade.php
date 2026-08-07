@@ -70,6 +70,7 @@
                                 <th class="px-4 py-3">Population</th>
                                 <th class="px-4 py-3">{{ $index->name }}</th>
                                 <th class="px-4 py-3">Risk</th>
+                                <th class="px-4 py-3">2-Week Trend</th>
                                 <th class="px-4 py-3"></th>
                             </tr>
                         </thead>
@@ -82,6 +83,10 @@
                                     <td class="px-4 py-3 text-sm font-semibold">{{ $region->current_score ?? '—' }}</td>
                                     <td class="px-4 py-3 text-sm">
                                         <span class="risk-badge risk-badge-{{ $region->risk_band }}">{{ $region->risk_band === 'none' ? 'no data' : $region->risk_band }}</span>
+                                    </td>
+                                    <td class="px-4 py-3 text-sm {{ ['up' => 'text-red-600 dark:text-red-400', 'down' => 'text-emerald-600 dark:text-emerald-400', 'flat' => 'text-slate-500', 'unknown' => 'text-slate-400'][$region->trend['direction']] }}">
+                                        @if ($region->trend['direction'] === 'up') &uarr; @elseif ($region->trend['direction'] === 'down') &darr; @endif
+                                        {{ $region->trend['label'] }}
                                     </td>
                                     <td class="px-4 py-3 text-sm text-right">
                                         <a href="{{ route('regions.show', ['region' => $region->region_id, 'index' => $index->code]) }}" class="link-nav">View &rarr;</a>

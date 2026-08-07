@@ -41,6 +41,10 @@
                     <div class="metric-card-label">{{ $index->name }}</div>
                     <div class="metric-card-value">{{ $latest?->score ?? '—' }}</div>
                     <div class="metric-card-sub">{{ $riskBand === 'none' ? 'no data yet' : ucfirst($riskBand).' risk' }}</div>
+                    <div class="metric-card-sub">
+                        @if ($trend['direction'] === 'up') &uarr; @elseif ($trend['direction'] === 'down') &darr; @endif
+                        {{ $trend['label'] }}
+                    </div>
                 </div>
                 <div class="metric-card metric-teal">
                     <div class="metric-card-label">Population</div>
