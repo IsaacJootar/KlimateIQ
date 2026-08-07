@@ -5,8 +5,12 @@
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}">
-                        <x-application-logo class="block h-9 w-auto text-gano-600 dark:text-gano-400" />
+                    <a href="{{ route('dashboard') }}" class="flex flex-col justify-center leading-none">
+                        <span class="flex items-center gap-2">
+                            <x-application-logo class="block h-8 w-auto text-gano-600 dark:text-gano-400" />
+                            <span class="text-lg font-bold text-gray-800 dark:text-gray-200">Gano.ai</span>
+                        </span>
+                        <span class="text-[10px] font-semibold uppercase tracking-wide text-gano-600 dark:text-gano-400 mt-0.5">Climate Intelligence</span>
                     </a>
                 </div>
 
@@ -64,6 +68,9 @@
                     <x-slot name="content">
                         <x-dropdown-link :href="route('profile.edit')">
                             {{ __('Profile') }}
+                        </x-dropdown-link>
+                        <x-dropdown-link :href="route('profile.edit').'#alert-channels'">
+                            {{ __('Alert Channels (in-app, email, SMS)') }}
                         </x-dropdown-link>
 
                         <!-- Authentication -->
@@ -134,6 +141,9 @@
             <div class="mt-3 space-y-1">
                 <x-responsive-nav-link :href="route('profile.edit')">
                     {{ __('Profile') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('profile.edit').'#alert-channels'">
+                    {{ __('Alert Channels') }}
                 </x-responsive-nav-link>
 
                 <!-- Authentication -->

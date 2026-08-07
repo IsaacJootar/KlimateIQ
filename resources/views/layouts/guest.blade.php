@@ -17,12 +17,13 @@
     </head>
     <body class="font-sans text-gray-900 antialiased">
         <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100 dark:bg-gray-900">
-            <div class="flex items-center gap-2">
-                <a href="/">
-                    <x-application-logo class="w-12 h-12 text-gano-600 dark:text-gano-400" />
-                </a>
-                <span class="text-xl font-bold text-gray-800 dark:text-gray-200">Gano.ai</span>
-            </div>
+            <a href="/" class="flex flex-col items-center">
+                <span class="flex items-center gap-2">
+                    <x-application-logo class="w-10 h-10 text-gano-600 dark:text-gano-400" />
+                    <span class="text-xl font-bold text-gray-800 dark:text-gray-200">Gano.ai</span>
+                </span>
+                <span class="text-xs font-semibold uppercase tracking-wide text-gano-600 dark:text-gano-400 mt-1">Climate Intelligence</span>
+            </a>
 
             @php
                 // Tailwind's scanner needs literal class strings, not an interpolated one, so

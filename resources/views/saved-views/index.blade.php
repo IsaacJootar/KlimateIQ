@@ -39,10 +39,15 @@
                         </div>
                     </div>
                     @if ($hasAgency)
-                        <label class="inline-flex items-center gap-2 text-sm">
-                            <input type="checkbox" name="share_with_agency" value="1" class="rounded">
-                            Share with everyone in my agency
-                        </label>
+                        <div>
+                            <label class="inline-flex items-center gap-2 text-sm">
+                                <input type="checkbox" name="share_with_agency" value="1" class="rounded">
+                                Share with everyone in my agency
+                            </label>
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                Everyone registered under {{ auth()->user()->agency?->name ?? 'your agency' }} will be able to see and use this saved view. Leave unchecked to keep it private to you.
+                            </p>
+                        </div>
                     @endif
                     <button type="submit" class="btn-primary w-full sm:w-auto">Save view</button>
                 </form>

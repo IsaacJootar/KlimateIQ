@@ -3,7 +3,7 @@
     $channels = $preference->alert_channels ?? ['in_app'];
 @endphp
 
-<section>
+<section id="alert-channels">
     <header>
         <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
             {{ __('Alert Channels') }}
