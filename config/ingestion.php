@@ -1,6 +1,7 @@
 <?php
 
 use App\Services\Ingestion\RainfallIngestionService;
+use App\Services\Ingestion\TemperatureIngestionService;
 
 return [
 
@@ -17,6 +18,7 @@ return [
     */
     'sources' => [
         RainfallIngestionService::class,
+        TemperatureIngestionService::class,
     ],
 
 ];
