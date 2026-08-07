@@ -1,0 +1,262 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    /* Gano.ai brand — deep teal */
+    --color-gano-50:  #F0FDFA;
+    --color-gano-100: #CCFBF1;
+    --color-gano-200: #99F6E4;
+    --color-gano-300: #5EEAD4;
+    --color-gano-400: #2DD4BF;
+    --color-gano-500: #14B8A6;
+    --color-gano-600: #0D9488;
+    --color-gano-700: #0F766E;
+    --color-gano-800: #115E59;
+    --color-gano-900: #134E4A;
+    --color-gano-950: #042F2E;
+
+    /* App sidebar */
+    --color-navy:      #0C1929;
+    --color-navy-deep: #060F1C;
+
+    /* Risk bands — the vocabulary the whole dashboard is built around */
+    --color-risk-green-500:  #059669;
+    --color-risk-green-600:  #047857;
+    --color-risk-amber-500:  #D97706;
+    --color-risk-amber-600:  #B45309;
+    --color-risk-red-500:    #DC2626;
+    --color-risk-red-600:    #991B1B;
+
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ── Stat cards — gradient style, colour signals meaning at a glance ── */
+.metric-card {
+    border-radius: 14px;
+    padding: 1.25rem;
+    color: #ffffff;
+    position: relative;
+    overflow: hidden;
+}
+.metric-card::after {
+    content: '';
+    position: absolute;
+    top: -30px; right: -30px;
+    width: 100px; height: 100px;
+    background: radial-gradient(circle, rgba(255,255,255,0.10) 0%, transparent 70%);
+    pointer-events: none;
+}
+.metric-card-label {
+    font-size: 0.70rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255,255,255,0.82);
+    margin-bottom: 0.625rem;
+}
+.metric-card-value {
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+    color: #ffffff;
+    font-variant-numeric: tabular-nums;
+}
+.metric-card-sub {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.78);
+    margin-top: 0.35rem;
+}
+.metric-icon-badge {
+    width: 34px; height: 34px;
+    border-radius: 9px;
+    background: rgba(255,255,255,0.15);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.metric-teal   { background: linear-gradient(135deg, #0D9488 0%, #134E4A 100%); box-shadow: 0 4px 14px rgba(13,148,136,0.30); }
+.metric-slate  { background: linear-gradient(135deg, #334155 0%, #0F172A 100%); box-shadow: 0 4px 14px rgba(15,23,42,0.25); }
+.metric-green  { background: linear-gradient(135deg, #059669 0%, #047857 100%); box-shadow: 0 4px 14px rgba(5,150,105,0.30); }
+.metric-amber  { background: linear-gradient(135deg, #D97706 0%, #B45309 100%); box-shadow: 0 4px 14px rgba(217,119,6,0.30); }
+.metric-red    { background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%); box-shadow: 0 4px 14px rgba(220,38,38,0.30); }
+.metric-none   { background: linear-gradient(135deg, #64748B 0%, #334155 100%); box-shadow: 0 4px 14px rgba(51,65,85,0.25); }
+
+/* ── Risk badges — used anywhere a single region/score needs a compact label ── */
+.risk-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+.risk-badge-green { background: #ECFDF5; color: #047857; }
+.risk-badge-amber { background: #FFFBEB; color: #B45309; }
+.risk-badge-red   { background: #FEF2F2; color: #B91C1C; }
+.risk-badge-none  { background: #F1F5F9; color: #64748B; }
+.dark .risk-badge-green { background: rgba(5,150,105,0.15); color: #6EE7B7; }
+.dark .risk-badge-amber { background: rgba(217,119,6,0.15); color: #FCD34D; }
+.dark .risk-badge-red   { background: rgba(220,38,38,0.15); color: #FCA5A5; }
+.dark .risk-badge-none  { background: rgba(100,116,139,0.15); color: #94A3B8; }
+
+/* ── Section cards ── */
+/* Cards are faintly tinted rather than plain white, so a surface reads as a surface
+   against the page behind it. `overflow-wrap` keeps long unbroken content, such as
+   identifiers or URLs, inside the card instead of pushing past its edge. */
+.section-card {
+    background: linear-gradient(180deg, #FFFFFF 0%, #F6FBFA 100%);
+    border: 1px solid #DDEBE8;
+    border-radius: 14px;
+    overflow: hidden;
+    overflow-wrap: break-word;
+    box-shadow: 0 1px 4px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
+}
+.dark .section-card {
+    background: linear-gradient(180deg, #1E293B 0%, #1B2637 100%);
+    border-color: #334155;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+}
+.section-card :where(p, h1, h2, h3, h4, dd, dt, li, td, th, a, span) {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.section-card :where(img, svg, video, iframe, pre) {
+    max-width: 100%;
+}
+.section-card :where(pre) {
+    overflow-x: auto;
+}
+.section-card-header {
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid #F1F5F9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.dark .section-card-header {
+    border-color: #334155;
+}
+
+/* Buttons DO something. Links GO somewhere. The two must never look alike,
+   because the user cannot undo an action they thought was navigation. */
+.btn-primary,
+.btn-secondary,
+.btn-danger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    border-radius: 0.75rem;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 120ms ease, border-color 120ms ease;
+}
+.btn-primary {
+    background: #0D9488;
+    color: #FFFFFF;
+    border: 1px solid #0D9488;
+}
+.btn-primary:hover { background: #0F766E; border-color: #0F766E; }
+.btn-secondary {
+    background: #FFFFFF;
+    color: #334155;
+    border: 1px solid #CBD5E1;
+}
+.btn-secondary:hover { background: #F1F5F9; }
+.dark .btn-secondary { background: #1E293B; color: #E2E8F0; border-color: #475569; }
+.dark .btn-secondary:hover { background: #334155; }
+.btn-danger {
+    background: #FFFFFF;
+    color: #B91C1C;
+    border: 1px solid #FCA5A5;
+}
+.btn-danger:hover { background: #FEF2F2; }
+.dark .btn-danger { background: #1E293B; color: #FCA5A5; border-color: #7F1D1D; }
+
+/* A navigation link never wears button chrome. It is text, in the link colour,
+   and it underlines on hover. */
+.link-nav {
+    color: #0F766E;
+    font-weight: 600;
+    text-decoration: none;
+}
+.link-nav:hover { text-decoration: underline; }
+.dark .link-nav { color: #5EEAD4; }
+
+/* A whole card that navigates. The arrow inside is the affordance; this just
+   confirms it on hover so it never reads as a static panel. */
+.nav-card { transition: background-color 120ms ease, border-color 120ms ease; }
+.nav-card:hover { background-color: #F0FDFA; }
+.dark .nav-card:hover { background-color: #134E4A; }
+
+/* Index/tab switcher pills */
+.pill-tab {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4rem 0.9rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #475569;
+    background: #F1F5F9;
+    text-decoration: none;
+    transition: background-color 120ms ease, color 120ms ease;
+}
+.pill-tab:hover { background: #E2E8F0; }
+.pill-tab-active { background: #0D9488; color: #FFFFFF; }
+.pill-tab-active:hover { background: #0F766E; }
+.dark .pill-tab { background: #1E293B; color: #CBD5E1; }
+.dark .pill-tab:hover { background: #334155; }
+.dark .pill-tab-active { background: #14B8A6; color: #042F2E; }
+
+/* Mobile safe area bottom padding (iPhone home bar) */
+.pb-safe {
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+}
+
+/* ---------------------------------------------------------------------------
+   Form controls carry a visible border by default.
+
+   Tailwind's preflight sets `border-width: 0` on every element, so a class such
+   as `border-slate-300` sets only the colour and the control renders with no
+   outline at all. The @tailwindcss/forms plugin normally restores this; it is
+   not installed here.
+
+   This lives in the base layer, so any utility class still wins: a control that
+   genuinely wants no border can still say `border-0`.
+   --------------------------------------------------------------------------- */
+@layer base {
+    input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='submit']):not([type='button']),
+    select,
+    textarea {
+        border-width: 1px;
+        border-style: solid;
+        border-color: #CBD5E1;
+        background-color: #ffffff;
+    }
+
+    input[type='checkbox'],
+    input[type='radio'] {
+        border-width: 1px;
+        border-style: solid;
+        border-color: #94A3B8;
+    }
+
+    .dark input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='submit']):not([type='button']),
+    .dark select,
+    .dark textarea {
+        border-color: #475569;
+        background-color: #0F172A;
+        color: #F1F5F9;
+    }
+
+    .dark input[type='checkbox'],
+    .dark input[type='radio'] {
+        border-color: #64748B;
+    }
+}

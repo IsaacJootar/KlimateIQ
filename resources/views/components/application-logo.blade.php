@@ -1,0 +1,6 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" {{ $attributes }}>
+    <circle cx="50" cy="50" r="44" fill="none" stroke="currentColor" stroke-width="8"/>
+    <polyline points="18,50 34,50 42,28 54,74 62,38 68,50 82,50"
+              fill="none" stroke="currentColor" stroke-width="8"
+              stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
