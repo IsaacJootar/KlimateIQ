@@ -8,6 +8,7 @@ use App\Http\Controllers\RegionController;
 use App\Http\Controllers\ReportRequestController;
 use App\Http\Controllers\SavedViewController;
 use App\Http\Controllers\ThresholdConfigController;
+use App\Http\Controllers\UserPreferenceController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('login'));
@@ -45,6 +46,8 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/notifications', [InAppNotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{notification}/read', [InAppNotificationController::class, 'markRead'])->name('notifications.read');
+
+    Route::post('/preferences/theme', [UserPreferenceController::class, 'setTheme'])->name('preferences.theme');
 });
 
 Route::middleware(['auth', 'platform.admin'])->prefix('admin')->name('admin.')->group(function () {
