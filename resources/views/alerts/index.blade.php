@@ -10,12 +10,6 @@
 
     <div class="py-12">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-            @if (session('status'))
-                <div class="mb-4 p-4 rounded-lg bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-200 text-sm">
-                    {{ session('status') }}
-                </div>
-            @endif
-
             <div class="section-card overflow-hidden">
                 <ul class="divide-y divide-gray-100 dark:divide-gray-700">
                     @forelse ($alerts as $alert)

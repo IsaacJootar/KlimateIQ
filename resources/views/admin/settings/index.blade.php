@@ -10,12 +10,6 @@
 
     <div class="py-12">
         <div class="max-w-2xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            @if (session('success'))
-                <div class="p-4 rounded-lg bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-200 text-sm">
-                    {{ session('success') }}
-                </div>
-            @endif
-
             <div class="section-card p-6">
                 <form method="POST" action="{{ route('admin.settings.update') }}" class="space-y-5">
                     @csrf

@@ -123,17 +123,6 @@
                 </div>
             </div>
 
-            @if (session('success'))
-                <div class="p-4 rounded-lg bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-200 text-sm">
-                    {{ session('success') }}
-                </div>
-            @endif
-            @if (session('error'))
-                <div class="p-4 rounded-lg bg-amber-50 dark:bg-amber-900 text-amber-700 dark:text-amber-200 text-sm">
-                    {{ session('error') }}
-                </div>
-            @endif
-
             <div class="section-card p-4">
                 <div class="flex items-center justify-between mb-1">
                     <div class="text-xs font-semibold uppercase text-gray-500">AI Summary</div>
