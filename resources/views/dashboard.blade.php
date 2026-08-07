@@ -40,6 +40,27 @@
                 </a>
             </div>
 
+            <div class="section-card overflow-hidden">
+                <div class="section-card-header">
+                    <h3 class="font-semibold text-gray-800 dark:text-gray-200">Highest risk regions</h3>
+                    <span class="text-xs text-slate-500 dark:text-slate-400">{{ $defaultIndex->name }}</span>
+                </div>
+                <ul class="divide-y divide-gray-100 dark:divide-gray-700">
+                    @forelse ($topRiskRegions as $i => $row)
+                        <li class="flex items-center gap-4 px-5 py-3">
+                            <span class="text-sm font-semibold text-slate-400 w-4">{{ $i + 1 }}</span>
+                            <a href="{{ route('regions.show', ['region' => $row['region']->region_id, 'index' => $defaultIndex->code]) }}" class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-slate-900 dark:text-white truncate">{{ $row['region']->name }}, {{ $row['region']->state }}</p>
+                            </a>
+                            <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ $row['score'] }}</span>
+                            <span class="risk-badge risk-badge-{{ $row['band'] }}">{{ $row['band'] }}</span>
+                        </li>
+                    @empty
+                        <li class="px-5 py-8 text-center text-sm text-gray-500">No scored regions yet.</li>
+                    @endforelse
+                </ul>
+            </div>
+
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="section-card overflow-hidden">
                     <div class="section-card-header">

@@ -8,6 +8,7 @@ use App\Models\RegionScore;
 use App\Models\RegionSignal;
 use App\Models\ScoringIndex;
 use App\Models\ThresholdConfig;
+use App\Support\RiskBand;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
@@ -36,6 +37,20 @@ class DashboardController extends Controller
             ->unique('region_id');
 
         $highRiskCount = $latestScores->where('score', '>=', 67)->count();
+
+        // "Where do I act first" — every scored region ranked, highest risk first, so a
+        // coordinator managing several LGAs doesn't have to eyeball the full regions table.
+        $topRiskRegions = $latestScores
+            ->whereNotNull('score')
+            ->sortByDesc('score')
+            ->take(5)
+            ->map(fn (RegionScore $score) => [
+                'region' => $regions->firstWhere('region_id', $score->region_id),
+                'score' => $score->score,
+                'band' => RiskBand::forScore($score->score),
+            ])
+            ->filter(fn (array $row) => $row['region'] !== null)
+            ->values();
 
         $openAlertsCount = Alert::query()
             ->whereHas('thresholdConfig', fn ($q) => $q->where('user_id', $user->id))
@@ -87,6 +102,7 @@ class DashboardController extends Controller
             'openAlertsCount' => $openAlertsCount,
             'activeThresholdsCount' => $activeThresholdsCount,
             'defaultIndex' => $defaultIndex,
+            'topRiskRegions' => $topRiskRegions,
             'recentAlerts' => $recentAlerts,
             'activityFeed' => $activityFeed,
         ]);
