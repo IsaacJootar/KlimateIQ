@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\PlatformSettingController;
 use App\Http\Controllers\AlertController;
+use App\Http\Controllers\CoveragePreferenceController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InAppNotificationController;
 use App\Http\Controllers\ProfileController;
@@ -47,6 +48,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/{notification}/read', [InAppNotificationController::class, 'markRead'])->name('notifications.read');
 
     Route::post('/preferences/theme', [UserPreferenceController::class, 'setTheme'])->name('preferences.theme');
+
+    Route::get('/coverage', [CoveragePreferenceController::class, 'edit'])->name('coverage.edit');
+    Route::put('/coverage', [CoveragePreferenceController::class, 'update'])->name('coverage.update');
 });
 
 Route::middleware(['auth', 'platform.admin'])->prefix('admin')->name('admin.')->group(function () {

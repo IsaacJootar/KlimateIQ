@@ -18,6 +18,9 @@
                     <x-nav-link :href="route('regions.index')" :active="request()->routeIs('regions.*')">
                         {{ __('Regions') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('coverage.edit')" :active="request()->routeIs('coverage.*')">
+                        {{ __('My Coverage') }}
+                    </x-nav-link>
                     <x-nav-link :href="route('alerts.index')" :active="request()->routeIs('alerts.*')">
                         {{ __('Alerts') }}
                     </x-nav-link>
@@ -97,6 +100,9 @@
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('regions.index')" :active="request()->routeIs('regions.*')">
                 {{ __('Regions') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('coverage.edit')" :active="request()->routeIs('coverage.*')">
+                {{ __('My Coverage') }}
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('alerts.index')" :active="request()->routeIs('alerts.*')">
                 {{ __('Alerts') }}
