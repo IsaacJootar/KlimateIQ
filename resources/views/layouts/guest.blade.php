@@ -24,7 +24,17 @@
                 <span class="text-xl font-bold text-gray-800 dark:text-gray-200">Gano.ai</span>
             </div>
 
-            <div class="w-full sm:max-w-md mt-6 px-6 py-4 section-card">
+            @php
+                // Tailwind's scanner needs literal class strings, not an interpolated one, so
+                // list every width this layout actually uses rather than building the class
+                // dynamically.
+                $widthClass = match ($maxWidth) {
+                    'xl' => 'sm:max-w-xl',
+                    'lg' => 'sm:max-w-lg',
+                    default => 'sm:max-w-md',
+                };
+            @endphp
+            <div class="w-full {{ $widthClass }} mt-6 px-6 py-4 section-card">
                 {{ $slot }}
             </div>
         </div>

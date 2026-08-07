@@ -1,6 +1,12 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Required for Alpine's x-cloak to do anything — without this rule, x-cloak is inert and the
+   element it's on is visible (unstyled) until Alpine finishes initializing. */
+[x-cloak] {
+    display: none !important;
+}
+
 @theme {
     /* Gano.ai brand — deep teal */
     --color-gano-50:  #F0FDFA;
