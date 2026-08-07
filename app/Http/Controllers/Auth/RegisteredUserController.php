@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Agency;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
@@ -20,7 +21,11 @@ class RegisteredUserController extends Controller
      */
     public function create(): View
     {
-        return view('auth.register');
+        return view('auth.register', [
+            'agencies' => Agency::query()->orderBy('name')->get(),
+            'designations' => config('nigeria.designations'),
+            'states' => config('nigeria.states'),
+        ]);
     }
 
     /**
@@ -34,12 +39,28 @@ class RegisteredUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'designation' => ['required', 'in:'.implode(',', array_keys(config('nigeria.designations')))],
+            'other_designation' => ['nullable', 'required_if:designation,OTHER', 'string', 'max:100'],
+            'state' => ['required', 'in:'.implode(',', config('nigeria.states'))],
+            'agency_id' => ['nullable', 'uuid', 'exists:agencies,agency_id'],
+            'new_agency_name' => ['nullable', 'string', 'max:200'],
         ]);
+
+        $agencyId = $request->filled('new_agency_name')
+            ? Agency::query()->firstOrCreate(['name' => trim($request->string('new_agency_name'))])->agency_id
+            : $request->input('agency_id');
+
+        $designation = $request->input('designation') === 'OTHER'
+            ? trim($request->string('other_designation'))
+            : config('nigeria.designations')[$request->input('designation')];
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'agency_id' => $agencyId,
+            'designation' => $designation,
+            'state' => $request->input('state'),
         ]);
 
         event(new Registered($user));
