@@ -15,6 +15,7 @@ class ReportRequest extends Model
 
     protected $fillable = [
         'user_id',
+        'agency_id',
         'index_id',
         'region_ids',
         'date_from',
@@ -40,5 +41,10 @@ class ReportRequest extends Model
     public function index(): BelongsTo
     {
         return $this->belongsTo(ScoringIndex::class, 'index_id', 'index_id');
+    }
+
+    public function agency(): BelongsTo
+    {
+        return $this->belongsTo(Agency::class, 'agency_id', 'agency_id');
     }
 }

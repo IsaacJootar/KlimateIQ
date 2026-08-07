@@ -15,6 +15,7 @@ class SavedView extends Model
 
     protected $fillable = [
         'user_id',
+        'agency_id',
         'name',
         'index_id',
         'region_ids',
@@ -34,5 +35,15 @@ class SavedView extends Model
     public function index(): BelongsTo
     {
         return $this->belongsTo(ScoringIndex::class, 'index_id', 'index_id');
+    }
+
+    public function agency(): BelongsTo
+    {
+        return $this->belongsTo(Agency::class, 'agency_id', 'agency_id');
+    }
+
+    public function isShared(): bool
+    {
+        return $this->agency_id !== null;
     }
 }

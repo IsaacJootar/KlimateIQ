@@ -38,6 +38,14 @@
                             @endforeach
                         </select>
                     </div>
+                    @if ($hasAgency)
+                        <div class="sm:col-span-2">
+                            <label class="inline-flex items-center gap-2 text-sm">
+                                <input type="checkbox" name="share_with_agency" value="1" class="rounded">
+                                Share with everyone in my agency
+                            </label>
+                        </div>
+                    @endif
                     <div class="sm:col-span-2">
                         <button type="submit" class="btn-primary">Save view</button>
                     </div>
@@ -54,6 +62,7 @@
                             <th class="px-4 py-3">Name</th>
                             <th class="px-4 py-3">Index</th>
                             <th class="px-4 py-3">Regions</th>
+                            <th class="px-4 py-3">Shared</th>
                             <th class="px-4 py-3"></th>
                         </tr>
                     </thead>
@@ -63,6 +72,11 @@
                                 <td class="px-4 py-3 text-sm font-medium">{{ $view->name }}</td>
                                 <td class="px-4 py-3 text-sm">{{ $view->index?->name ?? 'All' }}</td>
                                 <td class="px-4 py-3 text-sm">{{ count($view->region_ids ?? []) }} regions</td>
+                                <td class="px-4 py-3 text-sm">
+                                    @if ($view->isShared())
+                                        <span class="risk-badge risk-badge-green">agency</span>
+                                    @endif
+                                </td>
                                 <td class="px-4 py-3 text-sm text-right space-x-2">
                                     <a href="{{ route('regions.index', ['index' => $view->index?->code, 'regions' => implode(',', $view->region_ids ?? [])]) }}" class="link-nav">Load &rarr;</a>
                                     <form method="POST" action="{{ route('saved-views.destroy', $view) }}" class="inline">
@@ -73,12 +87,48 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="px-4 py-8 text-center text-sm text-gray-500">No saved views yet.</td>
+                                <td colspan="5" class="px-4 py-8 text-center text-sm text-gray-500">No saved views yet.</td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
+
+            @if ($hasAgency)
+                <div class="section-card overflow-hidden">
+                    <div class="section-card-header">
+                        <h3 class="font-semibold text-gray-800 dark:text-gray-200">Shared by your agency</h3>
+                    </div>
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead>
+                            <tr class="text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
+                                <th class="px-4 py-3">Name</th>
+                                <th class="px-4 py-3">Index</th>
+                                <th class="px-4 py-3">Regions</th>
+                                <th class="px-4 py-3">Saved by</th>
+                                <th class="px-4 py-3"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                            @forelse ($sharedViews as $view)
+                                <tr>
+                                    <td class="px-4 py-3 text-sm font-medium">{{ $view->name }}</td>
+                                    <td class="px-4 py-3 text-sm">{{ $view->index?->name ?? 'All' }}</td>
+                                    <td class="px-4 py-3 text-sm">{{ count($view->region_ids ?? []) }} regions</td>
+                                    <td class="px-4 py-3 text-sm text-gray-500">{{ $view->user->name }}</td>
+                                    <td class="px-4 py-3 text-sm text-right">
+                                        <a href="{{ route('regions.index', ['index' => $view->index?->code, 'regions' => implode(',', $view->region_ids ?? [])]) }}" class="link-nav">Load &rarr;</a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="px-4 py-8 text-center text-sm text-gray-500">Nobody in your agency has shared a view yet.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            @endif
         </div>
     </div>
 </x-app-layout>

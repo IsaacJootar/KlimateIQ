@@ -17,10 +17,16 @@ class ReportRequestController extends Controller
 {
     public function index(): View
     {
+        $agencyId = Auth::user()->agency_id;
+
         return view('reports.index', [
             'reportRequests' => ReportRequest::query()->where('user_id', Auth::id())->with('index')->orderByDesc('created_at')->get(),
+            'sharedReports' => $agencyId
+                ? ReportRequest::query()->where('agency_id', $agencyId)->where('user_id', '!=', Auth::id())->where('status', 'READY')->with(['index', 'user'])->orderByDesc('created_at')->get()
+                : collect(),
             'regions' => Region::query()->orderBy('name')->get(),
             'indices' => ScoringIndex::all(),
+            'hasAgency' => $agencyId !== null,
         ]);
     }
 
@@ -35,8 +41,11 @@ class ReportRequestController extends Controller
             'format' => ['required', 'in:csv,pdf'],
         ]);
 
+        $shareWithAgency = $request->boolean('share_with_agency') && Auth::user()->agency_id !== null;
+
         $reportRequest = ReportRequest::query()->create([
             'user_id' => Auth::id(),
+            'agency_id' => $shareWithAgency ? Auth::user()->agency_id : null,
             'index_id' => $validated['index_id'],
             'region_ids' => $validated['region_ids'],
             'date_from' => $validated['date_from'],
@@ -50,12 +59,15 @@ class ReportRequestController extends Controller
         // size grows past that.
         $generator->generate($reportRequest);
 
-        return back()->with('status', 'Report generated.');
+        return back()->with('status', $shareWithAgency ? 'Report generated and shared with your agency.' : 'Report generated.');
     }
 
     public function download(ReportRequest $reportRequest): StreamedResponse
     {
-        abort_unless($reportRequest->user_id === Auth::id(), 403);
+        $owns = $reportRequest->user_id === Auth::id();
+        $sharedWithMyAgency = $reportRequest->agency_id !== null && $reportRequest->agency_id === Auth::user()->agency_id;
+
+        abort_unless($owns || $sharedWithMyAgency, 403);
         abort_unless($reportRequest->status === 'READY' && $reportRequest->file_path, 404);
 
         return Storage::download($reportRequest->file_path, "gano-ai-report.{$reportRequest->format}");

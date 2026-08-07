@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Agency;
 use App\Models\Region;
 use App\Models\RegionScoringConfig;
 use App\Models\ScoringCalibrationParameter;
@@ -18,6 +19,7 @@ class ReferenceDataSeeder extends Seeder
         $this->seedRegions();
         $this->seedCalibrationParameters();
         $this->seedScoringConfigs();
+        $this->seedAgencies();
     }
 
     private function seedSignalTypes(): void
@@ -166,6 +168,19 @@ class ReferenceDataSeeder extends Seeder
                     ['weight' => $weight, 'higher_is_worse' => $higherIsWorse, 'enabled' => true]
                 );
             }
+        }
+    }
+
+    private function seedAgencies(): void
+    {
+        $agencies = [
+            ['name' => 'Lagos State Ministry of Health', 'type' => 'State Ministry of Health'],
+            ['name' => 'Bayelsa State Emergency Management Agency', 'type' => 'Emergency Response'],
+            ['name' => 'Nigeria Centre for Disease Control (NCDC)', 'type' => 'Federal Public Health Agency'],
+        ];
+
+        foreach ($agencies as $agency) {
+            Agency::query()->firstOrCreate(['name' => $agency['name']], $agency);
         }
     }
 }
