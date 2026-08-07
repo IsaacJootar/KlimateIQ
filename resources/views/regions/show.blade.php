@@ -87,38 +87,40 @@
                 <div class="section-card-header">
                     <h3 class="font-semibold text-gray-800 dark:text-gray-200">What's driving this score</h3>
                 </div>
-                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead>
-                        <tr class="text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
-                            <th class="px-4 py-3">Signal</th>
-                            <th class="px-4 py-3">Raw Value</th>
-                            <th class="px-4 py-3">Normalized</th>
-                            <th class="px-4 py-3">Weight</th>
-                            <th class="px-4 py-3">Contribution</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                        @forelse ($breakdown as $signal)
-                            <tr>
-                                <td class="px-4 py-3 text-sm font-medium">{{ $signal['signal_type_code'] }}</td>
-                                <td class="px-4 py-3 text-sm">
-                                    @if (($signal['status'] ?? null) === 'no_data')
-                                        <span class="text-gray-400 italic">no data</span>
-                                    @else
-                                        {{ $signal['raw_value'] }} {{ $signal['unit'] ?? '' }}
-                                    @endif
-                                </td>
-                                <td class="px-4 py-3 text-sm">{{ $signal['normalized_score'] ?? '—' }}</td>
-                                <td class="px-4 py-3 text-sm">{{ $signal['weight'] }}</td>
-                                <td class="px-4 py-3 text-sm font-semibold">{{ $signal['contribution'] ?? '—' }}</td>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead>
+                            <tr class="text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
+                                <th class="px-4 py-3">Signal</th>
+                                <th class="px-4 py-3">Raw Value</th>
+                                <th class="px-4 py-3">Normalized</th>
+                                <th class="px-4 py-3">Weight</th>
+                                <th class="px-4 py-3">Contribution</th>
                             </tr>
-                        @empty
-                            <tr>
-                                <td colspan="5" class="px-4 py-8 text-center text-sm text-gray-500">No score calculated yet for this index.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                            @forelse ($breakdown as $signal)
+                                <tr>
+                                    <td class="px-4 py-3 text-sm font-medium">{{ $signal['signal_type_code'] }}</td>
+                                    <td class="px-4 py-3 text-sm">
+                                        @if (($signal['status'] ?? null) === 'no_data')
+                                            <span class="text-gray-400 italic">no data</span>
+                                        @else
+                                            {{ $signal['raw_value'] }} {{ $signal['unit'] ?? '' }}
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3 text-sm">{{ $signal['normalized_score'] ?? '—' }}</td>
+                                    <td class="px-4 py-3 text-sm">{{ $signal['weight'] }}</td>
+                                    <td class="px-4 py-3 text-sm font-semibold">{{ $signal['contribution'] ?? '—' }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="px-4 py-8 text-center text-sm text-gray-500">No score calculated yet for this index.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             @if (session('success'))

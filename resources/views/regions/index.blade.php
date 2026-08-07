@@ -10,6 +10,9 @@
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
             {{ __('Regions') }}
         </h2>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Every monitored LGA, color-coded by current risk. Switch the index above to see a different score.
+        </p>
     </x-slot>
 
     <div class="py-12">
@@ -58,34 +61,36 @@
                 <div class="section-card-header">
                     <h3 class="font-semibold text-gray-800 dark:text-gray-200">All Regions</h3>
                 </div>
-                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead>
-                        <tr class="text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
-                            <th class="px-4 py-3">Region</th>
-                            <th class="px-4 py-3">State</th>
-                            <th class="px-4 py-3">Population</th>
-                            <th class="px-4 py-3">{{ $index->name }}</th>
-                            <th class="px-4 py-3">Risk</th>
-                            <th class="px-4 py-3"></th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                        @foreach ($regions as $region)
-                            <tr class="nav-card">
-                                <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">{{ $region->name }}</td>
-                                <td class="px-4 py-3 text-sm text-gray-500">{{ $region->state }}</td>
-                                <td class="px-4 py-3 text-sm text-gray-500">{{ number_format($region->population) }}</td>
-                                <td class="px-4 py-3 text-sm font-semibold">{{ $region->current_score ?? '—' }}</td>
-                                <td class="px-4 py-3 text-sm">
-                                    <span class="risk-badge risk-badge-{{ $region->risk_band }}">{{ $region->risk_band === 'none' ? 'no data' : $region->risk_band }}</span>
-                                </td>
-                                <td class="px-4 py-3 text-sm text-right">
-                                    <a href="{{ route('regions.show', ['region' => $region->region_id, 'index' => $index->code]) }}" class="link-nav">View &rarr;</a>
-                                </td>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead>
+                            <tr class="text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
+                                <th class="px-4 py-3">Region</th>
+                                <th class="px-4 py-3">State</th>
+                                <th class="px-4 py-3">Population</th>
+                                <th class="px-4 py-3">{{ $index->name }}</th>
+                                <th class="px-4 py-3">Risk</th>
+                                <th class="px-4 py-3"></th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                            @foreach ($regions as $region)
+                                <tr class="nav-card">
+                                    <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">{{ $region->name }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-500">{{ $region->state }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-500">{{ number_format($region->population) }}</td>
+                                    <td class="px-4 py-3 text-sm font-semibold">{{ $region->current_score ?? '—' }}</td>
+                                    <td class="px-4 py-3 text-sm">
+                                        <span class="risk-badge risk-badge-{{ $region->risk_band }}">{{ $region->risk_band === 'none' ? 'no data' : $region->risk_band }}</span>
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-right">
+                                        <a href="{{ route('regions.show', ['region' => $region->region_id, 'index' => $index->code]) }}" class="link-nav">View &rarr;</a>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>

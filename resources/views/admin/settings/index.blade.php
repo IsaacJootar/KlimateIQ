@@ -3,6 +3,9 @@
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
             {{ __('Platform Settings') }}
         </h2>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Platform-wide switches — these override every user's individual preferences.
+        </p>
     </x-slot>
 
     <div class="py-12">
