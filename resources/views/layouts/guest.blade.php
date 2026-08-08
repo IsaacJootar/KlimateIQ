@@ -22,7 +22,7 @@
             <a href="/" class="flex flex-col items-center">
                 <span class="flex items-center gap-2">
                     <x-application-logo class="w-10 h-10 text-gano-600 dark:text-gano-400" />
-                    <span class="text-xl font-bold text-gray-800 dark:text-gray-200">Gano.ai</span>
+                    <span class="text-xl font-bold text-gray-800 dark:text-gray-200">KlimateIQ</span>
                 </span>
                 <span class="text-xs font-semibold uppercase tracking-wide text-gano-600 dark:text-gano-400 mt-1">Climate Intelligence</span>
             </a>

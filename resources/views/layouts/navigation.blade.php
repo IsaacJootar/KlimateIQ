@@ -8,7 +8,7 @@
                     <a href="{{ route('dashboard') }}" class="flex flex-col justify-center leading-none">
                         <span class="flex items-center gap-2">
                             <x-application-logo class="block h-8 w-auto text-gano-600 dark:text-gano-400" />
-                            <span class="text-lg font-bold text-gray-800 dark:text-gray-200">Gano.ai</span>
+                            <span class="text-lg font-bold text-gray-800 dark:text-gray-200">KlimateIQ</span>
                         </span>
                         <span class="text-[10px] font-semibold uppercase tracking-wide text-gano-600 dark:text-gano-400 mt-0.5">Climate Intelligence</span>
                     </a>
