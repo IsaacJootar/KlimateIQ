@@ -73,6 +73,16 @@
                             {{ __('Alert Channels (in-app, email, SMS)') }}
                         </x-dropdown-link>
 
+                        @if (Auth::user()->isPlatformAdmin())
+                            <div class="border-t border-gray-100 dark:border-gray-700 my-1"></div>
+                            <x-dropdown-link :href="route('admin.users.index')">
+                                {{ __('Admin: Users') }}
+                            </x-dropdown-link>
+                            <x-dropdown-link :href="route('admin.settings.index')">
+                                {{ __('Admin: Platform Settings') }}
+                            </x-dropdown-link>
+                        @endif
+
                         <!-- Authentication -->
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
@@ -145,6 +155,15 @@
                 <x-responsive-nav-link :href="route('profile.edit').'#alert-channels'">
                     {{ __('Alert Channels') }}
                 </x-responsive-nav-link>
+
+                @if (Auth::user()->isPlatformAdmin())
+                    <x-responsive-nav-link :href="route('admin.users.index')">
+                        {{ __('Admin: Users') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('admin.settings.index')">
+                        {{ __('Admin: Platform Settings') }}
+                    </x-responsive-nav-link>
+                @endif
 
                 <!-- Authentication -->
                 <form method="POST" action="{{ route('logout') }}">

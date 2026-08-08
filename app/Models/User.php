@@ -31,6 +31,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'disabled_at' => 'datetime',
         ];
     }
 
@@ -42,6 +43,16 @@ class User extends Authenticatable
     public function isPlatformAdmin(): bool
     {
         return $this->platform_role === 'PLATFORM_ADMIN';
+    }
+
+    /**
+     * disabled_at is deliberately not in #[Fillable] — a user must never be able to set this
+     * on their own account through any normal update path. Only UserManagementController
+     * writes to it, via forceFill().
+     */
+    public function isDisabled(): bool
+    {
+        return $this->disabled_at !== null;
     }
 
     public function dashboardPreference(): HasOne

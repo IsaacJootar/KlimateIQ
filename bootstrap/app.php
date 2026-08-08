@@ -16,6 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'platform.admin' => \App\Http\Middleware\EnsurePlatformAdmin::class,
         ]);
+
+        // Global, not just on auth-gated routes — a disabled account's existing session must
+        // be cut off on its very next request, not just blocked from a fresh login.
+        $middleware->web(append: [\App\Http\Middleware\EnsureAccountIsActive::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

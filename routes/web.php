@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\PlatformSettingController;
+use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\AlertController;
 use App\Http\Controllers\CoveragePreferenceController;
 use App\Http\Controllers\DashboardController;
@@ -56,6 +57,10 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'platform.admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('settings', [PlatformSettingController::class, 'index'])->name('settings.index');
     Route::put('settings', [PlatformSettingController::class, 'update'])->name('settings.update');
+
+    Route::get('users', [UserManagementController::class, 'index'])->name('users.index');
+    Route::patch('users/{user}/toggle-admin', [UserManagementController::class, 'toggleAdmin'])->name('users.toggle-admin');
+    Route::patch('users/{user}/toggle-active', [UserManagementController::class, 'toggleActive'])->name('users.toggle-active');
 });
 
 require __DIR__.'/auth.php';
