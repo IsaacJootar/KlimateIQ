@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AgencyManagementController;
+use App\Http\Controllers\Admin\PipelineHealthController;
 use App\Http\Controllers\Admin\PlatformSettingController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\AlertController;
@@ -66,6 +67,10 @@ Route::middleware(['auth', 'platform.admin'])->prefix('admin')->name('admin.')->
     Route::get('agencies', [AgencyManagementController::class, 'index'])->name('agencies.index');
     Route::patch('agencies/{agency}', [AgencyManagementController::class, 'update'])->name('agencies.update');
     Route::post('agencies/merge', [AgencyManagementController::class, 'merge'])->name('agencies.merge');
+
+    Route::get('pipeline', [PipelineHealthController::class, 'index'])->name('pipeline.index');
+    Route::post('pipeline/run-now', [PipelineHealthController::class, 'runNow'])->name('pipeline.run-now');
+    Route::post('pipeline/failures/{uuid}/retry', [PipelineHealthController::class, 'retryFailure'])->name('pipeline.failures.retry');
 });
 
 require __DIR__.'/auth.php';

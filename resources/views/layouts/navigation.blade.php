@@ -81,6 +81,9 @@
                             <x-dropdown-link :href="route('admin.agencies.index')">
                                 {{ __('Admin: Agencies') }}
                             </x-dropdown-link>
+                            <x-dropdown-link :href="route('admin.pipeline.index')">
+                                {{ __('Admin: Pipeline Health') }}
+                            </x-dropdown-link>
                             <x-dropdown-link :href="route('admin.settings.index')">
                                 {{ __('Admin: Platform Settings') }}
                             </x-dropdown-link>
@@ -165,6 +168,9 @@
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('admin.agencies.index')">
                         {{ __('Admin: Agencies') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('admin.pipeline.index')">
+                        {{ __('Admin: Pipeline Health') }}
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('admin.settings.index')">
                         {{ __('Admin: Platform Settings') }}
