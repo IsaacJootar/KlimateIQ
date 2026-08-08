@@ -14,7 +14,8 @@
                 <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-1">Build a report</h3>
                 <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">Pick what to report on, the date range, and how you want the file.</p>
 
-                <form method="POST" action="{{ route('reports.store') }}" class="space-y-5">
+                <form method="POST" action="{{ route('reports.store') }}" class="space-y-5"
+                      x-data="{ loading: false }" @submit="loading = true">
                     @csrf
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
@@ -60,7 +61,16 @@
                             </p>
                         </div>
                     @endif
-                    <button type="submit" class="btn-primary w-full sm:w-auto">Generate report</button>
+                    <button type="submit" class="btn-primary w-full sm:w-auto" x-bind:disabled="loading">
+                        <span x-show="! loading">Generate report</span>
+                        <span x-show="loading" x-cloak class="inline-flex items-center gap-1.5">
+                            <svg class="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                            Building your report...
+                        </span>
+                    </button>
                 </form>
             </div>
 
