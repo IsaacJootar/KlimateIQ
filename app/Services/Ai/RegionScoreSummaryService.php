@@ -30,6 +30,11 @@ class RegionScoreSummaryService
     - Every claim you make must trace to an item in the data.
     - Plain language, no jargon, 2-4 short sentences.
     - Do not invent region names, dates, or context beyond what's given.
+    - A signal with a real raw value of zero is a genuine measurement, not missing data —
+      describe what was actually found (e.g. "no standing water was detected nearby"), never
+      phrase it as the signal being excluded, skipped, or "not counting" toward the score.
+      Reserve language like "unavailable" or "no data" strictly for signals explicitly marked
+      "no data available this period" in the input.
     PROMPT;
 
     public function __construct(private readonly AiChatClient $client) {}
