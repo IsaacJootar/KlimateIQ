@@ -8,7 +8,7 @@
                 Your coverage, at a glance — {{ $defaultIndex->name }}.
                 <a href="{{ route('coverage.edit') }}" class="link-nav">Change coverage</a>
             @else
-                Showing all regions — you haven't scoped your coverage yet.
+                Showing every region currently active on the platform — you haven't scoped your own coverage yet.
                 <a href="{{ route('coverage.edit') }}" class="link-nav">Set your coverage &rarr;</a>
             @endif
         </p>
@@ -19,7 +19,7 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <a href="{{ route('regions.index') }}" class="metric-card metric-teal">
-                    <div class="metric-card-label">{{ $hasCoverage ? 'Your Regions' : 'All Regions' }}</div>
+                    <div class="metric-card-label">{{ $hasCoverage ? 'Your Regions' : 'Active Regions' }}</div>
                     <div class="metric-card-value">{{ $regionsCount }}</div>
                     <div class="metric-card-sub">{{ $defaultIndex->name }}</div>
                 </a>

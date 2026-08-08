@@ -76,6 +76,11 @@ class RegionController extends Controller
             'regions' => $regions,
             'indices' => $indices,
             'index' => $index,
+            // Drives the "Your Regions" vs "Active Regions" label below — the count alone
+            // doesn't tell a new user whether they're looking at their own coverage or the
+            // platform-wide fallback, which is exactly what caused the "is this a bug?"
+            // confusion between this page and the Dashboard.
+            'hasCoverage' => $regionIds !== [] || $subscribedRegionIds !== [],
         ]);
     }
 

@@ -11,7 +11,12 @@
             {{ __('Regions') }}
         </h2>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Every monitored LGA, color-coded by current risk. Switch the index above to see a different score.
+            @if ($hasCoverage)
+                Your configured regions, color-coded by current risk. Switch the index above to see a different score.
+            @else
+                Every region currently active on the platform — you haven't set your own coverage yet.
+                <a href="{{ route('coverage.edit') }}" class="link-nav">Set your coverage &rarr;</a>
+            @endif
         </p>
     </x-slot>
 
@@ -29,7 +34,7 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="metric-card metric-teal">
-                    <div class="metric-card-label">Regions Monitored</div>
+                    <div class="metric-card-label">{{ $hasCoverage ? 'Your Regions' : 'Active Regions' }}</div>
                     <div class="metric-card-value">{{ $regions->count() }}</div>
                     <div class="metric-card-sub">{{ $index->name }}</div>
                 </div>
