@@ -2,6 +2,7 @@
 
 use App\Services\Ingestion\ElevationIngestionService;
 use App\Services\Ingestion\RainfallIngestionService;
+use App\Services\Ingestion\StandingWaterIngestionService;
 use App\Services\Ingestion\TemperatureIngestionService;
 use App\Services\Ingestion\VegetationIngestionService;
 
@@ -23,6 +24,7 @@ return [
         TemperatureIngestionService::class,
         VegetationIngestionService::class,
         ElevationIngestionService::class,
+        StandingWaterIngestionService::class,
     ],
 
 ];
