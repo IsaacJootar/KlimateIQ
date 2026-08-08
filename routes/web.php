@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AgencyManagementController;
 use App\Http\Controllers\Admin\PipelineHealthController;
+use App\Http\Controllers\Admin\ActionRecommendationController;
 use App\Http\Controllers\Admin\PlatformSettingController;
 use App\Http\Controllers\Admin\ScoringConfigController;
 use App\Http\Controllers\Admin\UserManagementController;
@@ -75,6 +76,9 @@ Route::middleware(['auth', 'platform.admin'])->prefix('admin')->name('admin.')->
 
     Route::get('scoring', [ScoringConfigController::class, 'index'])->name('scoring.index');
     Route::put('scoring/{index}', [ScoringConfigController::class, 'update'])->name('scoring.update');
+
+    Route::get('actions', [ActionRecommendationController::class, 'index'])->name('actions.index');
+    Route::put('actions/{index}', [ActionRecommendationController::class, 'update'])->name('actions.update');
 });
 
 require __DIR__.'/auth.php';
