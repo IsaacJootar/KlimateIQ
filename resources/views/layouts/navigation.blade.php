@@ -78,6 +78,9 @@
                             <x-dropdown-link :href="route('admin.users.index')">
                                 {{ __('Admin: Users') }}
                             </x-dropdown-link>
+                            <x-dropdown-link :href="route('admin.agencies.index')">
+                                {{ __('Admin: Agencies') }}
+                            </x-dropdown-link>
                             <x-dropdown-link :href="route('admin.settings.index')">
                                 {{ __('Admin: Platform Settings') }}
                             </x-dropdown-link>
@@ -159,6 +162,9 @@
                 @if (Auth::user()->isPlatformAdmin())
                     <x-responsive-nav-link :href="route('admin.users.index')">
                         {{ __('Admin: Users') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('admin.agencies.index')">
+                        {{ __('Admin: Agencies') }}
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('admin.settings.index')">
                         {{ __('Admin: Platform Settings') }}

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AgencyManagementController;
 use App\Http\Controllers\Admin\PlatformSettingController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\AlertController;
@@ -61,6 +62,10 @@ Route::middleware(['auth', 'platform.admin'])->prefix('admin')->name('admin.')->
     Route::get('users', [UserManagementController::class, 'index'])->name('users.index');
     Route::patch('users/{user}/toggle-admin', [UserManagementController::class, 'toggleAdmin'])->name('users.toggle-admin');
     Route::patch('users/{user}/toggle-active', [UserManagementController::class, 'toggleActive'])->name('users.toggle-active');
+
+    Route::get('agencies', [AgencyManagementController::class, 'index'])->name('agencies.index');
+    Route::patch('agencies/{agency}', [AgencyManagementController::class, 'update'])->name('agencies.update');
+    Route::post('agencies/merge', [AgencyManagementController::class, 'merge'])->name('agencies.merge');
 });
 
 require __DIR__.'/auth.php';
