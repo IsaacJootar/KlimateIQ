@@ -10,6 +10,7 @@ use App\Services\Ai\RegionScoreSummaryService;
 use App\Support\RiskBand;
 use App\Support\TrendSummary;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class RegionController extends Controller
@@ -36,17 +37,25 @@ class RegionController extends Controller
             ->unique('region_id')
             ->keyBy('region_id');
 
+        // Explicit region_ids in the URL (a saved view, or a link scoped to a specific
+        // subset) win first. Otherwise this must match the Dashboard: fall back to the
+        // user's own /coverage selection, and only then to every active region — this
+        // page previously ignored /coverage entirely and always showed all active
+        // regions regardless of what a user had actually configured, which silently
+        // contradicted the "your dashboard and region list default to these" promise
+        // made on the coverage page itself.
         $regionIds = array_filter(explode(',', (string) request('regions', '')));
+        $subscribedRegionIds = $regionIds === [] ? Auth::user()->regionSubscriptions()->pluck('region_id')->all() : [];
 
-        // Explicit region_ids (from a saved view, or the map/table link for a specific
-        // subset) always win. Otherwise this is scoped to active regions — with all 774
-        // LGAs in the catalog, showing every one regardless of relevance isn't useful; a
-        // dormant region with no data yet belongs in /coverage's picker, not this table.
         $regions = Region::query()
             ->when(
                 $regionIds !== [],
                 fn ($q) => $q->whereIn('region_id', $regionIds),
-                fn ($q) => $q->active()
+                fn ($q) => $q->when(
+                    $subscribedRegionIds !== [],
+                    fn ($q) => $q->whereIn('region_id', $subscribedRegionIds),
+                    fn ($q) => $q->active()
+                )
             )
             ->orderBy('name')
             ->get()
