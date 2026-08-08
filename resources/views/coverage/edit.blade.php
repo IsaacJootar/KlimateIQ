@@ -12,12 +12,17 @@
     <div class="py-12">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <form method="POST" action="{{ route('coverage.update') }}"
-                  x-data="{ regionScope: '{{ $subscribedRegionIds ? 'specific' : 'all' }}', indexScope: '{{ $subscribedIndexIds ? 'specific' : 'all' }}' }"
+                  x-data="{
+                      regionScope: '{{ $subscribedRegionIds ? 'specific' : 'all' }}',
+                      indexScope: '{{ $subscribedIndexIds ? 'specific' : 'all' }}',
+                      regionSearch: '',
+                      matchesSearch(haystack) { return this.regionSearch === '' || haystack.includes(this.regionSearch.toLowerCase()); },
+                  }"
                   class="section-card p-6">
                 @csrf
                 @method('PUT')
 
-                <x-form-section title="Regions" description="A state coordinator might cover every region; an LGA officer usually covers just one or a handful.">
+                <x-form-section title="Regions" description="Every LGA in Nigeria is here — a state coordinator might cover dozens, an LGA officer usually covers just one or a handful. Picking a region that's brand new to the platform kicks off its first real data pull right away.">
                     <div class="space-y-2">
                         <label class="flex items-center gap-2 text-sm">
                             <input type="radio" name="region_scope" value="all" x-model="regionScope">
@@ -28,14 +33,18 @@
                             Only specific regions
                         </label>
                     </div>
-                    <div x-show="regionScope === 'specific'" x-cloak class="grid grid-cols-2 sm:grid-cols-3 gap-2 pl-6">
-                        @foreach ($regions as $region)
-                            <label class="flex items-center gap-2 text-sm">
-                                <input type="checkbox" name="region_ids[]" value="{{ $region->region_id }}" class="rounded"
-                                    @checked(in_array($region->region_id, $subscribedRegionIds))>
-                                {{ $region->name }}
-                            </label>
-                        @endforeach
+                    <div x-show="regionScope === 'specific'" x-cloak class="pl-6">
+                        <x-text-input type="search" x-model="regionSearch" placeholder="Search by LGA or state name..." class="w-full mb-3" />
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-80 overflow-y-auto pr-1">
+                            @foreach ($regions as $region)
+                                <label class="flex items-center gap-2 text-sm"
+                                    x-show="matchesSearch('{{ addslashes(strtolower($region->name.' '.$region->state)) }}')">
+                                    <input type="checkbox" name="region_ids[]" value="{{ $region->region_id }}" class="rounded"
+                                        @checked(in_array($region->region_id, $subscribedRegionIds))>
+                                    {{ $region->name }}, {{ $region->state }}
+                                </label>
+                            @endforeach
+                        </div>
                     </div>
                 </x-form-section>
 

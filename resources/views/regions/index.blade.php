@@ -79,7 +79,7 @@
                                 <tr class="nav-card">
                                     <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">{{ $region->name }}</td>
                                     <td class="px-4 py-3 text-sm text-gray-500">{{ $region->state }}</td>
-                                    <td class="px-4 py-3 text-sm text-gray-500">{{ number_format($region->population) }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-500">{{ $region->population !== null ? number_format($region->population) : '—' }}</td>
                                     <td class="px-4 py-3 text-sm font-semibold">{{ $region->current_score ?? '—' }}</td>
                                     <td class="px-4 py-3 text-sm">
                                         <span class="risk-badge risk-badge-{{ $region->risk_band }}">{{ $region->risk_band === 'none' ? 'no data' : $region->risk_band }}</span>

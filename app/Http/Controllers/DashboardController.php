@@ -21,8 +21,14 @@ class DashboardController extends Controller
         $regionIds = $user->regionSubscriptions()->pluck('region_id');
         $indexIds = $user->indexSubscriptions()->pluck('index_id');
 
+        // "All regions" (no explicit coverage) means "everything currently active," not
+        // literally all 774 seeded LGAs — most of which nobody has ever asked about.
         $regions = Region::query()
-            ->when($regionIds->isNotEmpty(), fn ($q) => $q->whereIn('region_id', $regionIds))
+            ->when(
+                $regionIds->isNotEmpty(),
+                fn ($q) => $q->whereIn('region_id', $regionIds),
+                fn ($q) => $q->active()
+            )
             ->get();
 
         $defaultIndex = $indexIds->isNotEmpty()

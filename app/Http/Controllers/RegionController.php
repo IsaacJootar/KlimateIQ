@@ -38,8 +38,16 @@ class RegionController extends Controller
 
         $regionIds = array_filter(explode(',', (string) request('regions', '')));
 
+        // Explicit region_ids (from a saved view, or the map/table link for a specific
+        // subset) always win. Otherwise this is scoped to active regions — with all 774
+        // LGAs in the catalog, showing every one regardless of relevance isn't useful; a
+        // dormant region with no data yet belongs in /coverage's picker, not this table.
         $regions = Region::query()
-            ->when($regionIds !== [], fn ($q) => $q->whereIn('region_id', $regionIds))
+            ->when(
+                $regionIds !== [],
+                fn ($q) => $q->whereIn('region_id', $regionIds),
+                fn ($q) => $q->active()
+            )
             ->orderBy('name')
             ->get()
             ->map(function (Region $region) use ($latestByRegion, $priorByRegion) {

@@ -122,6 +122,16 @@ php artisan test
 Uses a dedicated `gano_ai_test` Postgres database (see `phpunit.xml`) rather than SQLite — several
 migrations use Postgres-specific constraints.
 
+## Known limitations
+
+- **Agency membership is self-declared, not verified.** Anyone can select any existing agency
+  (or type a new one) at signup — there's no check that they actually belong to it. This matters
+  because agency membership currently gates "share with my agency" visibility on Saved Views and
+  Reports, and will matter more once any cross-agency oversight capability exists. The intended
+  fix — matching a user's email domain against a per-agency verified domain, with unverified
+  claims held for admin review rather than either silently trusted or blocked — is deferred, not
+  forgotten.
+
 ## Third-party API
 
 Token-authenticated (Sanctum) read access to the same scores the dashboard renders — the

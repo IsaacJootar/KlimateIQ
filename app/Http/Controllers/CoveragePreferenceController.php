@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\IngestRegionSignalJob;
 use App\Models\Region;
 use App\Models\ScoringIndex;
 use App\Models\UserIndexSubscription;
 use App\Models\UserRegionSubscription;
+use App\Support\IngestionWindow;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -46,8 +48,24 @@ class CoveragePreferenceController extends Controller
 
         UserRegionSubscription::where('user_id', $userId)->delete();
         if ($validated['region_scope'] === 'specific') {
-            foreach ($validated['region_ids'] ?? [] as $regionId) {
+            $regionIds = $validated['region_ids'] ?? [];
+
+            // Dormant regions among the ones being picked — nobody has ever pulled data
+            // for them and nobody else is currently watching them either. Must be checked
+            // before creating the subscription rows below, or every region would look
+            // "already watched" by the time we check.
+            $newlyActivated = Region::query()
+                ->whereIn('region_id', $regionIds)
+                ->whereDoesntHave('signals')
+                ->whereDoesntHave('subscribers')
+                ->get();
+
+            foreach ($regionIds as $regionId) {
                 UserRegionSubscription::create(['user_id' => $userId, 'region_id' => $regionId]);
+            }
+
+            foreach ($newlyActivated as $region) {
+                $this->triggerFirstIngestion($region);
             }
         }
 
@@ -59,5 +77,24 @@ class CoveragePreferenceController extends Controller
         }
 
         return back()->with('status', 'Coverage updated.');
+    }
+
+    /**
+     * A region going from dormant to watched shouldn't leave the user staring at "no
+     * data" for up to a week — pull its first real data right away, on top of it now
+     * joining the normal weekly cycle automatically (see IngestSignalsCommand).
+     */
+    private function triggerFirstIngestion(Region $region): void
+    {
+        [$periodStart, $periodEnd] = IngestionWindow::lastComplete();
+
+        foreach (config('ingestion.sources', []) as $serviceClass) {
+            IngestRegionSignalJob::dispatch(
+                $serviceClass,
+                $region->region_id,
+                $periodStart->toDateString(),
+                $periodEnd->toDateString(),
+            );
+        }
     }
 }

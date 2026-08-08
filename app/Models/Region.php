@@ -45,4 +45,20 @@ class Region extends Model
     {
         return $this->hasMany(RegionScoringConfig::class, 'region_id', 'region_id');
     }
+
+    public function subscribers(): HasMany
+    {
+        return $this->hasMany(UserRegionSubscription::class, 'region_id', 'region_id');
+    }
+
+    /**
+     * A region is "active" — worth pulling live signals for — once it's ever had a signal
+     * recorded, or at least one user is currently watching it. Most of Nigeria's 774 LGAs
+     * are seeded but dormant; this is what keeps weekly ingestion scoped to the ones that
+     * actually matter to someone, rather than all 774 regardless of relevance.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where(fn ($q) => $q->whereHas('signals')->orWhereHas('subscribers'));
+    }
 }

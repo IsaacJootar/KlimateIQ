@@ -10,6 +10,8 @@ use App\Models\ScoringCalibrationParameter;
 use App\Models\ScoringIndex;
 use App\Models\SignalType;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
 
 class ReferenceDataSeeder extends Seeder
 {
@@ -145,6 +147,69 @@ class ReferenceDataSeeder extends Seeder
         foreach ($regions as $region) {
             Region::query()->updateOrCreate(['lga_code' => $region['lga_code']], $region);
         }
+
+        $this->seedRemainingNigerianLgas();
+    }
+
+    /**
+     * The other 766 of Nigeria's 774 LGAs, from a public open dataset (name, state,
+     * coordinates only — no per-LGA population figure is freely available at this
+     * granularity, so it's left null rather than fabricated; the UI shows "—" for it).
+     * Skips any name+state already seeded above so the 8 hand-curated ones — which do
+     * have real population — are never overwritten.
+     *
+     * These start dormant: ingestion only runs for a region once a user actually adds
+     * it to their coverage (see IngestSignalsCommand), so seeding all 774 doesn't mean
+     * pulling live data for all 774 every week.
+     */
+    private function seedRemainingNigerianLgas(): void
+    {
+        $path = __DIR__.'/data/nigeria_lgas.json';
+
+        if (! file_exists($path)) {
+            return;
+        }
+
+        $existing = Region::query()->get(['name', 'state'])
+            ->map(fn ($r) => strtolower($r->name.'|'.$r->state))
+            ->flip();
+
+        // The dataset's own naming doesn't match what's already hand-seeded above: it uses
+        // "Federal Capital Territory" where we use "FCT", and just "Abuja" for the area
+        // council we seeded as "Abuja Municipal".
+        $stateAliases = ['Federal Capital Territory' => 'FCT'];
+        $nameAliases = ['Abuja' => 'Abuja Municipal'];
+
+        $lgas = json_decode(file_get_contents($path), true);
+        $now = Carbon::now();
+        $rows = [];
+
+        foreach ($lgas as $lga) {
+            $state = $stateAliases[$lga['state']] ?? $lga['state'];
+            $name = $nameAliases[$lga['name']] ?? $lga['name'];
+            $key = strtolower($name.'|'.$state);
+
+            if (isset($existing[$key])) {
+                continue;
+            }
+
+            $rows[] = [
+                'lga_code' => "NG-{$lga['state_code']}-{$lga['id']}",
+                'name' => $lga['name'],
+                'state' => $state,
+                'latitude' => $lga['latitude'],
+                'longitude' => $lga['longitude'],
+                'population' => null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        // One bulk upsert instead of ~766 individual queries — this runs on every test
+        // that seeds reference data, so query count here isn't free.
+        if ($rows !== []) {
+            DB::table('regions')->upsert($rows, ['lga_code'], ['name', 'state', 'latitude', 'longitude', 'updated_at']);
+        }
     }
 
     /**
@@ -226,9 +291,39 @@ class ReferenceDataSeeder extends Seeder
     private function seedAgencies(): void
     {
         $agencies = [
+            // State ministries of health — one per region actually seeded with hand-curated
+            // data above, not all 36+FCT, so the list stays relevant rather than generic.
             ['name' => 'Lagos State Ministry of Health', 'type' => 'State Ministry of Health'],
+            ['name' => 'Kano State Ministry of Health', 'type' => 'State Ministry of Health'],
+            ['name' => 'Rivers State Ministry of Health', 'type' => 'State Ministry of Health'],
+            ['name' => 'Oyo State Ministry of Health', 'type' => 'State Ministry of Health'],
+            ['name' => 'Borno State Ministry of Health', 'type' => 'State Ministry of Health'],
+            ['name' => 'Sokoto State Ministry of Health', 'type' => 'State Ministry of Health'],
+            ['name' => 'FCT Health and Human Services Secretariat', 'type' => 'State Ministry of Health'],
+
+            // Emergency response
             ['name' => 'Bayelsa State Emergency Management Agency', 'type' => 'Emergency Response'],
+            ['name' => 'Lagos State Emergency Management Agency (LASEMA)', 'type' => 'Emergency Response'],
+            ['name' => 'National Emergency Management Agency (NEMA)', 'type' => 'Emergency Response'],
+
+            // Federal public health / environment
             ['name' => 'Nigeria Centre for Disease Control (NCDC)', 'type' => 'Federal Public Health Agency'],
+            ['name' => 'Federal Ministry of Health and Social Welfare', 'type' => 'Federal Public Health Agency'],
+            ['name' => 'National Primary Health Care Development Agency (NPHCDA)', 'type' => 'Federal Public Health Agency'],
+            ['name' => 'Federal Ministry of Environment', 'type' => 'Federal Public Health Agency'],
+            ['name' => 'Nigerian Meteorological Agency (NiMet)', 'type' => 'Federal Public Health Agency'],
+
+            // NGOs / development partners
+            ['name' => 'World Health Organization (WHO) Nigeria', 'type' => 'NGO / Development Partner'],
+            ['name' => 'UNICEF Nigeria', 'type' => 'NGO / Development Partner'],
+            ['name' => 'Malaria Consortium Nigeria', 'type' => 'NGO / Development Partner'],
+            ['name' => 'Society for Family Health (SFH)', 'type' => 'NGO / Development Partner'],
+            ['name' => 'Nigerian Red Cross Society', 'type' => 'NGO / Development Partner'],
+            ['name' => 'eHealth Africa', 'type' => 'NGO / Development Partner'],
+
+            // Research
+            ['name' => 'Nigerian Institute of Medical Research (NIMR)', 'type' => 'Research Institution'],
+            ['name' => 'Nigerian Institute for Trypanosomiasis and Onchocerciasis Research (NITOR)', 'type' => 'Research Institution'],
         ];
 
         foreach ($agencies as $agency) {

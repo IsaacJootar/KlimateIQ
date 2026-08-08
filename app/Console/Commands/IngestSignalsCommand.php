@@ -4,8 +4,8 @@ namespace App\Console\Commands;
 
 use App\Jobs\IngestRegionSignalJob;
 use App\Models\Region;
+use App\Support\IngestionWindow;
 use Illuminate\Console\Command;
-use Illuminate\Support\Carbon;
 
 class IngestSignalsCommand extends Command
 {
@@ -17,14 +17,14 @@ class IngestSignalsCommand extends Command
 
     public function handle(): int
     {
-        // NASA POWER (and most reanalysis sources) lag a few days behind real time, so
-        // "last complete week" means 7-13 days ago, not the current week.
-        $periodEnd = Carbon::now()->subDays(6)->startOfDay();
-        $periodStart = $periodEnd->copy()->subDays(6);
+        [$periodStart, $periodEnd] = IngestionWindow::lastComplete();
 
+        // Only regions someone actually cares about — already has data, or a user is
+        // currently watching it — not all 774 seeded LGAs regardless of relevance.
+        // --region explicitly overrides this (e.g. to force the very first pull below).
         $regions = $this->option('region')
             ? Region::query()->where('region_id', $this->option('region'))->get()
-            : Region::query()->get();
+            : Region::query()->active()->get();
 
         $sources = config('ingestion.sources', []);
         $dispatched = 0;

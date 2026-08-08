@@ -48,7 +48,7 @@
                 </div>
                 <div class="metric-card metric-teal">
                     <div class="metric-card-label">Population</div>
-                    <div class="metric-card-value">{{ number_format($region->population) }}</div>
+                    <div class="metric-card-value">{{ $region->population !== null ? number_format($region->population) : '—' }}</div>
                     <div class="metric-card-sub">{{ $region->lga_code }}</div>
                 </div>
                 <div class="metric-card metric-slate">
