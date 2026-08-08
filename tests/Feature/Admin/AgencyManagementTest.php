@@ -102,6 +102,27 @@ class AgencyManagementTest extends TestCase
         $this->assertModelExists($keep);
     }
 
+    public function test_admins_can_grant_and_revoke_federal_oversight(): void
+    {
+        $admin = $this->admin();
+        $agency = Agency::factory()->create(['federal_oversight' => false]);
+
+        $this->actingAs($admin)->patch(route('admin.agencies.toggle-oversight', $agency))->assertRedirect();
+        $this->assertTrue($agency->fresh()->federal_oversight);
+
+        $this->actingAs($admin)->patch(route('admin.agencies.toggle-oversight', $agency))->assertRedirect();
+        $this->assertFalse($agency->fresh()->federal_oversight);
+    }
+
+    public function test_non_admins_cannot_toggle_federal_oversight(): void
+    {
+        $user = User::factory()->create();
+        $agency = Agency::factory()->create(['federal_oversight' => false]);
+
+        $this->actingAs($user)->patch(route('admin.agencies.toggle-oversight', $agency))->assertForbidden();
+        $this->assertFalse($agency->fresh()->federal_oversight);
+    }
+
     public function test_merge_rejects_merging_an_agency_into_itself(): void
     {
         $admin = $this->admin();

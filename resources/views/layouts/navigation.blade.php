@@ -37,6 +37,11 @@
                     <x-nav-link :href="route('reports.index')" :active="request()->routeIs('reports.*')">
                         {{ __('Reports') }}
                     </x-nav-link>
+                    @if (Auth::user()->hasFederalOversight())
+                        <x-nav-link :href="route('overview.index')" :active="request()->routeIs('overview.*')">
+                            {{ __('Platform Overview') }}
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
 
@@ -145,6 +150,11 @@
             <x-responsive-nav-link :href="route('reports.index')" :active="request()->routeIs('reports.*')">
                 {{ __('Reports') }}
             </x-responsive-nav-link>
+            @if (Auth::user()->hasFederalOversight())
+                <x-responsive-nav-link :href="route('overview.index')" :active="request()->routeIs('overview.*')">
+                    {{ __('Platform Overview') }}
+                </x-responsive-nav-link>
+            @endif
             <x-responsive-nav-link :href="route('notifications.index')" :active="request()->routeIs('notifications.*')">
                 {{ __('Notifications') }}
             </x-responsive-nav-link>

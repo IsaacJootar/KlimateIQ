@@ -323,7 +323,11 @@ class ReferenceDataSeeder extends Seeder
             ['name' => 'National Emergency Management Agency (NEMA)', 'type' => 'Emergency Response'],
 
             // Federal public health / environment
-            ['name' => 'Nigeria Centre for Disease Control (NCDC)', 'type' => 'Federal Public Health Agency'],
+            // NCDC gets federal_oversight => true as the reference example for the
+            // Cross-agency oversight view — a national body genuinely needs to see across
+            // every agency, not just its own configured regions. Any other agency can be
+            // flipped on the same way from Admin: Agencies.
+            ['name' => 'Nigeria Centre for Disease Control (NCDC)', 'type' => 'Federal Public Health Agency', 'federal_oversight' => true],
             ['name' => 'Federal Ministry of Health and Social Welfare', 'type' => 'Federal Public Health Agency'],
             ['name' => 'National Primary Health Care Development Agency (NPHCDA)', 'type' => 'Federal Public Health Agency'],
             ['name' => 'Federal Ministry of Environment', 'type' => 'Federal Public Health Agency'],

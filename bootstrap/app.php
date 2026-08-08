@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'platform.admin' => \App\Http\Middleware\EnsurePlatformAdmin::class,
+            'federal.oversight' => \App\Http\Middleware\EnsureFederalOversight::class,
         ]);
 
         // Global, not just on auth-gated routes — a disabled account's existing session must

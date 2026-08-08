@@ -46,6 +46,17 @@ class User extends Authenticatable
     }
 
     /**
+     * Platform-wide visibility across every agency, not just this user's own. Rides on the
+     * user's organization rather than being a per-person grant — any account under an agency
+     * flagged this way gets the view automatically, no per-user setup, and it goes away for
+     * everyone at that agency the moment a platform admin flips the flag off.
+     */
+    public function hasFederalOversight(): bool
+    {
+        return (bool) $this->agency?->federal_oversight;
+    }
+
+    /**
      * disabled_at is deliberately not in #[Fillable] — a user must never be able to set this
      * on their own account through any normal update path. Only UserManagementController
      * writes to it, via forceFill().

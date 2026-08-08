@@ -16,6 +16,11 @@ class Agency extends Model
     protected $fillable = [
         'name',
         'type',
+        'federal_oversight',
+    ];
+
+    protected $casts = [
+        'federal_oversight' => 'boolean',
     ];
 
     public function users(): HasMany

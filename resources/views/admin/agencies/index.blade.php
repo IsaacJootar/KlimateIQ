@@ -5,6 +5,9 @@
         </h2>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Every organization registered on the platform, with how many accounts belong to it.
+            "Platform Overview" grants every account under that agency a cross-agency view of the
+            whole platform — not just their own configured coverage. Reserve it for organizations
+            whose actual mission is oversight across everyone, like a national public health body.
         </p>
     </x-slot>
 
@@ -19,6 +22,7 @@
                                 <th class="px-4 py-3">Name</th>
                                 <th class="px-4 py-3">Type</th>
                                 <th class="px-4 py-3">Members</th>
+                                <th class="px-4 py-3">Platform Overview</th>
                                 <th class="px-4 py-3"></th>
                             </tr>
                         </thead>
@@ -34,11 +38,23 @@
                                     </td>
                                     <td class="px-4 py-3 text-sm text-gray-500">{{ $agency->type ?? '—' }}</td>
                                     <td class="px-4 py-3 text-sm text-gray-500">{{ $agency->users_count }}</td>
-                                    <td class="px-4 py-3"></td>
+                                    <td class="px-4 py-3">
+                                        <span class="risk-badge {{ $agency->federal_oversight ? 'risk-badge-green' : 'risk-badge-none' }}">
+                                            {{ $agency->federal_oversight ? 'granted' : 'off' }}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3 text-right">
+                                        <form method="POST" action="{{ route('admin.agencies.toggle-oversight', $agency) }}">
+                                            @csrf @method('PATCH')
+                                            <button type="submit" class="btn-secondary">
+                                                {{ $agency->federal_oversight ? 'Revoke' : 'Grant' }}
+                                            </button>
+                                        </form>
+                                    </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="px-4 py-8 text-center text-sm text-gray-500">No agencies yet.</td>
+                                    <td colspan="5" class="px-4 py-8 text-center text-sm text-gray-500">No agencies yet.</td>
                                 </tr>
                             @endforelse
                         </tbody>

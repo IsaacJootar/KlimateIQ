@@ -30,6 +30,20 @@ class AgencyManagementController extends Controller
     }
 
     /**
+     * Grants or revokes the Platform Overview page (a cross-agency view, not scoped to any
+     * single agency's own coverage) for every user under this agency. Rides on the agency
+     * rather than a per-user flag — see User::hasFederalOversight().
+     */
+    public function toggleOversight(Agency $agency): RedirectResponse
+    {
+        $agency->update(['federal_oversight' => ! $agency->federal_oversight]);
+
+        $state = $agency->federal_oversight ? 'granted' : 'revoked';
+
+        return back()->with('status', "Platform Overview access {$state} for \"{$agency->name}\".");
+    }
+
+    /**
      * Folds one agency into another: every user, saved view, report, and threshold pointed
      * at the duplicate gets repointed at the one being kept, then the duplicate is deleted.
      * Reassigning first matters — threshold_configs.agency_id cascade-deletes on agency

@@ -10,6 +10,7 @@ use App\Http\Controllers\AlertController;
 use App\Http\Controllers\CoveragePreferenceController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InAppNotificationController;
+use App\Http\Controllers\PlatformOverviewController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegionController;
 use App\Http\Controllers\ReportRequestController;
@@ -58,6 +59,10 @@ Route::middleware('auth')->group(function () {
     Route::put('/coverage', [CoveragePreferenceController::class, 'update'])->name('coverage.update');
 });
 
+Route::middleware(['auth', 'federal.oversight'])->group(function () {
+    Route::get('/overview', [PlatformOverviewController::class, 'index'])->name('overview.index');
+});
+
 Route::middleware(['auth', 'platform.admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('settings', [PlatformSettingController::class, 'index'])->name('settings.index');
     Route::put('settings', [PlatformSettingController::class, 'update'])->name('settings.update');
@@ -68,6 +73,7 @@ Route::middleware(['auth', 'platform.admin'])->prefix('admin')->name('admin.')->
 
     Route::get('agencies', [AgencyManagementController::class, 'index'])->name('agencies.index');
     Route::patch('agencies/{agency}', [AgencyManagementController::class, 'update'])->name('agencies.update');
+    Route::patch('agencies/{agency}/toggle-oversight', [AgencyManagementController::class, 'toggleOversight'])->name('agencies.toggle-oversight');
     Route::post('agencies/merge', [AgencyManagementController::class, 'merge'])->name('agencies.merge');
 
     Route::get('pipeline', [PipelineHealthController::class, 'index'])->name('pipeline.index');
