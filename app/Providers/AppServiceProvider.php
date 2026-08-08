@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Services\Ai\AiChatClient;
 use App\Services\Ai\OpenAiClient;
+use App\Services\Earthdata\AppEearsClient;
 use App\Services\Sms\SmsClient;
 use App\Services\Sms\TermiiSmsClient;
 use Illuminate\Support\ServiceProvider;
@@ -22,6 +23,9 @@ class AppServiceProvider extends ServiceProvider
         // SMS alerts use Termii, bound the same way — SmsChannel never knows which provider
         // is behind SmsClient.
         $this->app->singleton(SmsClient::class, fn () => TermiiSmsClient::fromConfig());
+
+        // NASA Earthdata (AppEEARS) — used by VegetationIngestionService.
+        $this->app->singleton(AppEearsClient::class, fn () => AppEearsClient::fromConfig());
     }
 
     /**

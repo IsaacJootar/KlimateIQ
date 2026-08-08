@@ -38,6 +38,11 @@ return [
         'base_url' => env('TERMII_BASE_URL', 'https://api.ng.termii.com'),
     ],
 
+    'earthdata' => [
+        'username' => env('NASA_EARTHDATA_USERNAME'),
+        'password' => env('NASA_EARTHDATA_PASSWORD'),
+    ],
+
     'ses' => [
         'key' => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),

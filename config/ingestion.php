@@ -2,6 +2,7 @@
 
 use App\Services\Ingestion\RainfallIngestionService;
 use App\Services\Ingestion\TemperatureIngestionService;
+use App\Services\Ingestion\VegetationIngestionService;
 
 return [
 
@@ -19,6 +20,7 @@ return [
     'sources' => [
         RainfallIngestionService::class,
         TemperatureIngestionService::class,
+        VegetationIngestionService::class,
     ],
 
 ];

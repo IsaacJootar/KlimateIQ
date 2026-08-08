@@ -18,6 +18,11 @@ class IngestRegionSignalJob implements ShouldQueue
 
     public int $backoff = 60;
 
+    // Most sources return in well under a minute. Vegetation (AppEEARS) submits an async
+    // task and polls until it completes, which in practice takes ~1 minute but can run
+    // longer — this ceiling only matters for that source; it's a no-op for fast ones.
+    public int $timeout = 300;
+
     /**
      * @param  class-string<\App\Services\Ingestion\SignalIngestionService>  $serviceClass
      */
