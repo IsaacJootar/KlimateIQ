@@ -50,22 +50,24 @@
                 </div>
 
                 <div>
-                    <x-input-label for="state" :value="__('State')" />
+                    <x-input-label for="state" :value="__('Organization\'s State')" />
                     <x-select-input id="state" name="state" required class="block mt-1 w-full">
-                        <option value="">Select your state</option>
+                        <option value="">Select a state</option>
                         @foreach ($states as $state)
                             <option value="{{ $state }}" @selected(old('state') === $state)>{{ $state }}</option>
                         @endforeach
                     </x-select-input>
+                    <p class="mt-1 text-xs text-slate-400">Where your organization operates — not necessarily your own location.</p>
                     <x-input-error :messages="$errors->get('state')" class="mt-2" />
                 </div>
             </div>
 
             <div class="mt-4">
-                <x-input-label for="agency_id" :value="__('Agency / Organization (optional)')" />
+                <x-input-label for="agency_id" :value="__('Organization')" />
+                <p class="text-xs text-slate-400 mb-1">Required, so we know who's using the platform.</p>
                 <div x-show="!newAgency">
                     <x-select-input id="agency_id" name="agency_id" class="block mt-1 w-full">
-                        <option value="">— None —</option>
+                        <option value="">Select your organization</option>
                         @foreach ($agencies as $agency)
                             <option value="{{ $agency->agency_id }}" @selected(old('agency_id') === $agency->agency_id)>{{ $agency->name }}</option>
                         @endforeach
@@ -73,13 +75,14 @@
                 </div>
                 <div x-show="newAgency" x-cloak>
                     <x-text-input class="block mt-1 w-full" type="text" name="new_agency_name"
-                        :value="old('new_agency_name')" placeholder="Your agency's name" />
+                        :value="old('new_agency_name')" placeholder="Your organization's name" />
                 </div>
                 <button type="button" class="mt-1 text-xs link-nav" @click="newAgency = !newAgency">
-                    <span x-show="!newAgency">My agency isn't listed</span>
+                    <span x-show="!newAgency">My organization isn't listed</span>
                     <span x-show="newAgency" x-cloak>Choose from the list instead</span>
                 </button>
                 <x-input-error :messages="$errors->get('agency_id')" class="mt-2" />
+                <x-input-error :messages="$errors->get('new_agency_name')" class="mt-2" />
             </div>
         </div>
 

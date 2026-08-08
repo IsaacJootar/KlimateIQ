@@ -42,8 +42,11 @@ class RegisteredUserController extends Controller
             'designation' => ['required', 'in:'.implode(',', array_keys(config('nigeria.designations')))],
             'other_designation' => ['nullable', 'required_if:designation,OTHER', 'string', 'max:100'],
             'state' => ['required', 'in:'.implode(',', config('nigeria.states'))],
-            'agency_id' => ['nullable', 'uuid', 'exists:agencies,agency_id'],
-            'new_agency_name' => ['nullable', 'string', 'max:200'],
+            'agency_id' => ['required_without:new_agency_name', 'nullable', 'uuid', 'exists:agencies,agency_id'],
+            'new_agency_name' => ['required_without:agency_id', 'nullable', 'string', 'max:200'],
+        ], [
+            'agency_id.required_without' => 'Select your organization, or add it if it isn\'t listed.',
+            'new_agency_name.required_without' => 'Enter your organization\'s name.',
         ]);
 
         $agencyId = $request->filled('new_agency_name')

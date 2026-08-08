@@ -25,11 +25,13 @@ class RegistrationTest extends TestCase
             'password_confirmation' => 'password',
             'designation' => 'RESEARCHER',
             'state' => 'Lagos',
+            'new_agency_name' => 'Test Health Agency',
         ]);
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('dashboard', absolute: false));
         $this->assertDatabaseHas('users', ['email' => 'test@example.com', 'designation' => 'Researcher', 'state' => 'Lagos']);
+        $this->assertDatabaseHas('agencies', ['name' => 'Test Health Agency']);
     }
 
     public function test_registration_requires_a_role_and_state(): void
@@ -42,6 +44,21 @@ class RegistrationTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors(['designation', 'state']);
+        $this->assertGuest();
+    }
+
+    public function test_registration_requires_an_organization(): void
+    {
+        $response = $this->post('/register', [
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'designation' => 'RESEARCHER',
+            'state' => 'Lagos',
+        ]);
+
+        $response->assertSessionHasErrors(['agency_id']);
         $this->assertGuest();
     }
 
@@ -70,6 +87,7 @@ class RegistrationTest extends TestCase
             'designation' => 'OTHER',
             'other_designation' => 'Community Health Volunteer',
             'state' => 'Lagos',
+            'new_agency_name' => 'Test Health Agency',
         ]);
 
         $this->assertAuthenticated();
