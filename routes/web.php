@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AgencyManagementController;
 use App\Http\Controllers\Admin\PipelineHealthController;
 use App\Http\Controllers\Admin\PlatformSettingController;
+use App\Http\Controllers\Admin\ScoringConfigController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\AlertController;
 use App\Http\Controllers\CoveragePreferenceController;
@@ -71,6 +72,9 @@ Route::middleware(['auth', 'platform.admin'])->prefix('admin')->name('admin.')->
     Route::get('pipeline', [PipelineHealthController::class, 'index'])->name('pipeline.index');
     Route::post('pipeline/run-now', [PipelineHealthController::class, 'runNow'])->name('pipeline.run-now');
     Route::post('pipeline/failures/{uuid}/retry', [PipelineHealthController::class, 'retryFailure'])->name('pipeline.failures.retry');
+
+    Route::get('scoring', [ScoringConfigController::class, 'index'])->name('scoring.index');
+    Route::put('scoring/{index}', [ScoringConfigController::class, 'update'])->name('scoring.update');
 });
 
 require __DIR__.'/auth.php';

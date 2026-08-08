@@ -84,6 +84,9 @@
                             <x-dropdown-link :href="route('admin.pipeline.index')">
                                 {{ __('Admin: Pipeline Health') }}
                             </x-dropdown-link>
+                            <x-dropdown-link :href="route('admin.scoring.index')">
+                                {{ __('Admin: Index & Scoring Config') }}
+                            </x-dropdown-link>
                             <x-dropdown-link :href="route('admin.settings.index')">
                                 {{ __('Admin: Platform Settings') }}
                             </x-dropdown-link>
@@ -171,6 +174,9 @@
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('admin.pipeline.index')">
                         {{ __('Admin: Pipeline Health') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('admin.scoring.index')">
+                        {{ __('Admin: Index & Scoring Config') }}
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('admin.settings.index')">
                         {{ __('Admin: Platform Settings') }}
