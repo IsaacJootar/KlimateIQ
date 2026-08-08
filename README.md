@@ -56,19 +56,20 @@ or `region_scores.breakdown` directly).
 
 ## Data sources
 
-| Signal | Source |
-|---|---|
-| Rainfall | NASA POWER |
-| Standing water | JRC Global Surface Water / Sentinel-2 NDWI |
-| Temperature | ERA5 (Copernicus CDS) |
-| Vegetation/humidity | MODIS |
-| Population exposure | WorldPop / GRID3 Nigeria |
-| Elevation | SRTM |
+| Signal | Source | Status |
+|---|---|---|
+| Rainfall | NASA POWER | Live |
+| Standing water | JRC Global Surface Water | Live |
+| Temperature | NASA POWER | Live |
+| Vegetation/humidity | MODIS (via NASA Earthdata/AppEEARS) | Live |
+| Elevation | SRTM (Open Topo Data) | Live |
+| Population exposure | WorldPop / GRID3 Nigeria | **Pending** — no ingestion service built yet; weighted into scoring but always absent, see [`docs/INGESTION_GUIDE.md`](docs/INGESTION_GUIDE.md#population-exposure--pending-not-live) |
 
-8 real Nigerian LGAs are seeded across 8 states (Lagos, Bayelsa, Oyo, Kano, Rivers, Borno, Sokoto,
-FCT) — enough geographic and climate diversity to demonstrate meaningfully without ingesting the
-whole country. See [`docs/INGESTION_GUIDE.md`](docs/INGESTION_GUIDE.md) for how to plug in an
-additional signal source.
+All 774 real Nigerian LGAs are seeded (name, state, coordinates). Ingestion is usage-driven — a
+region only gets pulled once someone actually watches it or requests it via Coverage, so the
+platform doesn't waste cycles ingesting every LGA nobody's asked about. See
+[`docs/INGESTION_GUIDE.md`](docs/INGESTION_GUIDE.md) for how to plug in an additional signal
+source, and how confident you should be in the current scoring bounds.
 
 ## Setup
 
@@ -131,6 +132,13 @@ migrations use Postgres-specific constraints.
   fix — matching a user's email domain against a per-agency verified domain, with unverified
   claims held for admin review rather than either silently trusted or blocked — is deferred, not
   forgotten.
+
+- **Scoring calibration bounds are engineering estimates, not clinically validated.** Only
+  Vegetation's `-1` to `1` range is a genuine scientific standard (NDVI's own definition); the
+  rest are climatologically plausible defaults for Nigeria, not numbers checked against real
+  health-outcome data. See
+  [`docs/INGESTION_GUIDE.md`](docs/INGESTION_GUIDE.md#how-trustworthy-are-the-current-bounds) for
+  the honest breakdown of what's science-based versus a reasonable guess.
 
 ## Third-party API
 

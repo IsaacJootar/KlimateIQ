@@ -84,6 +84,35 @@ Normalization bounds (min/max per signal) live in `scoring_calibration_parameter
 `{SIGNAL_CODE}_MIN` / `{SIGNAL_CODE}_MAX`. Tune them without touching code as real historical data
 becomes available — see `ScoringCalibrationParameter`.
 
+### How trustworthy are the current bounds?
+
+Worth being direct about this: the seeded bounds are **not** derived from a health-outcomes
+study. They're a mix of:
+
+- **A real scientific standard** — Vegetation's `-1` to `1` is NDVI's actual defined range.
+- **Climatologically/geographically plausible defaults** — Rainfall, Temperature, and Elevation
+  are set to realistic ranges for Nigeria, not empirically validated against case data.
+- **Arbitrary** — Population Exposure's `0` to `1,000,000` is a round-number guess, and moot
+  anyway since that signal has no ingestion source yet (see below).
+
+Genuine calibration — checking whether, say, 90mm of weekly rainfall actually correlates with a
+malaria case spike in a given range — requires historical case data (Malaria Atlas Project,
+DHS/MIS, NEMA flood records, ...) matched against `region_signals` by region and period. That
+hasn't been done. Until it is, treat every score this platform produces as "a transparent,
+reproducible combination of real environmental readings," not as a clinically validated risk
+probability.
+
+### Population Exposure — pending, not live
+
+`POPULATION_EXPOSURE` exists as a `signal_type`, has calibration bounds, and is weighted into the
+Composite Climate-Health Pressure Index (15%) — but **no ingestion service implements it**. It's
+not in `config('ingestion.sources')`, so it never actually collects data; `region_signals` has no
+rows for it. The planned source is WorldPop / GRID3 Nigeria. Because
+`WeightedFormulaScoringStrategy` renormalizes over only the signals that actually have data (see
+its docblock), this doesn't bias any score toward zero — it's just silently excluded from the
+math until someone builds `PopulationExposureIngestionService` following the pattern in
+"Adding a new signal source" above.
+
 ## Activating the trained-model scoring strategy
 
 `App\Services\Scoring\TrainedModelScoringStrategy` is the real seam, not a promise. To activate it:

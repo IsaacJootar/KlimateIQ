@@ -64,6 +64,11 @@
                         seeded for every signal, including ones not used by {{ $index->name }} above — that's fine,
                         an unused signal's bounds simply aren't consulted for this index.
                     </p>
+                    <p class="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2 mb-6">
+                        Honesty check: only Vegetation's &minus;1 to 1 range is a real scientific standard (NDVI's
+                        own definition). The rest are climatologically plausible defaults for Nigeria, not numbers
+                        checked against real case data yet &mdash; see the ingestion guide for the full breakdown.
+                    </p>
 
                     <div class="space-y-4">
                         @foreach ($calibration as $signalCode => $params)

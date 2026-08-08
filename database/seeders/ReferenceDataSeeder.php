@@ -216,6 +216,22 @@ class ReferenceDataSeeder extends Seeder
      * System-wide (region_id = null) normalization bounds, one pair per signal per index.
      * Uncalibrated placeholders — the brief asks these be tunable without code changes once
      * real historical data is available, which is exactly what this table is for.
+     *
+     * None of these are sourced from an epidemiological study or a health-outcomes dataset —
+     * be honest about that rather than implying clinical rigor that doesn't exist yet. What
+     * grounds each one, specifically:
+     *   - VEGETATION (-1 to 1): a genuine scientific standard — NDVI is mathematically defined
+     *     on that range, this isn't a guess.
+     *   - RAINFALL, TEMPERATURE, ELEVATION: climatologically/geographically plausible for
+     *     Nigeria (realistic weekly rainfall, realistic temperature swing, realistic terrain
+     *     height) — sane engineering defaults, not empirically validated against case data.
+     *   - STANDING_WATER (0-100): just the natural range of a percentage, not a chosen bound.
+     *   - POPULATION_EXPOSURE (0-1,000,000): an arbitrary round number, and moot for now — see
+     *     the "Data sources" note in README.md, this signal has no ingestion pipeline yet, so
+     *     these bounds are never actually applied to real data.
+     * Real calibration means correlating these signals against historical case data (Malaria
+     * Atlas Project, DHS/MIS, NEMA flood records, ...) and is still to be done — see
+     * docs/INGESTION_GUIDE.md.
      */
     private function seedCalibrationParameters(): void
     {
