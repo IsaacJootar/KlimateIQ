@@ -34,6 +34,103 @@
                 </div>
             @endif
 
+            <div class="section-card p-6"
+                 x-data="{
+                    token: '{{ session('plainTextToken') }}',
+                    endpoint: 'indices',
+                    indexCode: '{{ $indices->first()->code ?? '' }}',
+                    regionId: '{{ $regions->first()->region_id ?? '' }}',
+                    loading: false,
+                    status: null,
+                    elapsed: null,
+                    body: null,
+                    url: '',
+                    async send() {
+                        this.loading = true;
+                        this.status = null;
+                        this.body = null;
+
+                        if (this.endpoint === 'indices') this.url = '/api/v1/indices';
+                        else if (this.endpoint === 'regions') this.url = '/api/v1/regions';
+                        else if (this.endpoint === 'scores-by-index') this.url = `/api/v1/indices/${this.indexCode}/scores`;
+                        else if (this.endpoint === 'scores-by-region') this.url = `/api/v1/regions/${this.regionId}/scores`;
+
+                        const start = performance.now();
+                        try {
+                            const res = await fetch(this.url, {
+                                headers: { 'Authorization': `Bearer ${this.token}`, 'Accept': 'application/json' },
+                            });
+                            this.status = res.status;
+                            const json = await res.json();
+                            this.body = JSON.stringify(json, null, 2);
+                        } catch (e) {
+                            this.status = 'network error';
+                            this.body = String(e);
+                        }
+                        this.elapsed = Math.round(performance.now() - start);
+                        this.loading = false;
+                    },
+                 }">
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-1">Try it — call the live API</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">
+                    This sends a real request from your browser to this server's own API, exactly like a third
+                    party would — nothing here is faked or pre-recorded. Paste any token you've issued (the one
+                    you just created above is pre-filled), pick an endpoint, and see the actual response.
+                </p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                    <div class="sm:col-span-2">
+                        <x-input-label for="try-token">Bearer token</x-input-label>
+                        <x-text-input id="try-token" type="text" x-model="token" placeholder="Paste a token here" />
+                    </div>
+                    <div>
+                        <x-input-label for="try-endpoint">Endpoint</x-input-label>
+                        <x-select-input id="try-endpoint" x-model="endpoint">
+                            <option value="indices">GET /api/v1/indices</option>
+                            <option value="regions">GET /api/v1/regions</option>
+                            <option value="scores-by-index">GET /api/v1/indices/{code}/scores</option>
+                            <option value="scores-by-region">GET /api/v1/regions/{id}/scores</option>
+                        </x-select-input>
+                    </div>
+                    <div x-show="endpoint === 'scores-by-index'" x-cloak>
+                        <x-input-label for="try-index">Index</x-input-label>
+                        <x-select-input id="try-index" x-model="indexCode">
+                            @foreach ($indices as $idx)
+                                <option value="{{ $idx->code }}">{{ $idx->name }}</option>
+                            @endforeach
+                        </x-select-input>
+                    </div>
+                    <div x-show="endpoint === 'scores-by-region'" x-cloak>
+                        <x-input-label for="try-region">Region</x-input-label>
+                        <x-select-input id="try-region" x-model="regionId">
+                            @foreach ($regions as $region)
+                                <option value="{{ $region->region_id }}">{{ $region->name }}, {{ $region->state }}</option>
+                            @endforeach
+                        </x-select-input>
+                    </div>
+                </div>
+
+                <button type="button" class="btn-primary" @click="send()" x-bind:disabled="loading || ! token">
+                    <span x-show="! loading">Send request</span>
+                    <span x-show="loading" x-cloak class="inline-flex items-center gap-1.5">
+                        <svg class="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                        Sending…
+                    </span>
+                </button>
+
+                <div x-show="status !== null" x-cloak class="mt-4">
+                    <div class="flex items-center gap-3 mb-2 text-xs">
+                        <span class="risk-badge" x-bind:class="status === 200 ? 'risk-badge-green' : 'risk-badge-red'" x-text="'HTTP ' + status"></span>
+                        <code class="text-slate-500 dark:text-slate-400" x-text="url"></code>
+                        <span class="text-slate-400" x-text="elapsed + 'ms'"></span>
+                    </div>
+                    <pre class="text-xs bg-slate-900 text-slate-100 rounded-lg p-4 overflow-x-auto max-h-96" x-text="body"></pre>
+                </div>
+            </div>
+
             <x-form-section title="Issue a new token" last="true"
                 description="Pick the account the token authenticates as. That account's data isn't scoped by the token — every token can read every region/index/score, the same as the dashboard.">
                 <form method="POST" action="{{ route('admin.api-tokens.store') }}" class="grid grid-cols-1 sm:grid-cols-2 gap-4">

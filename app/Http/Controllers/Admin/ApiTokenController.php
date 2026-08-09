@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Region;
+use App\Models\ScoringIndex;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,6 +27,11 @@ class ApiTokenController extends Controller
                 ->orderByDesc('created_at')
                 ->get(),
             'users' => User::query()->orderBy('name')->get(['id', 'name', 'email']),
+            // For the "Try it" panel — lets a picked endpoint's {code}/{id} be a dropdown
+            // instead of asking whoever's testing to already know a valid index code or
+            // region_id by heart.
+            'indices' => ScoringIndex::query()->orderBy('name')->get(['index_id', 'code', 'name']),
+            'regions' => Region::query()->active()->orderBy('name')->get(['region_id', 'name', 'state']),
         ]);
     }
 
