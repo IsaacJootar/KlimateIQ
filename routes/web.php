@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AgencyManagementController;
+use App\Http\Controllers\Admin\ApiTokenController;
 use App\Http\Controllers\Admin\PipelineHealthController;
 use App\Http\Controllers\Admin\ActionRecommendationController;
 use App\Http\Controllers\Admin\PlatformSettingController;
@@ -85,6 +86,10 @@ Route::middleware(['auth', 'platform.admin'])->prefix('admin')->name('admin.')->
 
     Route::get('actions', [ActionRecommendationController::class, 'index'])->name('actions.index');
     Route::put('actions/{index}', [ActionRecommendationController::class, 'update'])->name('actions.update');
+
+    Route::get('api-tokens', [ApiTokenController::class, 'index'])->name('api-tokens.index');
+    Route::post('api-tokens', [ApiTokenController::class, 'store'])->name('api-tokens.store');
+    Route::delete('api-tokens/{token}', [ApiTokenController::class, 'destroy'])->name('api-tokens.destroy');
 });
 
 require __DIR__.'/auth.php';
