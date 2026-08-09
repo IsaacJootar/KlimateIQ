@@ -31,25 +31,34 @@ class DashboardController extends Controller
             )
             ->get();
 
-        // Bug fixed here: this used to be ScoringIndex::find($indexIds->first()), which just
-        // took whichever subscribed index happened to have the lowest index_id — in practice
-        // always Malaria Risk (index_id 1) whenever it was among the selection, regardless of
-        // what else was picked or in what order, making "change your coverage" look like it
-        // did nothing. With more than one index subscribed and no explicit "primary" concept
-        // to ask the user for, Composite Climate-Health Pressure — the one index designed to
-        // be "the overall snapshot" — is the more defensible default than an arbitrary ID; if
-        // it wasn't selected either, fall back to alphabetical rather than ID order so it's at
-        // least predictable instead of coincidental.
         $subscribedIndices = ScoringIndex::query()->whereIn('index_id', $indexIds)->get();
-        $defaultIndex = match (true) {
-            $subscribedIndices->isEmpty() => ScoringIndex::where('code', 'COMPOSITE_PRESSURE')->first(),
-            $subscribedIndices->count() === 1 => $subscribedIndices->first(),
-            default => $subscribedIndices->firstWhere('code', 'COMPOSITE_PRESSURE')
-                ?? $subscribedIndices->sortBy('name')->first(),
-        };
+
+        // Tabs: the indices this user actually picked in Coverage, so they can switch between
+        // them instead of the Dashboard silently choosing just one. No index preference set at
+        // all means "show everything," matching how an empty region selection already behaves.
+        $availableIndices = $subscribedIndices->isNotEmpty()
+            ? $subscribedIndices->sortBy('name')->values()
+            : ScoringIndex::query()->orderBy('name')->get();
+
+        // An explicit ?index= (clicking a tab) wins if it's one of this user's available
+        // indices. Otherwise, the same deliberate default as before: this used to be
+        // ScoringIndex::find($indexIds->first()), which just took whichever subscribed index
+        // happened to have the lowest index_id — in practice always Malaria Risk (index_id 1)
+        // whenever it was among the selection, regardless of what else was picked, making
+        // "change your coverage" look like it did nothing. Composite Climate-Health Pressure —
+        // the one index designed to be "the overall snapshot" — is the more defensible default
+        // than an arbitrary ID when several are selected with no explicit "primary" to ask for;
+        // otherwise fall back to alphabetical, at least predictable instead of coincidental.
+        $activeIndex = $availableIndices->firstWhere('code', request('index'))
+            ?? match (true) {
+                $subscribedIndices->isEmpty() => ScoringIndex::where('code', 'COMPOSITE_PRESSURE')->first(),
+                $subscribedIndices->count() === 1 => $subscribedIndices->first(),
+                default => $subscribedIndices->firstWhere('code', 'COMPOSITE_PRESSURE')
+                    ?? $subscribedIndices->sortBy('name')->first(),
+            };
 
         $latestScores = RegionScore::query()
-            ->where('index_id', $defaultIndex->index_id)
+            ->where('index_id', $activeIndex->index_id)
             ->whereIn('region_id', $regions->pluck('region_id'))
             ->orderByDesc('period_start')
             ->get()
@@ -120,7 +129,8 @@ class DashboardController extends Controller
             'highRiskCount' => $highRiskCount,
             'openAlertsCount' => $openAlertsCount,
             'activeThresholdsCount' => $activeThresholdsCount,
-            'defaultIndex' => $defaultIndex,
+            'defaultIndex' => $activeIndex,
+            'availableIndices' => $availableIndices,
             'topRiskRegions' => $topRiskRegions,
             'recentAlerts' => $recentAlerts,
             'activityFeed' => $activityFeed,
