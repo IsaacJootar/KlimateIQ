@@ -5,12 +5,12 @@
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}" class="flex flex-col justify-center leading-none">
-                        <span class="flex items-center gap-2">
-                            <x-application-logo class="block h-8 w-auto text-gano-600 dark:text-gano-400" />
+                    <a href="{{ route('dashboard') }}" class="flex items-center gap-2">
+                        <x-application-logo class="block h-8 w-auto text-gano-600 dark:text-gano-400 flex-shrink-0" />
+                        <span class="flex flex-col leading-none">
                             <span class="text-lg font-bold text-gray-800 dark:text-gray-200">KlimateIQ</span>
+                            <span class="text-[7px] font-semibold uppercase tracking-wide text-gano-600 dark:text-gano-400 mt-0.5 whitespace-nowrap">Climate Intelligence</span>
                         </span>
-                        <span class="text-[10px] font-semibold uppercase tracking-wide text-gano-600 dark:text-gano-400 mt-0.5">Climate Intelligence</span>
                     </a>
                 </div>
 

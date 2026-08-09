@@ -19,12 +19,12 @@
     </head>
     <body class="font-sans text-gray-900 antialiased">
         <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100 dark:bg-gray-900">
-            <a href="/" class="flex flex-col items-center">
-                <span class="flex items-center gap-2">
-                    <x-application-logo class="w-10 h-10 text-gano-600 dark:text-gano-400" />
-                    <span class="text-xl font-bold text-gray-800 dark:text-gray-200">KlimateIQ</span>
+            <a href="/" class="flex items-center gap-2">
+                <x-application-logo class="w-10 h-10 text-gano-600 dark:text-gano-400 flex-shrink-0" />
+                <span class="flex flex-col">
+                    <span class="text-xl font-bold text-gray-800 dark:text-gray-200 leading-tight">KlimateIQ</span>
+                    <span class="text-[8px] font-semibold uppercase tracking-wide text-gano-600 dark:text-gano-400 whitespace-nowrap">Climate Intelligence</span>
                 </span>
-                <span class="text-xs font-semibold uppercase tracking-wide text-gano-600 dark:text-gano-400 mt-1">Climate Intelligence</span>
             </a>
 
             @php
