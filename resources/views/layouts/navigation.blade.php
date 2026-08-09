@@ -95,6 +95,9 @@
                             <x-dropdown-link :href="route('admin.actions.index')">
                                 {{ __('Admin: Recommended Actions') }}
                             </x-dropdown-link>
+                            <x-dropdown-link :href="route('admin.scoring-strategy.index')">
+                                {{ __('Admin: Scoring Strategy') }}
+                            </x-dropdown-link>
                             <x-dropdown-link :href="route('admin.api-tokens.index')">
                                 {{ __('Admin: API Tokens') }}
                             </x-dropdown-link>
@@ -196,6 +199,9 @@
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('admin.actions.index')">
                         {{ __('Admin: Recommended Actions') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('admin.scoring-strategy.index')">
+                        {{ __('Admin: Scoring Strategy') }}
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('admin.api-tokens.index')">
                         {{ __('Admin: API Tokens') }}

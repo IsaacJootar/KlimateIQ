@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\PipelineHealthController;
 use App\Http\Controllers\Admin\ActionRecommendationController;
 use App\Http\Controllers\Admin\PlatformSettingController;
 use App\Http\Controllers\Admin\ScoringConfigController;
+use App\Http\Controllers\Admin\ScoringStrategyController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\AlertController;
 use App\Http\Controllers\CoveragePreferenceController;
@@ -90,6 +91,9 @@ Route::middleware(['auth', 'platform.admin'])->prefix('admin')->name('admin.')->
     Route::get('api-tokens', [ApiTokenController::class, 'index'])->name('api-tokens.index');
     Route::post('api-tokens', [ApiTokenController::class, 'store'])->name('api-tokens.store');
     Route::delete('api-tokens/{token}', [ApiTokenController::class, 'destroy'])->name('api-tokens.destroy');
+
+    Route::get('scoring-strategy', [ScoringStrategyController::class, 'index'])->name('scoring-strategy.index');
+    Route::patch('scoring-strategy/{region}', [ScoringStrategyController::class, 'update'])->name('scoring-strategy.update');
 });
 
 require __DIR__.'/auth.php';
