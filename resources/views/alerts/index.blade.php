@@ -35,13 +35,13 @@
                                 @if ($alert->status === 'OPEN')
                                     <form method="POST" action="{{ route('alerts.acknowledge', $alert) }}" class="inline">
                                         @csrf @method('PATCH')
-                                        <button type="submit" class="btn-secondary">Acknowledge</button>
+                                        <x-loading-button class="btn-secondary" loading-text="Acknowledging…">Acknowledge</x-loading-button>
                                     </form>
                                 @endif
                                 @if ($alert->status !== 'RESOLVED')
                                     <form method="POST" action="{{ route('alerts.resolve', $alert) }}" class="inline">
                                         @csrf @method('PATCH')
-                                        <button type="submit" class="btn-primary">Resolve</button>
+                                        <x-loading-button class="btn-primary" loading-text="Resolving…">Resolve</x-loading-button>
                                     </form>
                                 @endif
                             </div>

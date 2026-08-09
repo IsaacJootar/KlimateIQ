@@ -9,18 +9,9 @@
                     When each active region last got real data from each source, and anything that's failed.
                 </p>
             </div>
-            <form method="POST" action="{{ route('admin.pipeline.run-now') }}" x-data="{ loading: false }" @submit="loading = true">
+            <form method="POST" action="{{ route('admin.pipeline.run-now') }}">
                 @csrf
-                <button type="submit" class="btn-primary flex-shrink-0" x-bind:disabled="loading">
-                    <span x-show="! loading">Run ingestion now</span>
-                    <span x-show="loading" x-cloak class="inline-flex items-center gap-1.5">
-                        <svg class="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                        </svg>
-                        Queuing jobs&hellip;
-                    </span>
-                </button>
+                <x-loading-button class="btn-primary flex-shrink-0" loading-text="Queuing jobs…">Run ingestion now</x-loading-button>
             </form>
         </div>
     </x-slot>
@@ -90,13 +81,9 @@
                                     {{ $failure['message'] }} &middot; {{ $failure['failed_at']->diffForHumans() }}
                                 </p>
                             </div>
-                            <form method="POST" action="{{ route('admin.pipeline.failures.retry', $failure['uuid']) }}" class="flex-shrink-0"
-                                  x-data="{ loading: false }" @submit="loading = true">
+                            <form method="POST" action="{{ route('admin.pipeline.failures.retry', $failure['uuid']) }}" class="flex-shrink-0">
                                 @csrf
-                                <button type="submit" class="btn-secondary" x-bind:disabled="loading">
-                                    <span x-show="! loading">Retry</span>
-                                    <span x-show="loading" x-cloak>Retrying&hellip;</span>
-                                </button>
+                                <x-loading-button class="btn-secondary" loading-text="Retrying…">Retry</x-loading-button>
                             </form>
                         </li>
                     @empty

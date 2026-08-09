@@ -49,7 +49,7 @@
                             </p>
                         </div>
                     @endif
-                    <button type="submit" class="btn-primary w-full sm:w-auto">Save view</button>
+                    <x-loading-button class="btn-primary w-full sm:w-auto" loading-text="Saving…">Save view</x-loading-button>
                 </form>
             </div>
 
@@ -75,7 +75,7 @@
                                 <a href="{{ route('regions.index', ['index' => $view->index?->code, 'regions' => implode(',', $view->region_ids ?? [])]) }}" class="link-nav">Load &rarr;</a>
                                 <form method="POST" action="{{ route('saved-views.destroy', $view) }}" class="inline">
                                     @csrf @method('DELETE')
-                                    <button type="submit" class="btn-danger">Delete</button>
+                                    <x-loading-button class="btn-danger" loading-text="Deleting…">Delete</x-loading-button>
                                 </form>
                             </div>
                         </li>

@@ -43,7 +43,7 @@
         </div>
 
         <div class="flex items-center gap-4">
-            <x-primary-button>{{ __('Save') }}</x-primary-button>
+            <x-loading-button class="btn-primary text-xs uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-gano-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800" loading-text="Saving…">{{ __('Save') }}</x-loading-button>
 
             @if (session('status') === 'notifications-updated')
                 <p x-data="{ show: true }" x-show="show" x-transition x-init="setTimeout(() => show = false, 2000)"

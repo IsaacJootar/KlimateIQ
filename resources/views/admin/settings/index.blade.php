@@ -55,7 +55,7 @@
                         </ul>
                     </div>
 
-                    <button type="submit" class="btn-primary">Save settings</button>
+                    <x-loading-button class="btn-primary" loading-text="Saving…">Save settings</x-loading-button>
                 </form>
             </div>
         </div>

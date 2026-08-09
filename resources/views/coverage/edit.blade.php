@@ -70,7 +70,7 @@
                     </div>
                 </x-form-section>
 
-                <button type="submit" class="btn-primary w-full sm:w-auto">Save coverage</button>
+                <x-loading-button class="btn-primary w-full sm:w-auto" loading-text="Saving…">Save coverage</x-loading-button>
             </form>
         </div>
     </div>

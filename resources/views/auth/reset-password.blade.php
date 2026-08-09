@@ -31,9 +31,9 @@
         </div>
 
         <div class="flex items-center justify-end mt-4">
-            <x-primary-button>
+            <x-loading-button class="btn-primary text-xs uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-gano-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800" loading-text="Resetting…">
                 {{ __('Reset Password') }}
-            </x-primary-button>
+            </x-loading-button>
         </div>
     </form>
 </x-guest-layout>

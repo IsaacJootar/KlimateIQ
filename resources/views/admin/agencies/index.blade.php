@@ -33,7 +33,7 @@
                                         <form method="POST" action="{{ route('admin.agencies.update', $agency) }}" class="flex items-center gap-2">
                                             @csrf @method('PATCH')
                                             <x-text-input type="text" name="name" value="{{ $agency->name }}" class="text-sm !py-1.5" />
-                                            <button type="submit" class="btn-secondary flex-shrink-0">Save</button>
+                                            <x-loading-button class="btn-secondary flex-shrink-0" loading-text="Saving…">Save</x-loading-button>
                                         </form>
                                     </td>
                                     <td class="px-4 py-3 text-sm text-gray-500">{{ $agency->type ?? '—' }}</td>
@@ -46,9 +46,9 @@
                                     <td class="px-4 py-3 text-right">
                                         <form method="POST" action="{{ route('admin.agencies.toggle-oversight', $agency) }}">
                                             @csrf @method('PATCH')
-                                            <button type="submit" class="btn-secondary">
+                                            <x-loading-button class="btn-secondary" loading-text="Updating…">
                                                 {{ $agency->federal_oversight ? 'Revoke' : 'Grant' }}
-                                            </button>
+                                            </x-loading-button>
                                         </form>
                                     </td>
                                 </tr>
@@ -86,7 +86,7 @@
                             @endforeach
                         </x-select-input>
                     </div>
-                    <button type="submit" class="btn-danger w-full sm:w-auto sm:col-span-2">Merge agencies</button>
+                    <x-loading-button class="btn-danger w-full sm:w-auto sm:col-span-2" loading-text="Merging…">Merge agencies</x-loading-button>
                 </form>
             </x-form-section>
 

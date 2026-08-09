@@ -51,7 +51,7 @@
                         <x-input-label for="name">Token name</x-input-label>
                         <x-text-input id="name" type="text" name="name" placeholder="e.g. NCDC dashboard integration" required />
                     </div>
-                    <button type="submit" class="btn-primary w-full sm:w-auto sm:col-span-2">Issue token</button>
+                    <x-loading-button class="btn-primary w-full sm:w-auto sm:col-span-2" loading-text="Issuing…">Issue token</x-loading-button>
                 </form>
             </x-form-section>
 
@@ -81,7 +81,7 @@
                                         <form method="POST" action="{{ route('admin.api-tokens.destroy', $token) }}"
                                               onsubmit="return confirm('Revoke this token? Anything using it will stop working immediately.');">
                                             @csrf @method('DELETE')
-                                            <button type="submit" class="btn-danger">Revoke</button>
+                                            <x-loading-button class="btn-danger" loading-text="Revoking…">Revoke</x-loading-button>
                                         </form>
                                     </td>
                                 </tr>

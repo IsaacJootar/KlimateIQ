@@ -95,7 +95,7 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn-primary w-full sm:w-auto mt-6">Save {{ $index->name }} configuration</button>
+                <x-loading-button class="btn-primary w-full sm:w-auto mt-6" loading-text="Saving…">Save {{ $index->name }} configuration</x-loading-button>
             </form>
         </div>
     </div>

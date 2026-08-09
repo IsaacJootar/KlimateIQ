@@ -85,7 +85,7 @@
                         </div>
                     </x-form-section>
 
-                    <button type="submit" class="btn-primary w-full sm:w-auto">Configure threshold</button>
+                    <x-loading-button class="btn-primary w-full sm:w-auto" loading-text="Saving…">Configure threshold</x-loading-button>
                 </form>
             </div>
 
@@ -116,11 +116,11 @@
                                 </span>
                                 <form method="POST" action="{{ route('thresholds.toggle', $threshold) }}" class="inline">
                                     @csrf @method('PATCH')
-                                    <button type="submit" class="btn-secondary">{{ $threshold->active ? 'Pause' : 'Activate' }}</button>
+                                    <x-loading-button class="btn-secondary" loading-text="{{ $threshold->active ? 'Pausing…' : 'Activating…' }}">{{ $threshold->active ? 'Pause' : 'Activate' }}</x-loading-button>
                                 </form>
                                 <form method="POST" action="{{ route('thresholds.destroy', $threshold) }}" class="inline">
                                     @csrf @method('DELETE')
-                                    <button type="submit" class="btn-danger">Delete</button>
+                                    <x-loading-button class="btn-danger" loading-text="Deleting…">Delete</x-loading-button>
                                 </form>
                             </div>
                         </li>

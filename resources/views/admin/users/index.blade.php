@@ -54,15 +54,15 @@
                                         @else
                                             <form method="POST" action="{{ route('admin.users.toggle-admin', $user) }}" class="inline">
                                                 @csrf @method('PATCH')
-                                                <button type="submit" class="btn-secondary">
+                                                <x-loading-button class="btn-secondary" loading-text="Updating…">
                                                     {{ $user->isPlatformAdmin() ? 'Revoke admin' : 'Make admin' }}
-                                                </button>
+                                                </x-loading-button>
                                             </form>
                                             <form method="POST" action="{{ route('admin.users.toggle-active', $user) }}" class="inline">
                                                 @csrf @method('PATCH')
-                                                <button type="submit" class="{{ $user->isDisabled() ? 'btn-secondary' : 'btn-danger' }}">
+                                                <x-loading-button class="{{ $user->isDisabled() ? 'btn-secondary' : 'btn-danger' }}" loading-text="Updating…">
                                                     {{ $user->isDisabled() ? 'Reactivate' : 'Deactivate' }}
-                                                </button>
+                                                </x-loading-button>
                                             </form>
                                         @endif
                                     </td>

@@ -43,7 +43,7 @@
                         </div>
                     @endforeach
 
-                    <button type="submit" class="btn-primary w-full sm:w-auto">Save {{ $index->name }} actions</button>
+                    <x-loading-button class="btn-primary w-full sm:w-auto" loading-text="Saving…">Save {{ $index->name }} actions</x-loading-button>
                 </form>
             </div>
         </div>
