@@ -35,22 +35,28 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="metric-card metric-teal">
                     <div class="metric-card-label">{{ $hasCoverage ? 'Your Regions' : 'Active Regions' }}</div>
-                    <div class="metric-card-value">{{ $regions->count() }}</div>
+                    <div class="metric-card-value"><x-count-up :value="$regions->count()" /></div>
                     <div class="metric-card-sub">{{ $index->name }}</div>
                 </div>
                 <div class="metric-card metric-red">
                     <div class="metric-card-label">High Risk</div>
-                    <div class="metric-card-value">{{ $highRisk->count() }}</div>
+                    <div class="metric-card-value"><x-count-up :value="$highRisk->count()" /></div>
                     <div class="metric-card-sub">score &ge; 67</div>
                 </div>
                 <div class="metric-card metric-amber">
                     <div class="metric-card-label">Population at Risk</div>
-                    <div class="metric-card-value">{{ number_format($populationAtRisk) }}</div>
+                    <div class="metric-card-value"><x-count-up :value="$populationAtRisk" comma /></div>
                     <div class="metric-card-sub">in high-risk regions</div>
                 </div>
                 <div class="metric-card metric-slate">
                     <div class="metric-card-label">Average Score</div>
-                    <div class="metric-card-value">{{ $avgScore ?? '—' }}</div>
+                    <div class="metric-card-value">
+                        @if ($avgScore !== null)
+                            <x-count-up :value="$avgScore" :decimals="1" />
+                        @else
+                            &mdash;
+                        @endif
+                    </div>
                     <div class="metric-card-sub">across monitored regions</div>
                 </div>
             </div>
@@ -75,6 +81,7 @@
                                 <th class="px-4 py-3">Population</th>
                                 <th class="px-4 py-3">{{ $index->name }}</th>
                                 <th class="px-4 py-3">Risk</th>
+                                <th class="px-4 py-3">History</th>
                                 <th class="px-4 py-3">2-Week Trend</th>
                                 <th class="px-4 py-3"></th>
                             </tr>
@@ -88,6 +95,9 @@
                                     <td class="px-4 py-3 text-sm font-semibold">{{ $region->current_score ?? '—' }}</td>
                                     <td class="px-4 py-3 text-sm">
                                         <span class="risk-badge risk-badge-{{ $region->risk_band }}">{{ $region->risk_band === 'none' ? 'no data' : $region->risk_band }}</span>
+                                    </td>
+                                    <td class="px-4 py-3 text-sm">
+                                        <x-sparkline :values="$region->sparkline" :band="$region->risk_band" />
                                     </td>
                                     <td class="px-4 py-3 text-sm {{ ['up' => 'text-red-600 dark:text-red-400', 'down' => 'text-emerald-600 dark:text-emerald-400', 'flat' => 'text-slate-500', 'unknown' => 'text-slate-400'][$region->trend['direction']] }}">
                                         @if ($region->trend['direction'] === 'up') &uarr; @elseif ($region->trend['direction'] === 'down') &darr; @endif

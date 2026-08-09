@@ -20,22 +20,22 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <a href="{{ route('regions.index') }}" class="metric-card metric-teal">
                     <div class="metric-card-label">{{ $hasCoverage ? 'Your Regions' : 'Active Regions' }}</div>
-                    <div class="metric-card-value">{{ $regionsCount }}</div>
+                    <div class="metric-card-value"><x-count-up :value="$regionsCount" /></div>
                     <div class="metric-card-sub">{{ $defaultIndex->name }}</div>
                 </a>
                 <a href="{{ route('regions.index') }}" class="metric-card metric-red">
                     <div class="metric-card-label">High Risk</div>
-                    <div class="metric-card-value">{{ $highRiskCount }}</div>
+                    <div class="metric-card-value"><x-count-up :value="$highRiskCount" /></div>
                     <div class="metric-card-sub">score &ge; 67</div>
                 </a>
                 <a href="{{ route('alerts.index') }}" class="metric-card metric-amber">
                     <div class="metric-card-label">Open Alerts</div>
-                    <div class="metric-card-value">{{ $openAlertsCount }}</div>
+                    <div class="metric-card-value"><x-count-up :value="$openAlertsCount" /></div>
                     <div class="metric-card-sub">need your attention</div>
                 </a>
                 <a href="{{ route('thresholds.index') }}" class="metric-card metric-slate">
                     <div class="metric-card-label">Active Thresholds</div>
-                    <div class="metric-card-value">{{ $activeThresholdsCount }}</div>
+                    <div class="metric-card-value"><x-count-up :value="$activeThresholdsCount" /></div>
                     <div class="metric-card-sub">configured</div>
                 </a>
             </div>
@@ -86,19 +86,48 @@
                 <div class="section-card overflow-hidden">
                     <div class="section-card-header">
                         <h3 class="font-semibold text-gray-800 dark:text-gray-200">Pipeline activity</h3>
+                        <x-live-dot />
                     </div>
-                    <ul class="divide-y divide-gray-100 dark:divide-gray-700">
-                        @forelse ($activityFeed as $entry)
-                            <li class="px-5 py-3">
-                                <p class="text-sm text-slate-900 dark:text-white">{{ $entry['label'] }}</p>
-                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                    {{ $entry['value'] }} &middot; {{ $entry['at']->diffForHumans() }}
-                                </p>
-                            </li>
-                        @empty
-                            <li class="px-5 py-8 text-center text-sm text-gray-500">No ingestion or scoring activity yet.</li>
-                        @endforelse
-                    </ul>
+                    @if ($activityFeed->isEmpty())
+                        <p class="px-5 py-8 text-center text-sm text-gray-500">No ingestion or scoring activity yet.</p>
+                    @elseif ($activityFeed->count() < 4)
+                        {{-- Too few rows for a loop to read as motion rather than as flicker — just list them. --}}
+                        <ul class="divide-y divide-gray-100 dark:divide-gray-700">
+                            @foreach ($activityFeed as $entry)
+                                <li class="px-5 py-3">
+                                    <p class="text-sm text-slate-900 dark:text-white">{{ $entry['label'] }}</p>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                        {{ $entry['value'] }} &middot; {{ $entry['at']->diffForHumans() }}
+                                    </p>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @else
+                        <div class="ticker h-[220px] overflow-hidden relative">
+                            <div class="ticker-track">
+                                <ul class="divide-y divide-gray-100 dark:divide-gray-700">
+                                    @foreach ($activityFeed as $entry)
+                                        <li class="px-5 py-3">
+                                            <p class="text-sm text-slate-900 dark:text-white">{{ $entry['label'] }}</p>
+                                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                {{ $entry['value'] }} &middot; {{ $entry['at']->diffForHumans() }}
+                                            </p>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                                <ul class="divide-y divide-gray-100 dark:divide-gray-700" aria-hidden="true">
+                                    @foreach ($activityFeed as $entry)
+                                        <li class="px-5 py-3">
+                                            <p class="text-sm text-slate-900 dark:text-white">{{ $entry['label'] }}</p>
+                                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                {{ $entry['value'] }} &middot; {{ $entry['at']->diffForHumans() }}
+                                            </p>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
 

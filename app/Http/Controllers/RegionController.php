@@ -47,6 +47,14 @@ class RegionController extends Controller
         $regionIds = array_filter(explode(',', (string) request('regions', '')));
         $subscribedRegionIds = $regionIds === [] ? Auth::user()->regionSubscriptions()->pluck('region_id')->all() : [];
 
+        // Full ascending history per region, for the sparkline — separate from $latestByRegion/
+        // $priorByRegion above, which only ever need single points, not a series.
+        $historyByRegion = RegionScore::query()
+            ->where('index_id', $index->index_id)
+            ->orderBy('period_start')
+            ->get()
+            ->groupBy('region_id');
+
         $regions = Region::query()
             ->when(
                 $regionIds !== [],
@@ -59,7 +67,7 @@ class RegionController extends Controller
             )
             ->orderBy('name')
             ->get()
-            ->map(function (Region $region) use ($latestByRegion, $priorByRegion) {
+            ->map(function (Region $region) use ($latestByRegion, $priorByRegion, $historyByRegion) {
                 $score = $latestByRegion->get($region->region_id);
                 $prior = $priorByRegion->get($region->region_id);
                 $region->setAttribute('current_score', $score?->score);
@@ -68,6 +76,12 @@ class RegionController extends Controller
                     $score?->score !== null ? (float) $score->score : null,
                     $prior?->score !== null ? (float) $prior->score : null,
                 ));
+                $region->setAttribute('sparkline', $historyByRegion->get($region->region_id, collect())
+                    ->pluck('score')
+                    ->map(fn ($v) => $v !== null ? (float) $v : null)
+                    ->take(-8)
+                    ->values()
+                    ->all());
 
                 return $region;
             });

@@ -21,7 +21,10 @@
 
             <div class="section-card overflow-hidden">
                 <div class="section-card-header">
-                    <h3 class="font-semibold text-gray-800 dark:text-gray-200">Data freshness</h3>
+                    <div class="flex items-center gap-3">
+                        <h3 class="font-semibold text-gray-800 dark:text-gray-200">Data freshness</h3>
+                        <x-live-dot label="Monitoring" />
+                    </div>
                     <span class="text-xs text-slate-500 dark:text-slate-400">
                         <span class="risk-badge risk-badge-red">never</span> = no successful pull yet &middot;
                         <span class="risk-badge risk-badge-amber">amber</span> = older than {{ 10 }} days &middot;

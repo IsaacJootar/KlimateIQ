@@ -15,17 +15,17 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div class="metric-card metric-teal">
                     <div class="metric-card-label">Active Regions</div>
-                    <div class="metric-card-value">{{ $activeRegionsCount }}</div>
+                    <div class="metric-card-value"><x-count-up :value="$activeRegionsCount" /></div>
                     <div class="metric-card-sub">platform-wide</div>
                 </div>
                 <div class="metric-card metric-red">
                     <div class="metric-card-label">Open Alerts</div>
-                    <div class="metric-card-value">{{ $openAlertsCount }}</div>
+                    <div class="metric-card-value"><x-count-up :value="$openAlertsCount" /></div>
                     <div class="metric-card-sub">across every agency</div>
                 </div>
                 <div class="metric-card metric-slate">
                     <div class="metric-card-label">Agencies</div>
-                    <div class="metric-card-value">{{ $agencyCount }}</div>
+                    <div class="metric-card-value"><x-count-up :value="$agencyCount" /></div>
                     <div class="metric-card-sub">registered on the platform</div>
                 </div>
             </div>
