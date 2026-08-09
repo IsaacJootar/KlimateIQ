@@ -8,7 +8,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ $title ? $title.' · Gano.ai' : 'Gano.ai' }}</title>
+        <title>{{ $title ? $title.' · KlimateIQ' : 'KlimateIQ' }}</title>
 
         <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
 

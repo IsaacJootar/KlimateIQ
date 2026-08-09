@@ -1,7 +1,7 @@
 # Developer Guide: Ingestion, Scoring, and the Third-Party API
 
 This is the guide a third party (another agency, another team) needs to plug a new environmental
-signal into Gano.ai, or to consume its risk scores without rebuilding ingestion themselves.
+signal into KlimateIQ, or to consume its risk scores without rebuilding ingestion themselves.
 
 ## Architecture in one picture
 
@@ -157,4 +157,4 @@ curl -H "Authorization: Bearer <token>" \
 
 Every score in the response carries the same `breakdown` the dashboard drill-down shows — which
 signal, its raw value, its normalized contribution, and its weight — so a third party gets the
-same auditability a Gano.ai user gets, not a black-box number.
+same auditability a KlimateIQ user gets, not a black-box number.

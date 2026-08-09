@@ -34,7 +34,7 @@ return [
 
     'termii' => [
         'api_key' => env('TERMII_API_KEY'),
-        'sender_id' => env('TERMII_SENDER_ID', 'Gano.ai'),
+        'sender_id' => env('TERMII_SENDER_ID', 'KlimateIQ'),
         'base_url' => env('TERMII_BASE_URL', 'https://api.ng.termii.com'),
     ],
 

@@ -1,4 +1,4 @@
-# Gano.ai — Climate-Health Surveillance Dashboard
+# KlimateIQ — Climate-Health Surveillance Dashboard
 
 Built for NigComSat Accelerator 3.0, Track C: Public Health Intelligence.
 
@@ -13,7 +13,7 @@ misdirected and health outcomes suffer.
 
 ## The solution
 
-Gano.ai ingests satellite/reanalysis environmental signals per Nigerian LGA, fuses them into
+KlimateIQ ingests satellite/reanalysis environmental signals per Nigerian LGA, fuses them into
 named, purpose-built risk indices (not one blended score), lets health agencies configure their
 own thresholds and alerts per region, and gives every user — state coordinator, LGA malaria
 officer, flood response team — a dashboard scoped to what they're actually responsible for, not

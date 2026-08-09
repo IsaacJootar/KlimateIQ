@@ -78,7 +78,7 @@ class ThresholdBreachedNotification extends Notification
 
         return $mail
             ->action('View alert', route('alerts.index'))
-            ->line('Log in to Gano.ai to acknowledge or resolve this alert.');
+            ->line('Log in to KlimateIQ to acknowledge or resolve this alert.');
     }
 
     public function toDatabase(object $notifiable): array
@@ -107,7 +107,7 @@ class ThresholdBreachedNotification extends Notification
 
         $target = $this->alert->index?->name ?? $this->alert->signalType?->name ?? 'a signal';
 
-        $message = "Gano.ai alert: {$target} in {$this->alert->region->name} crossed your threshold ".
+        $message = "KlimateIQ alert: {$target} in {$this->alert->region->name} crossed your threshold ".
             "(value: {$this->alert->score_at_trigger}).";
 
         if ($action = $this->recommendedAction()) {

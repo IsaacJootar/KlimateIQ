@@ -12,7 +12,7 @@
     </style>
 </head>
 <body>
-    <h1>{{ $reportRequest->index->name }} — Gano.ai Report</h1>
+    <h1>{{ $reportRequest->index->name }} — KlimateIQ Report</h1>
     <p class="meta">{{ $reportRequest->date_from->toDateString() }} to {{ $reportRequest->date_to->toDateString() }} &middot; {{ count($regions) }} regions</p>
 
     <table>

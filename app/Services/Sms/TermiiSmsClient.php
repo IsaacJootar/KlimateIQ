@@ -25,7 +25,7 @@ class TermiiSmsClient implements SmsClient
     {
         return new self(
             apiKey: config('services.termii.api_key'),
-            senderId: (string) config('services.termii.sender_id', 'Gano.ai'),
+            senderId: (string) config('services.termii.sender_id', 'KlimateIQ'),
             baseUrl: rtrim((string) config('services.termii.base_url', 'https://api.ng.termii.com'), '/'),
         );
     }
