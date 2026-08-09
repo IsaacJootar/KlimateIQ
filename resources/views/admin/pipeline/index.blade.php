@@ -9,9 +9,18 @@
                     When each active region last got real data from each source, and anything that's failed.
                 </p>
             </div>
-            <form method="POST" action="{{ route('admin.pipeline.run-now') }}">
+            <form method="POST" action="{{ route('admin.pipeline.run-now') }}" x-data="{ loading: false }" @submit="loading = true">
                 @csrf
-                <button type="submit" class="btn-primary flex-shrink-0">Run ingestion now</button>
+                <button type="submit" class="btn-primary flex-shrink-0" x-bind:disabled="loading">
+                    <span x-show="! loading">Run ingestion now</span>
+                    <span x-show="loading" x-cloak class="inline-flex items-center gap-1.5">
+                        <svg class="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                        Queuing jobs&hellip;
+                    </span>
+                </button>
             </form>
         </div>
     </x-slot>
@@ -22,7 +31,11 @@
             <div class="section-card overflow-hidden">
                 <div class="section-card-header">
                     <h3 class="font-semibold text-gray-800 dark:text-gray-200">Data freshness</h3>
-                    <span class="text-xs text-slate-500 dark:text-slate-400">Flagged stale after {{ 10 }} days without new data</span>
+                    <span class="text-xs text-slate-500 dark:text-slate-400">
+                        <span class="risk-badge risk-badge-red">never</span> = no successful pull yet &middot;
+                        <span class="risk-badge risk-badge-amber">amber</span> = older than {{ 10 }} days &middot;
+                        <span class="risk-badge risk-badge-green">green</span> = fresh
+                    </span>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -77,9 +90,13 @@
                                     {{ $failure['message'] }} &middot; {{ $failure['failed_at']->diffForHumans() }}
                                 </p>
                             </div>
-                            <form method="POST" action="{{ route('admin.pipeline.failures.retry', $failure['uuid']) }}" class="flex-shrink-0">
+                            <form method="POST" action="{{ route('admin.pipeline.failures.retry', $failure['uuid']) }}" class="flex-shrink-0"
+                                  x-data="{ loading: false }" @submit="loading = true">
                                 @csrf
-                                <button type="submit" class="btn-secondary">Retry</button>
+                                <button type="submit" class="btn-secondary" x-bind:disabled="loading">
+                                    <span x-show="! loading">Retry</span>
+                                    <span x-show="loading" x-cloak>Retrying&hellip;</span>
+                                </button>
                             </form>
                         </li>
                     @empty
