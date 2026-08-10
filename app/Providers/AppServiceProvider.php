@@ -7,6 +7,8 @@ use App\Services\Ai\OpenAiClient;
 use App\Services\Earthdata\AppEearsClient;
 use App\Services\Sms\SmsClient;
 use App\Services\Sms\TermiiSmsClient;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -40,6 +42,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Third-party API (routes/api.php) — keyed by the authenticated user, not the IP, so
+        // one integration's traffic can't eat another token holder's quota. 60/min is generous
+        // for a dashboard-style read integration; this is insurance against a runaway client,
+        // not a tight production limit.
+        RateLimiter::for('api', fn ($request) => Limit::perMinute(60)->by($request->user()?->id ?: $request->ip()));
     }
 }

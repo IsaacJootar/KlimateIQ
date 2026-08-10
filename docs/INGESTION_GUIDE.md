@@ -136,7 +136,8 @@ Nothing else — ingestion, alerts, the dashboard — needs to change.
 
 ## Third-party API
 
-Token-authenticated via Sanctum. Issue a token for an external agency:
+Token-authenticated via Sanctum. A platform admin issues and revokes tokens from
+`/admin/api-tokens` — including a live "Try it" panel to test one immediately — or via tinker:
 
 ```bash
 php artisan tinker
@@ -152,6 +153,10 @@ Then call with `Authorization: Bearer <token>`:
 | `GET /api/v1/regions` | Every monitored region (id, name, state, lat/lng, population) |
 | `GET /api/v1/indices/{code}/scores` | Latest score per region for that index, with full breakdown |
 | `GET /api/v1/regions/{id}/scores?index={code}` | Full score history for one region/index |
+
+Rate-limited to 60 requests/minute per token (keyed by the authenticated user, not the IP — see
+`AppServiceProvider::boot()` — so one integration's traffic never affects another's quota). A
+request over the limit gets a `429` with `Retry-After`.
 
 Example:
 
