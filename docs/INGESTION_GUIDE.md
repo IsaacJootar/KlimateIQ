@@ -56,8 +56,13 @@ even move alerts to a separate deployment, without touching the other two layers
    ],
    ```
 
-That's it. `php artisan signals:ingest` and the weekly schedule (`routes/console.php`) both pick
-it up automatically — no other file changes.
+That's it for `php artisan signals:ingest` with no `--source` filter — it picks up every
+configured source automatically. The two *scheduled* runs in `routes/console.php` are more
+specific, though: they each pass an explicit `--source=CODE,CODE` list (rainfall/standing water
+daily, everything else weekly) rather than "every source," because Flood Risk's inputs need a
+tighter cadence than the rest — see the comment there for why. A brand-new source needs one line
+added to whichever of those two lists fits its update frequency, or it simply won't run on a
+schedule at all (it'll still work fine via a manual `signals:ingest` or `--source=` call).
 
 If your source needs outbound HTTPS and you're on the same class of dev machine as this project
 (XAMPP/Windows with an unconfigured `curl.cainfo`), use the

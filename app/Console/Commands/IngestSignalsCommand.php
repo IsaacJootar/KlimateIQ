@@ -11,9 +11,10 @@ class IngestSignalsCommand extends Command
 {
     protected $signature = 'signals:ingest
         {--region= : Only ingest for this region_id}
+        {--source= : Only ingest these signal source codes, comma-separated (e.g. RAINFALL,STANDING_WATER). Defaults to every configured source.}
         {--sync : Run inline instead of queueing (useful for a first proof-of-pipeline run)}';
 
-    protected $description = 'Ingest the last complete week of every configured signal source for every region.';
+    protected $description = 'Ingest the last complete period of every configured signal source for every region.';
 
     public function handle(): int
     {
@@ -26,7 +27,19 @@ class IngestSignalsCommand extends Command
             ? Region::query()->where('region_id', $this->option('region'))->get()
             : Region::query()->active()->get();
 
-        $sources = config('ingestion.sources', []);
+        // --source lets the scheduler run fast-moving signals (rainfall, standing water) on a
+        // tighter cadence than slow-moving ones (temperature, vegetation, elevation) without
+        // two separate ingestion pipelines — see routes/console.php.
+        $requestedSources = $this->option('source')
+            ? array_map('trim', explode(',', strtoupper($this->option('source'))))
+            : null;
+
+        $sources = collect(config('ingestion.sources', []))
+            ->filter(fn ($serviceClass) => $requestedSources === null
+                || in_array(app($serviceClass)->signalTypeCode(), $requestedSources, true))
+            ->values()
+            ->all();
+
         $dispatched = 0;
 
         foreach ($sources as $serviceClass) {

@@ -8,11 +8,17 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Weekly signal ingestion — queued, so a slow or failing source can't block the others.
-Schedule::command('signals:ingest')->weeklyOn(1, '02:00');
+// Split cadence, not one weekly run for everything: Rainfall and Standing Water feed Flood
+// Risk, which this platform bills as an emergency-response tool — a week-old reading of either
+// isn't good enough for that (a flood can develop and recede inside a week). Temperature,
+// Vegetation, and Elevation move slowly enough that weekly is genuinely fine for them; polling
+// them daily would just be extra load on their APIs for data that hasn't meaningfully changed.
+Schedule::command('signals:ingest --source=RAINFALL,STANDING_WATER')->dailyAt('02:00');
+Schedule::command('signals:ingest --source=TEMPERATURE,VEGETATION,ELEVATION')->weeklyOn(1, '02:30');
 
-// Recalculates every index/region from whatever signals landed above. Runs a couple of hours
-// later, not right after — ingestion only enqueues jobs, a queue worker has to actually work
-// through all of them (the slowest sources take up to a few minutes each) before there's new
-// data worth scoring.
-Schedule::command('scores:calculate')->weeklyOn(1, '04:00');
+// Recalculates every index/region from whatever signals have landed. Runs daily, not weekly,
+// now that some signals do — cheap to rerun even on a day only the slow signals were untouched,
+// and it's what actually makes the faster rainfall/standing-water ingestion above meaningful:
+// without this also running daily, fresher raw signals would just sit unused until the old
+// weekly recalculation caught up to them.
+Schedule::command('scores:calculate')->dailyAt('04:00');
