@@ -44,6 +44,13 @@ return [
     // @see: https://docs.sentry.io/platforms/php/guides/laravel/configuration/options/#enable_metrics
     'enable_metrics' => env('SENTRY_ENABLE_METRICS', true),
 
+    // Local/XAMPP Windows PHP installs commonly lack a usable system CA store, which breaks
+    // Sentry's own cURL transport with "unable to get local issuer certificate" — every other
+    // outbound integration in this app works around the same root cause via ResolvesCaBundle,
+    // but Sentry's SDK doesn't go through Laravel's HTTP client so that trait doesn't apply here.
+    // This tells Sentry's transport to use the CA bundle shipped with cURL/PHP itself instead.
+    'http_ssl_native_ca' => env('SENTRY_HTTP_SSL_NATIVE_CA', true),
+
     // @see: https://docs.sentry.io/platforms/php/guides/laravel/configuration/options/#log_flush_threshold
     'log_flush_threshold' => env('SENTRY_LOG_FLUSH_THRESHOLD') === null ? null : (int) env('SENTRY_LOG_FLUSH_THRESHOLD'),
 
