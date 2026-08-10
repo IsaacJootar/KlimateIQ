@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\IndexActionRecommendation;
 use App\Models\Region;
 use App\Models\RegionScore;
-use App\Models\ScoringIndex;
 use App\Services\Ai\RegionScoreSummaryService;
+use App\Support\IndexCoverage;
 use App\Support\RiskBand;
 use App\Support\TrendSummary;
 use Illuminate\Http\RedirectResponse;
@@ -17,8 +17,7 @@ class RegionController extends Controller
 {
     public function index(): View
     {
-        $indices = ScoringIndex::all();
-        $index = $indices->firstWhere('code', request('index', 'COMPOSITE_PRESSURE')) ?? $indices->first();
+        ['available' => $indices, 'active' => $index] = IndexCoverage::resolve(Auth::user(), request('index'));
 
         $latestByRegion = RegionScore::query()
             ->where('index_id', $index->index_id)
@@ -100,8 +99,7 @@ class RegionController extends Controller
 
     public function show(Region $region): View
     {
-        $indices = ScoringIndex::all();
-        $index = $indices->firstWhere('code', request('index', 'COMPOSITE_PRESSURE')) ?? $indices->first();
+        ['available' => $indices, 'active' => $index] = IndexCoverage::resolve(Auth::user(), request('index'));
 
         $scores = RegionScore::query()
             ->where('region_id', $region->region_id)
@@ -130,7 +128,7 @@ class RegionController extends Controller
 
     public function generateSummary(Region $region, RegionScoreSummaryService $summarizer): RedirectResponse
     {
-        $index = ScoringIndex::all()->firstWhere('code', request('index', 'COMPOSITE_PRESSURE'));
+        ['active' => $index] = IndexCoverage::resolve(Auth::user(), request('index'));
 
         $latest = RegionScore::query()
             ->where('region_id', $region->region_id)

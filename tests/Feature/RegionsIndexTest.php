@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\Region;
+use App\Models\ScoringIndex;
 use App\Models\User;
+use App\Models\UserIndexSubscription;
 use App\Models\UserRegionSubscription;
 use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -71,5 +73,34 @@ class RegionsIndexTest extends TestCase
 
         $response->assertSee($viaLink->name);
         $response->assertDontSee($inCoverage->name);
+    }
+
+    /**
+     * Regression test: the index pill-tabs at the top of this page used to always list every
+     * index regardless of what the user configured in Coverage, unlike the Dashboard (which
+     * already scoped its tabs to the user's selection) — reported live as an inconsistency
+     * between the two pages.
+     */
+    public function test_index_tabs_are_scoped_to_the_users_coverage_selection(): void
+    {
+        $user = User::factory()->create();
+        $flood = ScoringIndex::where('code', 'FLOOD_RISK')->firstOrFail();
+        UserIndexSubscription::create(['user_id' => $user->id, 'index_id' => $flood->index_id, 'wants_alerts' => true]);
+
+        $response = $this->actingAs($user)->get(route('regions.index'));
+
+        $response->assertSee('Flood Risk Index');
+        $response->assertDontSee('Malaria Risk Index');
+    }
+
+    public function test_no_index_coverage_shows_every_index_tab(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->get(route('regions.index'));
+
+        $response->assertSee('Malaria Risk Index');
+        $response->assertSee('Flood Risk Index');
+        $response->assertSee('Composite Climate-Health Pressure Index');
     }
 }
