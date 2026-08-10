@@ -76,6 +76,59 @@ class PipelineHealthTest extends TestCase
         return $uuid;
     }
 
+    /**
+     * Inserts a jobs row in the same shape a real dispatch writes — displayName in the payload,
+     * a real unix-timestamp created_at — so tests exercise the same parsing the controller uses.
+     */
+    private function insertQueuedJob(string $displayName, int $ageMinutes = 0): void
+    {
+        DB::table('jobs')->insert([
+            'queue' => 'default',
+            'payload' => json_encode(['displayName' => $displayName]),
+            'attempts' => 0,
+            'available_at' => now()->subMinutes($ageMinutes)->timestamp,
+            'created_at' => now()->subMinutes($ageMinutes)->timestamp,
+        ]);
+    }
+
+    public function test_queue_shows_zero_pending_when_empty(): void
+    {
+        // Explicit rather than relying solely on RefreshDatabase — another test in this class
+        // uses the real 'database' queue connection (queue:retry does, regardless of the
+        // app-wide QUEUE_CONNECTION=sync default), and this guards against that leaking here.
+        DB::table('jobs')->delete();
+        $admin = $this->admin();
+
+        $response = $this->actingAs($admin)->get(route('admin.pipeline.index'));
+
+        $response->assertSee('0');
+        $response->assertDontSee('is a worker running?');
+    }
+
+    public function test_queue_shows_the_real_pending_count_and_breakdown_by_type(): void
+    {
+        $admin = $this->admin();
+        $this->insertQueuedJob(IngestRegionSignalJob::class);
+        $this->insertQueuedJob(IngestRegionSignalJob::class);
+        $this->insertQueuedJob('App\\Listeners\\EvaluateIndexThresholds');
+
+        $response = $this->actingAs($admin)->get(route('admin.pipeline.index'));
+
+        $response->assertSee('3');
+        $response->assertSee('2 &times; IngestRegionSignalJob', false);
+        $response->assertSee('1 &times; EvaluateIndexThresholds', false);
+    }
+
+    public function test_a_stale_queue_shows_a_warning(): void
+    {
+        $admin = $this->admin();
+        $this->insertQueuedJob(IngestRegionSignalJob::class, ageMinutes: 45);
+
+        $response = $this->actingAs($admin)->get(route('admin.pipeline.index'));
+
+        $response->assertSee('is a worker running?');
+    }
+
     public function test_non_admins_cannot_view_pipeline_health(): void
     {
         $user = User::factory()->create();

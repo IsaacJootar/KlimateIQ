@@ -57,7 +57,35 @@ class PipelineHealthController extends Controller
             'sources' => $sources,
             'grid' => $grid,
             'failures' => $failures,
+            'queue' => $this->queueSnapshot(),
         ]);
+    }
+
+    /**
+     * A visible answer to "is a worker actually keeping up" — this app has no queue worker
+     * dashboard (Horizon et al.), and a silent backlog is exactly what happened once already:
+     * jobs piled up for hours with nothing surfacing it short of querying the database by hand.
+     *
+     * @return array{total: int, oldestAgeMinutes: ?int, byType: \Illuminate\Support\Collection}
+     */
+    private function queueSnapshot(): array
+    {
+        $rows = DB::table('jobs')->orderBy('created_at')->get(['payload', 'created_at']);
+
+        $byType = $rows
+            ->map(fn ($row) => json_decode($row->payload, true)['displayName'] ?? 'Unknown')
+            ->countBy()
+            ->sortDesc();
+
+        $oldest = $rows->first();
+
+        return [
+            'total' => $rows->count(),
+            // Carbon 3 returns a signed diff by default (negative here, since the argument is
+            // in the past) — abs() it, this is an age, not a direction.
+            'oldestAgeMinutes' => $oldest ? abs(now()->diffInMinutes(\Illuminate\Support\Carbon::createFromTimestamp($oldest->created_at))) : null,
+            'byType' => $byType,
+        ];
     }
 
     public function runNow(): RedirectResponse

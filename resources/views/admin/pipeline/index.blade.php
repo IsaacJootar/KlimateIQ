@@ -21,6 +21,33 @@
 
             <div class="section-card overflow-hidden">
                 <div class="section-card-header">
+                    <h3 class="font-semibold text-gray-800 dark:text-gray-200">Queue</h3>
+                    @if ($queue['total'] > 0 && $queue['oldestAgeMinutes'] >= 30)
+                        <span class="risk-badge risk-badge-red">oldest job {{ $queue['oldestAgeMinutes'] }} min old — is a worker running?</span>
+                    @endif
+                </div>
+                <div class="px-5 py-4">
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">
+                        Jobs currently queued, waiting for <code class="text-xs">php artisan queue:work</code> to pick them up.
+                        This is the number that silently piled up to ~31,000 before anyone noticed — now it's visible here
+                        instead of only findable by querying the database directly.
+                    </p>
+                    <div class="flex items-baseline gap-2 mb-3">
+                        <span class="text-3xl font-bold text-slate-900 dark:text-white">{{ number_format($queue['total']) }}</span>
+                        <span class="text-sm text-slate-500 dark:text-slate-400">pending job{{ $queue['total'] === 1 ? '' : 's' }}</span>
+                    </div>
+                    @if ($queue['total'] > 0)
+                        <ul class="text-xs text-slate-600 dark:text-slate-300 space-y-1">
+                            @foreach ($queue['byType'] as $type => $count)
+                                <li>{{ number_format($count) }} &times; {{ class_basename($type) }}</li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </div>
+            </div>
+
+            <div class="section-card overflow-hidden">
+                <div class="section-card-header">
                     <div class="flex items-center gap-3">
                         <h3 class="font-semibold text-gray-800 dark:text-gray-200">Data freshness</h3>
                         <x-live-dot label="Monitoring" />
