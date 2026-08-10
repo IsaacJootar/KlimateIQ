@@ -63,7 +63,7 @@ or `region_scores.breakdown` directly).
 | Temperature | NASA POWER | Live |
 | Vegetation/humidity | MODIS (via NASA Earthdata/AppEEARS) | Live |
 | Elevation | SRTM (Open Topo Data) | Live |
-| Population exposure | WorldPop / GRID3 Nigeria | **Pending** — no ingestion service built yet; weighted into scoring but always absent, see [`docs/INGESTION_GUIDE.md`](docs/INGESTION_GUIDE.md#population-exposure--pending-not-live) |
+| Population exposure | UNFPA/US Census Bureau via HDX (2020 LGA-level projection) | Live, but not a per-request API pull — see [`docs/INGESTION_GUIDE.md`](docs/INGESTION_GUIDE.md#population-exposure) for what that means |
 
 All 774 real Nigerian LGAs are seeded (name, state, coordinates). Ingestion is usage-driven — a
 region only gets pulled once someone actually watches it or requests it via Coverage, so the

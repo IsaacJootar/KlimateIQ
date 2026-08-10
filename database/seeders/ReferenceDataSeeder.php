@@ -33,7 +33,7 @@ class ReferenceDataSeeder extends Seeder
             ['code' => 'STANDING_WATER', 'name' => 'Standing Water', 'unit' => '%', 'source' => 'JRC Global Surface Water / Sentinel-2 NDWI', 'higher_is_worse' => true],
             ['code' => 'TEMPERATURE', 'name' => 'Temperature', 'unit' => '°C', 'source' => 'NASA POWER / ERA5', 'higher_is_worse' => true],
             ['code' => 'VEGETATION', 'name' => 'Vegetation / Humidity', 'unit' => 'NDVI', 'source' => 'MODIS', 'higher_is_worse' => true],
-            ['code' => 'POPULATION_EXPOSURE', 'name' => 'Population Exposure', 'unit' => 'people', 'source' => 'WorldPop / GRID3 Nigeria', 'higher_is_worse' => true],
+            ['code' => 'POPULATION_EXPOSURE', 'name' => 'Population Exposure', 'unit' => 'people', 'source' => 'UNFPA/US Census Bureau via HDX (2020 LGA-level projection)', 'higher_is_worse' => true],
             // Lower ground floods first — the only inverted signal in the catalogue.
             ['code' => 'ELEVATION', 'name' => 'Elevation / Terrain', 'unit' => 'm', 'source' => 'SRTM', 'higher_is_worse' => false],
         ];
@@ -226,9 +226,11 @@ class ReferenceDataSeeder extends Seeder
      *     Nigeria (realistic weekly rainfall, realistic temperature swing, realistic terrain
      *     height) — sane engineering defaults, not empirically validated against case data.
      *   - STANDING_WATER (0-100): just the natural range of a percentage, not a chosen bound.
-     *   - POPULATION_EXPOSURE (0-1,000,000): an arbitrary round number, and moot for now — see
-     *     the "Data sources" note in README.md, this signal has no ingestion pipeline yet, so
-     *     these bounds are never actually applied to real data.
+     *   - POPULATION_EXPOSURE (0-3,500,000): grounded in the real imported data, not a guess —
+     *     set just above the actual observed max across all 774 LGAs (Alimosho, ~3.5M) once
+     *     population:import ran. Still not epidemiologically calibrated (a bigger population
+     *     isn't linearly "worse" the way this normalizes it), just an honest range instead of
+     *     an arbitrary one.
      * Real calibration means correlating these signals against historical case data (Malaria
      * Atlas Project, DHS/MIS, NEMA flood records, ...) and is still to be done — see
      * docs/INGESTION_GUIDE.md.
@@ -240,7 +242,7 @@ class ReferenceDataSeeder extends Seeder
             'STANDING_WATER' => ['min' => 0, 'max' => 100],
             'TEMPERATURE' => ['min' => 15, 'max' => 45],
             'VEGETATION' => ['min' => -1, 'max' => 1],
-            'POPULATION_EXPOSURE' => ['min' => 0, 'max' => 1000000],
+            'POPULATION_EXPOSURE' => ['min' => 0, 'max' => 3500000],
             'ELEVATION' => ['min' => 0, 'max' => 500],
         ];
 

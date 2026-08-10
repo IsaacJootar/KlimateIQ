@@ -14,7 +14,10 @@ Artisan::command('inspire', function () {
 // Vegetation, and Elevation move slowly enough that weekly is genuinely fine for them; polling
 // them daily would just be extra load on their APIs for data that hasn't meaningfully changed.
 Schedule::command('signals:ingest --source=RAINFALL,STANDING_WATER')->dailyAt('02:00');
-Schedule::command('signals:ingest --source=TEMPERATURE,VEGETATION,ELEVATION')->weeklyOn(1, '02:30');
+// Population Exposure rides along here even though it doesn't hit a live API (see
+// PopulationExposureIngestionService) — re-reading regions.population weekly is free, and it
+// keeps every source on one predictable schedule instead of a one-off exception.
+Schedule::command('signals:ingest --source=TEMPERATURE,VEGETATION,ELEVATION,POPULATION_EXPOSURE')->weeklyOn(1, '02:30');
 
 // Recalculates every index/region from whatever signals have landed. Runs daily, not weekly,
 // now that some signals do — cheap to rerun even on a day only the slow signals were untouched,

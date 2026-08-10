@@ -97,8 +97,10 @@ study. They're a mix of:
 - **A real scientific standard** — Vegetation's `-1` to `1` is NDVI's actual defined range.
 - **Climatologically/geographically plausible defaults** — Rainfall, Temperature, and Elevation
   are set to realistic ranges for Nigeria, not empirically validated against case data.
-- **Arbitrary** — Population Exposure's `0` to `1,000,000` is a round-number guess, and moot
-  anyway since that signal has no ingestion source yet (see below).
+- **Grounded in real observed data** — Population Exposure's `0` to `3,500,000` is set just above
+  the actual max across all 774 seeded LGAs once real population data was imported (see below),
+  not a round-number guess anymore. Still not epidemiologically calibrated — a bigger population
+  isn't linearly "worse" the way this normalizes it — just an honest range.
 
 Genuine calibration — checking whether, say, 90mm of weekly rainfall actually correlates with a
 malaria case spike in a given range — requires historical case data (Malaria Atlas Project,
@@ -107,16 +109,28 @@ hasn't been done. Until it is, treat every score this platform produces as "a tr
 reproducible combination of real environmental readings," not as a clinically validated risk
 probability.
 
-### Population Exposure — pending, not live
+### Population Exposure
 
-`POPULATION_EXPOSURE` exists as a `signal_type`, has calibration bounds, and is weighted into the
-Composite Climate-Health Pressure Index (15%) — but **no ingestion service implements it**. It's
-not in `config('ingestion.sources')`, so it never actually collects data; `region_signals` has no
-rows for it. The planned source is WorldPop / GRID3 Nigeria. Because
-`WeightedFormulaScoringStrategy` renormalizes over only the signals that actually have data (see
-its docblock), this doesn't bias any score toward zero — it's just silently excluded from the
-math until someone builds `PopulationExposureIngestionService` following the pattern in
-"Adding a new signal source" above.
+Live now (`PopulationExposureIngestionService`), but genuinely different from the other 5
+sources: it doesn't call an external API on every ingestion run. There's no reliable live,
+per-request, LGA-level population API for Nigeria — checked and ruled out during research for
+this: WorldPop's stats API returned errors when tested, a CIESIN GRID3 population image service
+was unreachable, and every LGA-level GRID3 feature layer on ArcGIS turns out to carry boundaries
+only, no population attribute.
+
+What actually works, and what this uses: a real, cited, downloadable dataset — UNFPA / US Census
+Bureau's "Nigeria - Subnational Population Statistics," via the UN's Humanitarian Data Exchange
+(data.humdata.org/dataset/cod-ps-nga). Their current release only goes to state level; the
+LGA-level breakdown only exists in their 2020 file, so that's what's imported — a real 2020
+projection, not the newest number that exists anywhere.
+
+`php artisan population:import path/to/nga_admpop_2020.xlsx` reads that file and fills
+`regions.population` for every matching LGA (773 of 774 — the one gap, Bakassi, is the source's
+own documented caveat, not a matching failure). `PopulationExposureIngestionService` then just
+reads that stored column into `region_signals` on the normal weekly schedule alongside
+Temperature/Vegetation/Elevation — re-fetching an unchanging number is harmless, just slightly
+redundant, same reasoning as Elevation's docblock. When a newer LGA-level dataset is published,
+rerun `population:import` with the new file; nothing else needs to change.
 
 ## Activating the trained-model scoring strategy
 

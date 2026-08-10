@@ -1,6 +1,7 @@
 <?php
 
 use App\Services\Ingestion\ElevationIngestionService;
+use App\Services\Ingestion\PopulationExposureIngestionService;
 use App\Services\Ingestion\RainfallIngestionService;
 use App\Services\Ingestion\StandingWaterIngestionService;
 use App\Services\Ingestion\TemperatureIngestionService;
@@ -25,6 +26,7 @@ return [
         VegetationIngestionService::class,
         ElevationIngestionService::class,
         StandingWaterIngestionService::class,
+        PopulationExposureIngestionService::class,
     ],
 
 ];
