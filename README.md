@@ -83,10 +83,12 @@ php artisan key:generate
 
 Create a `.env` with `DB_CONNECTION=pgsql` and your database credentials. A handful of
 integrations are optional and degrade gracefully without a key — email alerts (`RESEND_API_KEY`),
-SMS alerts (`TERMII_API_KEY`), AI score summaries (`OPENAI_API_KEY`), and Vegetation ingestion
+SMS alerts (`TERMII_API_KEY`), AI score summaries (`OPENAI_API_KEY`), Vegetation ingestion
 (`NASA_EARTHDATA_USERNAME`/`NASA_EARTHDATA_PASSWORD`, free account at
-[urs.earthdata.nasa.gov](https://urs.earthdata.nasa.gov/)). See `config/services.php` and
-`config/ingestion.php` for exactly which variables each one reads. Then:
+[urs.earthdata.nasa.gov](https://urs.earthdata.nasa.gov/)), and error tracking
+(`SENTRY_LARAVEL_DSN` — see `config/sentry.php`, a free Sentry project supplies this). See
+`config/services.php` and `config/ingestion.php` for exactly which variables each one reads.
+Then:
 
 ```bash
 php artisan migrate

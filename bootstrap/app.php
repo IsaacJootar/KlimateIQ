@@ -26,4 +26,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );
+
+        // Sentry — a no-op until SENTRY_LARAVEL_DSN is set (see config/sentry.php), same
+        // "works if configured, silently inert if not" pattern as Resend/OpenAI/Termii.
+        \Sentry\Laravel\Integration::handles($exceptions);
     })->create();
