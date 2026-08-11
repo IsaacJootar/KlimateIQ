@@ -1,4 +1,4 @@
-# KlimateIQ — Climate-Health Surveillance Dashboard
+# KlimateIQ — Climate-Health Intelligence Platform
 
 Built for NigComSat Accelerator 3.0, Track C: Public Health Intelligence.
 

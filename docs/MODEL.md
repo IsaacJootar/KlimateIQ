@@ -1,7 +1,7 @@
 # How KlimateIQ's scoring actually works
 
 This is a plain-language walkthrough of the real formula behind every risk score on the
-platform — not a summary, the actual math, so anyone (a judge, a health officer, a future
+platform — not a summary, the actual math, so anyone (a health officer, an auditor, a future
 engineer) can verify a score by hand. Every number KlimateIQ shows traces back to a real signal
 reading through a fixed, auditable calculation. There is no black box: `WeightedFormulaScoringStrategy`
 (the class that computes every score today) is under 160 lines and has no training step, no
