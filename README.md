@@ -13,20 +13,29 @@ Built for NigComSat Accelerator 3.0, Track C: Public Health Intelligence.
 
 ## The problem
 
-Pollution and climate readings are widely available; what happens to *people* because of them
-usually isn't. A rainfall grid tells you it rained 90mm in Bayelsa this week — it doesn't tell a
-malaria programme officer whether that means intervene now or wait, and it doesn't tell an
-emergency response coordinator which of five LGAs is closest to flooding first. The gap between
-raw environmental signal and an actionable, regionally-specific decision is where budgets get
-misdirected and health outcomes suffer.
+Nigeria carries the world's heaviest malaria burden by a wide margin. Per WHO's most recent
+global malaria fact sheet: 610,000 people died of malaria worldwide in 2024, 579,000 of them
+(95%) in the WHO African Region — and Nigeria alone accounts for 31.9% of the Region's deaths,
+roughly 30% of the entire world's malaria deaths concentrated in one country. About three-quarters
+of Regional malaria deaths are children under five.
+
+Malaria isn't the only climate-linked health risk that follows a predictable pattern, either.
+Anopheles mosquitoes breed in standing water, and outbreaks typically follow rainfall and flooding
+by 2–4 weeks — the incubation window for mosquito populations to build and transmission to spread.
+Heat stress, drought-driven food insecurity, and — during harmattan season — respiratory illness
+from airborne dust all follow their own environmental lead indicators the same way. In every case,
+the underlying environmental data already exists: satellites and reanalysis models measure
+rainfall, standing water, temperature, vegetation stress, and air quality continuously. What
+doesn't exist, for most health agencies, is the layer that turns "it rained 90mm this week" into
+"intervene in this LGA now" — regionally specific, tied to a real threshold, and reaching the
+person who can act on it before the lag window closes.
 
 ## The solution
 
-KlimateIQ ingests satellite/reanalysis environmental signals per Nigerian LGA, fuses them into
-named, purpose-built risk indices (not one blended score), lets health agencies configure their
-own thresholds and alerts per region, and gives every user — state coordinator, LGA malaria
-officer, flood response team — a dashboard scoped to what they're actually responsible for, not
-the whole country.
+KlimateIQ ingests environmental signals per Nigerian LGA, fuses them into named, purpose-built
+risk indices — not one blended score — lets health agencies configure their own thresholds and
+alerts per region, and gives every user a dashboard scoped to what they're actually responsible
+for, not the whole country.
 
 **Three independently scalable layers:**
 
@@ -37,6 +46,26 @@ the whole country.
    layer can be deployed, scaled, or replaced independently of the others.
 3. **User Interface Layer** — the dashboard, threshold configuration, and a documented
    third-party read API.
+
+```mermaid
+flowchart LR
+    subgraph Sources["External data sources"]
+        A["NASA POWER / Open-Meteo\n(rainfall, temperature)"]
+        B["JRC Global Surface Water\n(standing water)"]
+        C["MODIS\n(vegetation)"]
+        D["Open-Meteo Air Quality\n(PM2.5, PM10)"]
+        E["SRTM, UNFPA/HDX\n(elevation, population)"]
+    end
+
+    Sources --> F["SignalIngestionService\n(one class per source, one shared contract)"]
+    F --> G[("region_signals")]
+    G -- "RegionSignalIngested event" --> H["Threshold evaluation\n(per-signal alerts)"]
+    G --> I["WeightedFormulaScoringStrategy"]
+    I --> J[("region_scores")]
+    J -- "RegionScoreCalculated event" --> K["Threshold evaluation\n(per-index alerts)"]
+    K --> L["In-app / Email / SMS"]
+    J --> M["Dashboard, Coverage,\nThird-party API"]
+```
 
 ### Named indices, not one blended score
 
@@ -59,12 +88,46 @@ every calibration bound with its source are all written out in full in
 
 - **Scoring** — `WeightedFormulaScoringStrategy` is what's live today: transparent, calibrated,
   explainable. `TrainedModelScoringStrategy` is a genuine architectural seam (same interface, same
-  input/output shape) — see [`docs/INGESTION_GUIDE.md`](docs/INGESTION_GUIDE.md) for what
-  activating it requires once historical case data is available.
+  input/output shape) — see [`docs/MODEL.md`](docs/MODEL.md#two-scoring-strategies-by-design) for
+  what activating it requires once historical case data is available.
 - **Alerting** — thresholds can be a fixed value *or* an anomaly against a region's own rolling
   baseline (mean/stddev over its recent history) — genuinely adaptive, not a fixed rule.
 - **Reporting** — an OpenAI-powered summary turns a score's breakdown into a short plain-English
   explanation, restricted to only restating data already computed, cached alongside the score.
+
+## What's under the hood
+
+| Layer | Choice |
+|---|---|
+| Backend | Laravel 13 (PHP 8.3) |
+| Frontend | Livewire 4 + Alpine.js, Tailwind 4 |
+| Database | PostgreSQL 17 |
+| Cache / sessions / queue | Redis |
+| Queue worker | `systemd`-managed, auto-restarting |
+| Scheduler | Laravel's own, driven by cron |
+| Hosting | AWS EC2 (Amazon Linux 2023) + RDS Postgres, Nginx + PHP-FPM |
+| Email | Resend |
+| Error tracking | Sentry |
+| Auth (third-party API) | Laravel Sanctum |
+
+A single server-rendered stack (Laravel/Livewire) rather than a separate frontend/backend/ML
+service split was a deliberate choice for a product whose core value is a configurable dashboard
+and alerting engine, not a standalone inference service — it let the team ship a fully tested,
+deployed, production-monitored platform in the time available, not a stack decision made for its
+own sake.
+
+### Where the code actually lives
+
+```
+app/Services/Ingestion/   one class per data source, all implementing SignalIngestionService
+app/Services/Scoring/     WeightedFormulaScoringStrategy, the trained-model seam, the resolver
+app/Services/Alerts/      threshold evaluation — fixed value or rolling-baseline anomaly
+app/Services/Ai/          OpenAI-backed score summaries
+app/Notifications/        ThresholdBreachedNotification — in-app, email, SMS
+app/Console/Commands/     signals:ingest, scores:calculate, signals:backfill-history, ...
+docs/MODEL.md             the exact scoring formula, weights, and calibration sources
+docs/INGESTION_GUIDE.md   how to plug in a new signal source or index — no code change needed
+```
 
 ## Data sources
 
@@ -85,9 +148,20 @@ alerting.
 
 All 774 real Nigerian LGAs are seeded (name, state, coordinates). Ingestion is usage-driven — a
 region only gets pulled once someone actually watches it or requests it via Coverage, so the
-platform doesn't waste cycles ingesting every LGA nobody's asked about. See
-[`docs/INGESTION_GUIDE.md`](docs/INGESTION_GUIDE.md) for how to plug in an additional signal
-source, and how confident you should be in the current scoring bounds.
+platform doesn't waste cycles ingesting every LGA nobody's asked about.
+
+## Alert channels, today
+
+| Channel | Status |
+|---|---|
+| In-app | Live — the always-on baseline every user gets |
+| Email | Live, via Resend, with a branded template |
+| SMS | Built and tested end-to-end (including graceful no-op when unconfigured — see `tests/Feature/NotificationChannelsTest.php`), pending a production Termii account |
+
+Each user chooses their own channels per alert type; a platform-wide switch can also disable
+email outright without touching individual preferences. SMS being pending isn't a gap in the
+code — `App\Notifications\Channels\SmsChannel` and `App\Services\Sms\TermiiSmsClient` are fully
+implemented and covered by tests; it's waiting on a business account, not engineering.
 
 ## Setup
 
@@ -143,26 +217,41 @@ php artisan test
 Uses a dedicated `gano_ai_test` Postgres database (see `phpunit.xml`) rather than SQLite — several
 migrations use Postgres-specific constraints.
 
-## Known limitations
+## Roadmap
 
-- **Agency membership is self-declared, not verified.** Anyone can select any existing agency
-  (or type a new one) at signup — there's no check that they actually belong to it. This matters
-  because agency membership currently gates "share with my agency" visibility on Saved Views and
-  Reports, and will matter more once any cross-agency oversight capability exists. The intended
-  fix — matching a user's email domain against a per-agency verified domain, with unverified
-  claims held for admin review rather than either silently trusted or blocked — is deferred, not
-  forgotten.
+Two things are engineering estimates today, not finished claims — stated plainly rather than
+buried, because that's consistent with how the rest of the product works:
 
-- **Scoring calibration bounds are engineering estimates, not clinically validated.** Only
-  Vegetation's `-1` to `1` range is a genuine scientific standard (NDVI's own definition); the
-  rest are climatologically plausible defaults for Nigeria, not numbers checked against real
-  health-outcome data. See
-  [`docs/INGESTION_GUIDE.md`](docs/INGESTION_GUIDE.md#how-trustworthy-are-the-current-bounds) for
-  the honest breakdown of what's science-based versus a reasonable guess.
+- **Agency membership is self-declared, not yet verified.** Anyone can select any existing agency
+  (or type a new one) at signup. This gates "share with my agency" visibility on Saved Views and
+  Reports today, and will matter more once cross-agency oversight exists. The planned fix —
+  matching a user's email domain against a per-agency verified domain, with unverified claims held
+  for admin review rather than silently trusted or blocked — is scoped, not built yet.
+
+- **Scoring calibration bounds are climatologically plausible defaults, not yet clinically
+  validated.** Only Vegetation's `-1` to `1` range is a genuine scientific standard (NDVI's own
+  definition); the rest — including the new US-EPA-AQI-sourced air-quality bounds — are reasonable,
+  cited engineering estimates for Nigeria, not numbers checked against real health-outcome data
+  yet. `TrainedModelScoringStrategy` (see [`docs/MODEL.md`](docs/MODEL.md)) is the built, tested
+  seam for closing that gap once historical case data is available to calibrate against.
 
 ## Third-party API
 
-Token-authenticated (Sanctum) read access to the same scores the dashboard renders — the
-integration surface for another agency's dashboard. See
-[`docs/INGESTION_GUIDE.md`](docs/INGESTION_GUIDE.md#third-party-api) for endpoints and how to
-issue a token.
+Token-authenticated (Sanctum), read-only access to the same scores the dashboard renders — the
+integration surface for another agency's own dashboard, without them rebuilding ingestion or
+scoring.
+
+Issue a token: **Admin → API Tokens** in the dashboard, or `POST /admin/api-tokens`.
+
+| Endpoint | Returns |
+|---|---|
+| `GET /api/v1/indices` | Every named index (code, name, description) |
+| `GET /api/v1/regions` | Every seeded region (name, state, LGA code, coordinates, population) |
+| `GET /api/v1/indices/{indexCode}/scores` | Latest score per region for one index; `?region_id=` to scope to one region |
+| `GET /api/v1/regions/{region}/scores` | Full score history for one region; `?index=` to choose which index (defaults to Composite Climate-Health Pressure) |
+
+```bash
+curl https://app.klimateiq.org/api/v1/indices/MALARIA_RISK/scores \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Accept: application/json"
+```
