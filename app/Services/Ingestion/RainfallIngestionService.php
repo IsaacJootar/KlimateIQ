@@ -29,6 +29,8 @@ class RainfallIngestionService implements SignalIngestionService
 
     private const FILL_VALUE = -999.0;
 
+    public function __construct(private readonly OpenMeteoClient $openMeteo) {}
+
     public function signalTypeCode(): string
     {
         return 'RAINFALL';
@@ -52,19 +54,32 @@ class RainfallIngestionService implements SignalIngestionService
                 'format' => 'JSON',
             ]);
 
-        if ($response->failed()) {
-            throw new RuntimeException("NASA POWER request failed with status {$response->status()} for region {$region->region_id}.");
+        $source = 'NASA POWER (PRECTOTCORR)';
+        $validReadings = [];
+
+        if ($response->successful()) {
+            $daily = $response->json('properties.parameter.PRECTOTCORR', []);
+            $validReadings = array_filter(
+                $daily,
+                fn ($mm) => is_numeric($mm) && (float) $mm !== self::FILL_VALUE
+            );
         }
 
-        $daily = $response->json('properties.parameter.PRECTOTCORR', []);
-
-        $validReadings = array_filter(
-            $daily,
-            fn ($mm) => is_numeric($mm) && (float) $mm !== self::FILL_VALUE
-        );
-
+        // NASA POWER is the primary source — Open-Meteo only steps in when it's down or gave
+        // nothing usable, so a single provider's outage can't take the whole signal down.
         if ($validReadings === []) {
-            return null;
+            $fallback = $this->openMeteo->fetchDaily($region, $periodStart, $periodEnd, 'precipitation_sum');
+
+            if ($fallback === null) {
+                if ($response->failed()) {
+                    throw new RuntimeException("NASA POWER request failed with status {$response->status()} for region {$region->region_id}, and Open-Meteo fallback also had no data.");
+                }
+
+                return null;
+            }
+
+            $validReadings = $fallback;
+            $source = 'Open-Meteo (fallback — NASA POWER unavailable)';
         }
 
         $totalMm = array_sum($validReadings);
@@ -81,7 +96,7 @@ class RainfallIngestionService implements SignalIngestionService
             [
                 'value' => $roundedTotal,
                 'raw_metadata' => ['daily_mm' => $validReadings, 'days_reported' => count($validReadings)],
-                'source' => 'NASA POWER (PRECTOTCORR)',
+                'source' => $source,
                 'ingested_at' => now(),
             ]
         );

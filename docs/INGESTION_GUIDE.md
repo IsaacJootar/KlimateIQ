@@ -69,6 +69,23 @@ If your source needs outbound HTTPS and you're on the same class of dev machine 
 `App\Services\Ingestion\Concerns\ResolvesCaBundle` trait already used by
 `RainfallIngestionService` — it resolves a CA bundle so requests don't silently fail.
 
+## Resilience: no single provider is a single point of failure
+
+Every ingestion service is independent and swappable by design (see the picture above — nothing
+downstream knows or cares which provider a `SignalIngestionService` actually calls). This is
+deliberately load-bearing, not incidental: a startup that depends entirely on one weather data
+provider for its core signals is one rate-limit change, pricing change, or outage away from its
+whole platform going dark.
+
+`RainfallIngestionService` and `TemperatureIngestionService` put this into practice: NASA POWER is
+the primary source, but if it fails or returns no usable data for a region/period, both services
+automatically fall back to `App\Services\Ingestion\OpenMeteoClient` (Open-Meteo's ERA5-backed
+historical archive, free tier, no API key) before giving up. The resulting `RegionSignal` row is
+honestly labeled — `source` reads `"Open-Meteo (fallback — NASA POWER unavailable)"` rather than
+silently claiming NASA POWER when it wasn't actually used. Swapping or adding a fallback for any
+other source follows the same pattern: inject the fallback client, try the primary, fall back on
+failure, label the source honestly — no changes needed anywhere else in the pipeline.
+
 ## Adding a new named index
 
 A named index is just a row in `indices` plus weighted rows in `region_scoring_configs` — no code

@@ -25,6 +25,8 @@ class TemperatureIngestionService implements SignalIngestionService
 
     private const FILL_VALUE = -999.0;
 
+    public function __construct(private readonly OpenMeteoClient $openMeteo) {}
+
     public function signalTypeCode(): string
     {
         return 'TEMPERATURE';
@@ -48,19 +50,32 @@ class TemperatureIngestionService implements SignalIngestionService
                 'format' => 'JSON',
             ]);
 
-        if ($response->failed()) {
-            throw new RuntimeException("NASA POWER request failed with status {$response->status()} for region {$region->region_id}.");
+        $source = 'NASA POWER (T2M)';
+        $validReadings = [];
+
+        if ($response->successful()) {
+            $daily = $response->json('properties.parameter.T2M', []);
+            $validReadings = array_filter(
+                $daily,
+                fn ($celsius) => is_numeric($celsius) && (float) $celsius !== self::FILL_VALUE
+            );
         }
 
-        $daily = $response->json('properties.parameter.T2M', []);
-
-        $validReadings = array_filter(
-            $daily,
-            fn ($celsius) => is_numeric($celsius) && (float) $celsius !== self::FILL_VALUE
-        );
-
+        // NASA POWER is the primary source — Open-Meteo only steps in when it's down or gave
+        // nothing usable, so a single provider's outage can't take the whole signal down.
         if ($validReadings === []) {
-            return null;
+            $fallback = $this->openMeteo->fetchDaily($region, $periodStart, $periodEnd, 'temperature_2m_mean');
+
+            if ($fallback === null) {
+                if ($response->failed()) {
+                    throw new RuntimeException("NASA POWER request failed with status {$response->status()} for region {$region->region_id}, and Open-Meteo fallback also had no data.");
+                }
+
+                return null;
+            }
+
+            $validReadings = $fallback;
+            $source = 'Open-Meteo (fallback — NASA POWER unavailable)';
         }
 
         // Average, not summed — unlike rainfall, daily temperatures don't accumulate.
@@ -78,7 +93,7 @@ class TemperatureIngestionService implements SignalIngestionService
             [
                 'value' => $roundedAverage,
                 'raw_metadata' => ['daily_c' => $validReadings, 'days_reported' => count($validReadings)],
-                'source' => 'NASA POWER (T2M)',
+                'source' => $source,
                 'ingested_at' => now(),
             ]
         );
