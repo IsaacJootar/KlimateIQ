@@ -36,6 +36,8 @@ class ReferenceDataSeeder extends Seeder
             ['code' => 'POPULATION_EXPOSURE', 'name' => 'Population Exposure', 'unit' => 'people', 'source' => 'UNFPA/US Census Bureau via HDX (2020 LGA-level projection)', 'higher_is_worse' => true],
             // Lower ground floods first — the only inverted signal in the catalogue.
             ['code' => 'ELEVATION', 'name' => 'Elevation / Terrain', 'unit' => 'm', 'source' => 'SRTM', 'higher_is_worse' => false],
+            ['code' => 'AIR_QUALITY_PM25', 'name' => 'Fine Particulate Matter (PM2.5)', 'unit' => 'µg/m³', 'source' => 'Open-Meteo Air Quality API (CAMS)', 'higher_is_worse' => true],
+            ['code' => 'AIR_QUALITY_PM10', 'name' => 'Coarse Particulate Matter (PM10)', 'unit' => 'µg/m³', 'source' => 'Open-Meteo Air Quality API (CAMS)', 'higher_is_worse' => true],
         ];
 
         foreach ($types as $type) {
@@ -70,6 +72,11 @@ class ReferenceDataSeeder extends Seeder
                 'code' => 'DROUGHT_RISK',
                 'name' => 'Drought Risk Index',
                 'description' => 'Rainfall deficit + vegetation stress, for agricultural and water-security planning.',
+            ],
+            [
+                'code' => 'RESPIRATORY_RISK',
+                'name' => 'Respiratory Risk Index',
+                'description' => 'Fine and coarse particulate matter (PM2.5 + PM10), for air-quality and respiratory-health planning — especially relevant during harmattan/dust season.',
             ],
         ];
 
@@ -109,6 +116,11 @@ class ReferenceDataSeeder extends Seeder
                 'green' => 'No action needed. Continue routine monitoring.',
                 'amber' => 'Alert agricultural extension officers and water resource managers. Begin water-conservation messaging.',
                 'red' => 'Activate the drought contingency plan: prioritise water rationing for vulnerable communities and notify the state agriculture/water ministry.',
+            ],
+            'RESPIRATORY_RISK' => [
+                'green' => 'No action needed. Continue routine monitoring.',
+                'amber' => 'Issue an air-quality advisory for outdoor workers, schools, and people with respiratory conditions. Confirm health facilities are stocked for respiratory complaints.',
+                'red' => 'Issue a public air-quality warning. Recommend masks and reduced outdoor exposure, and brief the state ministry of health on the respiratory-case trend to watch for.',
             ],
         ];
 
@@ -244,6 +256,10 @@ class ReferenceDataSeeder extends Seeder
             'VEGETATION' => ['min' => -1, 'max' => 1],
             'POPULATION_EXPOSURE' => ['min' => 0, 'max' => 3500000],
             'ELEVATION' => ['min' => 0, 'max' => 500],
+            // US EPA AQI "Hazardous" ceiling (AQI 500) for each pollutant — a real, citable
+            // reference point rather than an arbitrary number.
+            'AIR_QUALITY_PM25' => ['min' => 0, 'max' => 500.4],
+            'AIR_QUALITY_PM10' => ['min' => 0, 'max' => 604],
         ];
 
         foreach (ScoringIndex::all() as $index) {
@@ -288,6 +304,9 @@ class ReferenceDataSeeder extends Seeder
                 'RAINFALL' => ['weight' => 0.5, 'higher_is_worse' => false], // less rain, more drought
                 'VEGETATION' => ['weight' => 0.5, 'higher_is_worse' => false], // lower NDVI, more vegetation stress
             ],
+            // PM2.5 weighted higher — finer particulate, the more health-critical of the two per
+            // WHO guidance.
+            'RESPIRATORY_RISK' => ['AIR_QUALITY_PM25' => 0.6, 'AIR_QUALITY_PM10' => 0.4],
         ];
 
         foreach ($weights as $indexCode => $signalWeights) {

@@ -58,12 +58,18 @@ or `region_scores.breakdown` directly).
 
 | Signal | Source | Status |
 |---|---|---|
-| Rainfall | NASA POWER | Live |
+| Rainfall | NASA POWER, falls back to Open-Meteo (ERA5) | Live |
 | Standing water | JRC Global Surface Water | Live |
-| Temperature | NASA POWER | Live |
+| Temperature | NASA POWER, falls back to Open-Meteo (ERA5) | Live |
 | Vegetation/humidity | MODIS (via NASA Earthdata/AppEEARS) | Live |
 | Elevation | SRTM (Open Topo Data) | Live |
 | Population exposure | UNFPA/US Census Bureau via HDX (2020 LGA-level projection) | Live, but not a per-request API pull — see [`docs/INGESTION_GUIDE.md`](docs/INGESTION_GUIDE.md#population-exposure) for what that means |
+| Air quality (PM2.5, PM10) | Open-Meteo Air Quality API (CAMS) | Live |
+
+No single provider is the platform's entire data backbone by design — see
+[`docs/INGESTION_GUIDE.md`](docs/INGESTION_GUIDE.md#resilience-no-single-provider-is-a-single-point-of-failure)
+for the resilience/fallback pattern and how a new source plugs in without touching scoring or
+alerting.
 
 All 774 real Nigerian LGAs are seeded (name, state, coordinates). Ingestion is usage-driven — a
 region only gets pulled once someone actually watches it or requests it via Coverage, so the

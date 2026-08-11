@@ -16,8 +16,11 @@ Artisan::command('inspire', function () {
 Schedule::command('signals:ingest --source=RAINFALL,STANDING_WATER')->dailyAt('02:00');
 // Population Exposure rides along here even though it doesn't hit a live API (see
 // PopulationExposureIngestionService) — re-reading regions.population weekly is free, and it
-// keeps every source on one predictable schedule instead of a one-off exception.
-Schedule::command('signals:ingest --source=TEMPERATURE,VEGETATION,ELEVATION,POPULATION_EXPOSURE')->weeklyOn(1, '02:30');
+// keeps every source on one predictable schedule instead of a one-off exception. Air quality
+// (PM2.5/PM10) moves faster than temperature/vegetation day-to-day (dust events, harmattan), but
+// starts on the slow cadence too — see docs/INGESTION_GUIDE.md if it needs to move to the daily
+// group later.
+Schedule::command('signals:ingest --source=TEMPERATURE,VEGETATION,ELEVATION,POPULATION_EXPOSURE,AIR_QUALITY_PM25,AIR_QUALITY_PM10')->weeklyOn(1, '02:30');
 
 // Recalculates every index/region from whatever signals have landed. Runs daily, not weekly,
 // now that some signals do — cheap to rerun even on a day only the slow signals were untouched,

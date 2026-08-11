@@ -1,5 +1,7 @@
 <?php
 
+use App\Services\Ingestion\AirQualityPm10IngestionService;
+use App\Services\Ingestion\AirQualityPm25IngestionService;
 use App\Services\Ingestion\ElevationIngestionService;
 use App\Services\Ingestion\PopulationExposureIngestionService;
 use App\Services\Ingestion\RainfallIngestionService;
@@ -27,6 +29,8 @@ return [
         ElevationIngestionService::class,
         StandingWaterIngestionService::class,
         PopulationExposureIngestionService::class,
+        AirQualityPm25IngestionService::class,
+        AirQualityPm10IngestionService::class,
     ],
 
 ];
