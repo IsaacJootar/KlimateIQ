@@ -2,7 +2,7 @@
 
 Built for NigComSat Accelerator 3.0, Track C: Public Health Intelligence.
 
-**Live**: [klimateiq.org](https://klimateiq.org) (product site) · [app.klimateiq.org](https://app.klimateiq.org) (the platform itself, deployed on our own AWS infrastructure — EC2 + managed RDS Postgres, not a PaaS trial tier)
+**Live**: [klimateiq.org](https://klimateiq.org) (product site) · [app.klimateiq.org](https://app.klimateiq.org) (the platform itself, deployed on AWS — EC2 + managed RDS Postgres)
 
 **How this actually stands up right now**, not aspirationally:
 
