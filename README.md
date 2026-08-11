@@ -2,6 +2,15 @@
 
 Built for NigComSat Accelerator 3.0, Track C: Public Health Intelligence.
 
+**Live**: [klimateiq.org](https://klimateiq.org) (product site) · [app.klimateiq.org](https://app.klimateiq.org) (the platform itself, deployed on our own AWS infrastructure — EC2 + managed RDS Postgres, not a PaaS trial tier)
+
+**How this actually stands up right now**, not aspirationally:
+
+- **774 real Nigerian LGAs** seeded with real coordinates and real 2020 UNFPA/US Census population figures — not placeholder data
+- **8 live signal sources** feeding **6 named risk indices**, with automatic fallback so no single data provider is a point of failure — see [`docs/MODEL.md`](docs/MODEL.md) for the exact formulas and [`docs/INGESTION_GUIDE.md`](docs/INGESTION_GUIDE.md) for the resilience pattern
+- **147 automated tests, all passing** — `php artisan test`
+- Real transactional email (Resend), real error tracking (Sentry), real production monitoring (a Pipeline Health dashboard showing queue depth and per-source data freshness) — not just a demo path
+
 ## The problem
 
 Pollution and climate readings are widely available; what happens to *people* because of them
@@ -37,11 +46,14 @@ the whole country.
 | **Flood Risk Index** | Rainfall + standing water + elevation | Emergency response |
 | **Heat Stress Risk Index** | Temperature + vegetation loss | Occupational and public heat-health planning |
 | **Drought Risk Index** | Rainfall deficit + vegetation stress | Agricultural and water-security planning |
+| **Respiratory Risk Index** | PM2.5 + PM10 particulate matter | Air-quality and respiratory-health planning, especially harmattan/dust season |
 | **Composite Climate-Health Pressure Index** | All active signals, weighted | Overall regional snapshot |
 
 Adding another index is a new row in `region_scoring_configs` — no code change. Every score
 traces back to exactly which signal drove it (see the breakdown on any region's drill-down page,
-or `region_scores.breakdown` directly).
+or `region_scores.breakdown` directly) — the exact formula, every index's real weights, and
+every calibration bound with its source are all written out in full in
+[`docs/MODEL.md`](docs/MODEL.md).
 
 ### AI, honestly scoped
 

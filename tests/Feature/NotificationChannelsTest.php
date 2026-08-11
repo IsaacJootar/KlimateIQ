@@ -102,6 +102,38 @@ class NotificationChannelsTest extends TestCase
         $this->assertSame(['database'], $notification->via($user));
     }
 
+    /**
+     * TERMII_API_KEY is a placeholder in production right now — a real key hasn't been obtained
+     * yet. This is the behavior that makes that safe to ship: an unconfigured SMS client is
+     * silently skipped, never attempted, never throws — same as if the user never opted into SMS
+     * at all.
+     */
+    public function test_sms_channel_is_skipped_when_the_client_is_not_configured_even_with_a_phone_number(): void
+    {
+        $this->mock(SmsClient::class, function ($mock) {
+            $mock->shouldReceive('isConfigured')->andReturn(false);
+        });
+
+        $user = User::factory()->create(['phone_number' => '+2348012345678']);
+        $user->getOrCreateDashboardPreference()->update(['alert_channels' => ['in_app', 'sms']]);
+        $notification = new ThresholdBreachedNotification($this->makeAlert($user));
+
+        $this->assertSame(['database'], $notification->via($user));
+    }
+
+    public function test_sms_channel_send_never_calls_the_client_when_not_configured(): void
+    {
+        $this->mock(SmsClient::class, function ($mock) {
+            $mock->shouldReceive('isConfigured')->andReturn(false);
+            $mock->shouldNotReceive('send');
+        });
+
+        $user = User::factory()->create(['phone_number' => '+2348012345678']);
+        $notification = new ThresholdBreachedNotification($this->makeAlert($user));
+
+        app(\App\Notifications\Channels\SmsChannel::class)->send($user, $notification);
+    }
+
     protected function tearDown(): void
     {
         Mockery::close();
