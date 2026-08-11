@@ -86,6 +86,19 @@ silently claiming NASA POWER when it wasn't actually used. Swapping or adding a 
 other source follows the same pattern: inject the fallback client, try the primary, fall back on
 failure, label the source honestly — no changes needed anywhere else in the pipeline.
 
+### Deepening the anomaly-detection baseline
+
+`ThresholdEvaluationService`'s anomaly checks (a threshold config with no fixed value, comparing
+instead against a region's own recent history) look at the 8 most recent prior `region_signals`
+rows for that region/signal. A newly-active region has little to no real history yet, which makes
+that rolling mean/stddev statistically weak or empty.
+
+`php artisan signals:backfill-history --periods=12` fills this in using the same
+`OpenMeteoClient` archive, stepping back 7-day periods from just before the live ingestion window
+so it can never collide with (or overwrite) a period a real scheduled pull already wrote. Every
+backfilled row is labeled `"Open-Meteo (ERA5 historical backfill)"` and skips any period that
+already has real data — it only ever adds history, never replaces a live reading.
+
 ## Adding a new named index
 
 A named index is just a row in `indices` plus weighted rows in `region_scoring_configs` — no code
