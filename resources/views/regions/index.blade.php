@@ -21,7 +21,7 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
             <div class="flex flex-wrap gap-2">
                 @foreach ($indices as $idx)
@@ -76,34 +76,34 @@
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead>
                             <tr class="text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
-                                <th class="px-4 py-3">Region</th>
-                                <th class="px-4 py-3">State</th>
-                                <th class="px-4 py-3">Population</th>
-                                <th class="px-4 py-3">{{ $index->name }}</th>
-                                <th class="px-4 py-3">Risk</th>
-                                <th class="px-4 py-3">History</th>
-                                <th class="px-4 py-3">2-Week Trend</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Region</th>
+                                <th class="px-4 py-3 whitespace-nowrap">State</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Population</th>
+                                <th class="px-4 py-3 whitespace-nowrap">{{ $index->name }}</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Risk</th>
+                                <th class="px-4 py-3 whitespace-nowrap">History</th>
+                                <th class="px-4 py-3 whitespace-nowrap">2-Week Trend</th>
                                 <th class="px-4 py-3"></th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                             @foreach ($regions as $region)
                                 <tr class="nav-card">
-                                    <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">{{ $region->name }}</td>
-                                    <td class="px-4 py-3 text-sm text-gray-500">{{ $region->state }}</td>
-                                    <td class="px-4 py-3 text-sm text-gray-500">{{ $region->population !== null ? number_format($region->population) : '—' }}</td>
-                                    <td class="px-4 py-3 text-sm font-semibold">{{ $region->current_score ?? '—' }}</td>
-                                    <td class="px-4 py-3 text-sm">
+                                    <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ $region->name }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{{ $region->state }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{{ $region->population !== null ? number_format($region->population) : '—' }}</td>
+                                    <td class="px-4 py-3 text-sm font-semibold whitespace-nowrap">{{ $region->current_score ?? '—' }}</td>
+                                    <td class="px-4 py-3 text-sm whitespace-nowrap">
                                         <span class="risk-badge risk-badge-{{ $region->risk_band }}">{{ $region->risk_band === 'none' ? 'no data' : $region->risk_band }}</span>
                                     </td>
-                                    <td class="px-4 py-3 text-sm">
+                                    <td class="px-4 py-3 text-sm whitespace-nowrap">
                                         <x-sparkline :values="$region->sparkline" :band="$region->risk_band" />
                                     </td>
-                                    <td class="px-4 py-3 text-sm {{ ['up' => 'text-red-600 dark:text-red-400', 'down' => 'text-emerald-600 dark:text-emerald-400', 'flat' => 'text-slate-500', 'unknown' => 'text-slate-400'][$region->trend['direction']] }}">
+                                    <td class="px-4 py-3 text-sm whitespace-nowrap {{ ['up' => 'text-red-600 dark:text-red-400', 'down' => 'text-emerald-600 dark:text-emerald-400', 'flat' => 'text-slate-500', 'unknown' => 'text-slate-400'][$region->trend['direction']] }}">
                                         @if ($region->trend['direction'] === 'up') &uarr; @elseif ($region->trend['direction'] === 'down') &darr; @endif
                                         {{ $region->trend['label'] }}
                                     </td>
-                                    <td class="px-4 py-3 text-sm text-right">
+                                    <td class="px-4 py-3 text-sm text-right whitespace-nowrap">
                                         <a href="{{ route('regions.show', ['region' => $region->region_id, 'index' => $index->code]) }}" class="link-nav">View &rarr;</a>
                                     </td>
                                 </tr>

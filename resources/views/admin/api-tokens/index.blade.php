@@ -160,11 +160,11 @@
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead>
                             <tr class="text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
-                                <th class="px-4 py-3">Name</th>
-                                <th class="px-4 py-3">Account</th>
-                                <th class="px-4 py-3">Last used</th>
-                                <th class="px-4 py-3">Issued</th>
-                                <th class="px-4 py-3"></th>
+                                <th class="px-4 py-3 whitespace-nowrap">Name</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Account</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Last used</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Issued</th>
+                                <th class="px-4 py-3 whitespace-nowrap"></th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 dark:divide-gray-700">

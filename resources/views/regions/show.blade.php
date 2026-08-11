@@ -25,7 +25,7 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
             <div class="flex flex-wrap gap-2">
                 @foreach ($indices as $idx)
@@ -97,17 +97,17 @@
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead>
                             <tr class="text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
-                                <th class="px-4 py-3">Signal</th>
-                                <th class="px-4 py-3">Raw Value</th>
-                                <th class="px-4 py-3">Normalized</th>
-                                <th class="px-4 py-3">Weight</th>
-                                <th class="px-4 py-3">Contribution</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Signal</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Raw Value</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Normalized</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Weight</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Contribution</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                             @forelse ($breakdown as $signal)
                                 <tr>
-                                    <td class="px-4 py-3 text-sm font-medium">{{ $signal['signal_type_code'] }}</td>
+                                    <td class="px-4 py-3 text-sm font-medium whitespace-nowrap">{{ $signal['signal_type_code'] }}</td>
                                     <td class="px-4 py-3 text-sm">
                                         @if (($signal['status'] ?? null) === 'no_data')
                                             <span class="text-gray-400 italic">no data</span>
@@ -115,9 +115,9 @@
                                             {{ $signal['raw_value'] }} {{ $signal['unit'] ?? '' }}
                                         @endif
                                     </td>
-                                    <td class="px-4 py-3 text-sm">{{ $signal['normalized_score'] ?? '—' }}</td>
-                                    <td class="px-4 py-3 text-sm">{{ $signal['weight'] }}</td>
-                                    <td class="px-4 py-3 text-sm font-semibold">{{ $signal['contribution'] ?? '—' }}</td>
+                                    <td class="px-4 py-3 text-sm whitespace-nowrap">{{ $signal['normalized_score'] ?? '—' }}</td>
+                                    <td class="px-4 py-3 text-sm whitespace-nowrap">{{ $signal['weight'] }}</td>
+                                    <td class="px-4 py-3 text-sm font-semibold whitespace-nowrap">{{ $signal['contribution'] ?? '—' }}</td>
                                 </tr>
                             @empty
                                 <tr>

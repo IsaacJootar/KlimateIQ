@@ -20,14 +20,14 @@
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead>
                             <tr class="text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
-                                <th class="px-4 py-3">Name</th>
-                                <th class="px-4 py-3">Email</th>
-                                <th class="px-4 py-3">Organization</th>
-                                <th class="px-4 py-3">Role</th>
-                                <th class="px-4 py-3">State</th>
-                                <th class="px-4 py-3">Admin</th>
-                                <th class="px-4 py-3">Status</th>
-                                <th class="px-4 py-3"></th>
+                                <th class="px-4 py-3 whitespace-nowrap">Name</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Email</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Organization</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Role</th>
+                                <th class="px-4 py-3 whitespace-nowrap">State</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Admin</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Status</th>
+                                <th class="px-4 py-3 whitespace-nowrap"></th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 dark:divide-gray-700">

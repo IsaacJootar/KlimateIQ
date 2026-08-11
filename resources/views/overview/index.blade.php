@@ -10,7 +10,7 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div class="metric-card metric-teal">
@@ -60,10 +60,10 @@
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead>
                             <tr class="text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
-                                <th class="px-4 py-3">Agency</th>
-                                <th class="px-4 py-3">Members</th>
-                                <th class="px-4 py-3">Regions Watched</th>
-                                <th class="px-4 py-3">Open Alerts</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Agency</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Members</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Regions Watched</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Open Alerts</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
@@ -75,9 +75,9 @@
                                             <span class="risk-badge risk-badge-green ml-1">oversight</span>
                                         @endif
                                     </td>
-                                    <td class="px-4 py-3 text-sm text-gray-500">{{ $row['user_count'] }}</td>
-                                    <td class="px-4 py-3 text-sm text-gray-500">{{ $row['regions_watched'] }}</td>
-                                    <td class="px-4 py-3 text-sm font-semibold">{{ $row['open_alerts'] }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{{ $row['user_count'] }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{{ $row['regions_watched'] }}</td>
+                                    <td class="px-4 py-3 text-sm font-semibold whitespace-nowrap">{{ $row['open_alerts'] }}</td>
                                 </tr>
                             @empty
                                 <tr>

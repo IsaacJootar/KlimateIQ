@@ -62,9 +62,9 @@
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead>
                             <tr class="text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
-                                <th class="px-4 py-3">Region</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Region</th>
                                 @foreach ($sources as $source)
-                                    <th class="px-4 py-3">{{ $source->signalTypeCode() }}</th>
+                                    <th class="px-4 py-3 whitespace-nowrap">{{ $source->signalTypeCode() }}</th>
                                 @endforeach
                             </tr>
                         </thead>
