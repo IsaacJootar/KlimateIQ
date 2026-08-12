@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\IngestionCadence;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -13,14 +14,16 @@ Artisan::command('inspire', function () {
 // isn't good enough for that (a flood can develop and recede inside a week). Temperature,
 // Vegetation, and Elevation move slowly enough that weekly is genuinely fine for them; polling
 // them daily would just be extra load on their APIs for data that hasn't meaningfully changed.
-Schedule::command('signals:ingest --source=RAINFALL,STANDING_WATER')->dailyAt('02:00');
+// Both lists live in App\Support\IngestionCadence — the single source of truth also used to
+// explain a "no data yet" signal in the UI (see regions/show.blade.php).
+Schedule::command('signals:ingest --source='.implode(',', IngestionCadence::DAILY))->dailyAt('02:00');
 // Population Exposure rides along here even though it doesn't hit a live API (see
 // PopulationExposureIngestionService) — re-reading regions.population weekly is free, and it
 // keeps every source on one predictable schedule instead of a one-off exception. Air quality
 // (PM2.5/PM10) moves faster than temperature/vegetation day-to-day (dust events, harmattan), but
 // starts on the slow cadence too — see docs/INGESTION_GUIDE.md if it needs to move to the daily
 // group later.
-Schedule::command('signals:ingest --source=TEMPERATURE,VEGETATION,ELEVATION,POPULATION_EXPOSURE,AIR_QUALITY_PM25,AIR_QUALITY_PM10')->weeklyOn(1, '02:30');
+Schedule::command('signals:ingest --source='.implode(',', IngestionCadence::WEEKLY))->weeklyOn(1, '02:30');
 
 // Recalculates every index/region from whatever signals have landed. Runs daily, not weekly,
 // now that some signals do — cheap to rerun even on a day only the slow signals were untouched,

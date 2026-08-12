@@ -94,9 +94,15 @@
                     <h3 class="font-semibold text-gray-800 dark:text-gray-200">What's driving this score</h3>
                 </div>
                 <p class="px-4 pt-3 text-xs text-gray-500 dark:text-gray-400">
-                    "Signal Score" is this signal's own 0&ndash;100 reading. "Contribution to Final Score" is how many of
-                    the {{ $latest?->score ?? '?' }} points at the top actually came from this signal &mdash; add every
-                    row in that column together and you get the score above.
+                    @if ($latest?->score !== null)
+                        "Signal Score" is this signal's own 0&ndash;100 reading. "Contribution to Final Score" is how
+                        many of the {{ $latest->score }} points at the top actually came from this signal &mdash; add
+                        every row in that column together and you get the score above.
+                    @else
+                        "Signal Score" is this signal's own 0&ndash;100 reading. "Contribution to Final Score" would
+                        show how many points each signal adds to the final score, once there's enough data to
+                        calculate one.
+                    @endif
                 </p>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -115,7 +121,11 @@
                                     <td class="px-4 py-3 text-sm font-medium whitespace-nowrap">{{ $signal['signal_type_code'] }}</td>
                                     <td class="px-4 py-3 text-sm">
                                         @if (($signal['status'] ?? null) === 'no_data')
-                                            <span class="text-gray-400 italic">no data</span>
+                                            @if (\App\Support\IngestionCadence::isWeekly($signal['signal_type_code']))
+                                                <span class="text-gray-400 italic">pending this week's update</span>
+                                            @else
+                                                <span class="text-gray-400 italic">no data</span>
+                                            @endif
                                         @else
                                             {{ $signal['raw_value'] }} {{ $signal['unit'] ?? '' }}
                                         @endif
