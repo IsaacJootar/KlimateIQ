@@ -89,6 +89,10 @@ class WeightedFormulaScoringStrategy implements ScoringStrategy
                 'vulnerability_multiplier' => round($multiplier, 4),
                 'weight' => $weight,
                 'contribution' => round($contribution, 2),
+                // Placeholder — filled in below once totalWeight is known. This is the number
+                // that should actually sum, across every row, to the final score: each signal's
+                // true share of it, not just its pre-weight normalized value.
+                'contribution_to_final_score' => null,
             ];
         }
 
@@ -97,6 +101,16 @@ class WeightedFormulaScoringStrategy implements ScoringStrategy
         }
 
         $score = round(min(100, max(0, $weightedSum / $totalWeight)), 2);
+
+        $breakdown = array_map(function (array $row) use ($totalWeight) {
+            if (($row['status'] ?? null) === 'no_data') {
+                return $row;
+            }
+
+            $row['contribution_to_final_score'] = round(($row['contribution'] * $row['weight']) / $totalWeight, 2);
+
+            return $row;
+        }, $breakdown);
 
         return new ScoreResult(score: $score, breakdown: $breakdown, scoringVersion: 'formula-v1');
     }

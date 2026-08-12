@@ -13,7 +13,7 @@ use Illuminate\View\View;
 /**
  * Edits the system-wide (region_id = null) defaults only — a region can still override any
  * of this with its own row at the database level, but that's not exposed here. No admin UI
- * for per-region overrides exists yet; this covers the common case every index actually uses.
+ * for per-region overrides exists yet (I will do that later); this covers the common case every index actually uses.
  */
 class ScoringConfigController extends Controller
 {

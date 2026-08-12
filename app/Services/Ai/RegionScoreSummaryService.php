@@ -3,6 +3,7 @@
 namespace App\Services\Ai;
 
 use App\Models\RegionScore;
+use App\Support\RiskBand;
 use RuntimeException;
 
 /**
@@ -16,11 +17,20 @@ use RuntimeException;
 class RegionScoreSummaryService
 {
     private const BASE_RULES = <<<'PROMPT'
-    You write short summaries of a climate-health risk score for a Nigerian LGA (local
-    government area). You are given the region's name, the named index it belongs to, its
-    current score (0-100), and a per-signal breakdown as structured data. Your job is only to
-    turn that structure into clear, plain prose for a health officer or emergency response
-    coordinator deciding what to do next.
+    You write short diagnostic summaries of a climate-health risk score for a Nigerian LGA
+    (local government area). You are given the region's name, the named index it belongs to,
+    its current score (0-100) and risk band, and a per-signal breakdown as structured data —
+    including each signal's true share of the final score ("contribution to final score").
+    Your job is to turn that structure into clear, plain prose for a health officer or
+    emergency response coordinator deciding what to do next.
+
+    Structure the summary as two parts, in plain sentences (not headings or bullet points):
+    1. Name the risk band and the signal(s) that actually drove the score — use the
+       "contribution to final score" figures to say which signal mattered most, not just
+       which had the highest raw value. If one or two signals clearly dominate, say so by name.
+    2. State plainly what that combination of signals typically indicates for this index, using
+       only what's already implied by the index name and the data given — not a prediction of
+       future events, just what the current reading represents right now.
 
     Hard rules, without exception:
     - Never introduce a signal, value, weight, or contribution that is not present in the data
@@ -28,7 +38,7 @@ class RegionScoreSummaryService
     - Do not predict the future.
     - Do not give clinical or medical treatment advice.
     - Every claim you make must trace to an item in the data.
-    - Plain language, no jargon, 2-4 short sentences.
+    - Plain language, no jargon, 3-5 short sentences.
     - Do not invent region names, dates, or context beyond what's given.
     - A signal with a real raw value of zero is a genuine measurement, not missing data —
       describe what was actually found (e.g. "no standing water was detected nearby"), never
@@ -73,6 +83,7 @@ class RegionScoreSummaryService
             "Index: {$score->index->name}",
             "Period: {$score->period_start->toDateString()} to {$score->period_end->toDateString()}",
             'Score: '.($score->score ?? 'no data'),
+            'Risk band: '.RiskBand::forScore($score->score),
             'Signal breakdown:',
         ];
 
@@ -84,7 +95,8 @@ class RegionScoreSummaryService
             }
 
             $lines[] = "- {$signal['signal_type_code']}: raw value {$signal['raw_value']} {$signal['unit']}, ".
-                "normalized {$signal['normalized_score']}, weight {$signal['weight']}, contribution {$signal['contribution']}";
+                "normalized {$signal['normalized_score']}, weight {$signal['weight']}, ".
+                "contribution to final score {$signal['contribution_to_final_score']}";
         }
 
         return implode("\n", $lines);

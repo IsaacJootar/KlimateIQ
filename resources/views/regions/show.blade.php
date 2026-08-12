@@ -93,15 +93,20 @@
                 <div class="section-card-header">
                     <h3 class="font-semibold text-gray-800 dark:text-gray-200">What's driving this score</h3>
                 </div>
+                <p class="px-4 pt-3 text-xs text-gray-500 dark:text-gray-400">
+                    "Signal Score" is this signal's own 0&ndash;100 reading. "Contribution to Final Score" is how many of
+                    the {{ $latest?->score ?? '?' }} points at the top actually came from this signal &mdash; add every
+                    row in that column together and you get the score above.
+                </p>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead>
                             <tr class="text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
                                 <th class="px-4 py-3 whitespace-nowrap">Signal</th>
                                 <th class="px-4 py-3 whitespace-nowrap">Raw Value</th>
-                                <th class="px-4 py-3 whitespace-nowrap">Normalized</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Signal Score</th>
                                 <th class="px-4 py-3 whitespace-nowrap">Weight</th>
-                                <th class="px-4 py-3 whitespace-nowrap">Contribution</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Contribution to Final Score</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
@@ -117,7 +122,7 @@
                                     </td>
                                     <td class="px-4 py-3 text-sm whitespace-nowrap">{{ $signal['normalized_score'] ?? '—' }}</td>
                                     <td class="px-4 py-3 text-sm whitespace-nowrap">{{ $signal['weight'] }}</td>
-                                    <td class="px-4 py-3 text-sm font-semibold whitespace-nowrap">{{ $signal['contribution'] ?? '—' }}</td>
+                                    <td class="px-4 py-3 text-sm font-semibold whitespace-nowrap">{{ $signal['contribution_to_final_score'] ?? '—' }}</td>
                                 </tr>
                             @empty
                                 <tr>
@@ -125,6 +130,14 @@
                                 </tr>
                             @endforelse
                         </tbody>
+                        @if (! empty($breakdown))
+                            <tfoot>
+                                <tr class="border-t-2 border-gray-300 dark:border-gray-600">
+                                    <td colspan="4" class="px-4 py-3 text-sm font-semibold text-right">Total (this region's score)</td>
+                                    <td class="px-4 py-3 text-sm font-bold whitespace-nowrap">{{ $latest?->score ?? '—' }}</td>
+                                </tr>
+                            </tfoot>
+                        @endif
                     </table>
                 </div>
             </div>
@@ -143,7 +156,7 @@
                                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                                     </svg>
-                                    Asking OpenAI for a summary...
+                                    AI is generating summary...
                                 </span>
                             </button>
                         </form>

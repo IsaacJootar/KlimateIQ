@@ -56,6 +56,39 @@ class ScoringEngineTest extends TestCase
         $this->assertSame(50.0, $result->score);
         $this->assertCount(2, $result->breakdown);
         $this->assertSame('no_data', collect($result->breakdown)->firstWhere('signal_type_code', 'STANDING_WATER')['status']);
+
+        // RAINFALL is the only signal with data, so its true share of the final score is the
+        // whole score itself.
+        $rainfallRow = collect($result->breakdown)->firstWhere('signal_type_code', 'RAINFALL');
+        $this->assertSame(50.0, $rainfallRow['contribution_to_final_score']);
+    }
+
+    public function test_contribution_to_final_score_sums_to_the_score_across_multiple_signals(): void
+    {
+        $region = Region::query()->where('lga_code', 'NG-LA-IKJ')->firstOrFail();
+        $index = ScoringIndex::query()->where('code', 'MALARIA_RISK')->firstOrFail();
+        $rainfall = SignalType::query()->where('code', 'RAINFALL')->firstOrFail();
+        $standingWater = SignalType::query()->where('code', 'STANDING_WATER')->firstOrFail();
+
+        // MALARIA_RISK weights RAINFALL and STANDING_WATER 0.5/0.5. Bounds: rainfall 0-200mm,
+        // standing water 0-100%. 100mm -> 50, 80% -> 80.
+        foreach ([$rainfall->signal_type_id => 100, $standingWater->signal_type_id => 80] as $signalTypeId => $value) {
+            RegionSignal::query()->create([
+                'region_id' => $region->region_id,
+                'signal_type_id' => $signalTypeId,
+                'period_start' => $this->periodStart(),
+                'period_end' => $this->periodEnd(),
+                'value' => $value,
+                'source' => 'test',
+                'ingested_at' => now(),
+            ]);
+        }
+
+        $result = app(RegionScoringService::class)->calculate($index, $region, $this->periodStart(), $this->periodEnd());
+
+        $summedContributions = collect($result->breakdown)->sum('contribution_to_final_score');
+
+        $this->assertEqualsWithDelta($result->score, $summedContributions, 0.01);
     }
 
     public function test_formula_strategy_returns_null_score_when_no_signals_available(): void
