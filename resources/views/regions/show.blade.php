@@ -146,7 +146,7 @@
             </div>
 
             <div class="section-card p-4">
-                <div class="text-xs font-semibold uppercase text-gray-500 mb-1">What this means</div>
+                <span class="risk-badge risk-badge-{{ $riskBand }} font-bold uppercase tracking-wide mb-2 inline-block">What this means</span>
                 @if ($diagnosis['conclusion'])
                     <p class="text-sm text-gray-800 dark:text-gray-200">{{ $diagnosis['conclusion'] }}</p>
                 @else
@@ -184,7 +184,7 @@
 
             @if ($recommendedAction)
                 <div class="section-card p-4 border-l-4 {{ ['amber' => 'border-amber-500', 'red' => 'border-red-500'][$riskBand] ?? 'border-gano-500' }}">
-                    <div class="text-xs font-semibold uppercase text-gray-500 mb-1">Recommended action</div>
+                    <span class="risk-badge risk-badge-{{ $riskBand }} font-bold uppercase tracking-wide mb-2 inline-block">Recommended action</span>
                     @if ($diagnosis['dominantSignal'])
                         <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Based on {{ $diagnosis['dominantSignal'] }} being the main driver above.</p>
                     @endif
