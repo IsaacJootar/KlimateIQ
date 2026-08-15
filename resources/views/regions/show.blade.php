@@ -58,13 +58,6 @@
                 </div>
             </div>
 
-            @if ($recommendedAction)
-                <div class="section-card p-4 border-l-4 {{ ['amber' => 'border-amber-500', 'red' => 'border-red-500'][$riskBand] ?? 'border-gano-500' }}">
-                    <div class="text-xs font-semibold uppercase text-gray-500 mb-1">Recommended action</div>
-                    <p class="text-sm text-gray-800 dark:text-gray-200">{{ $recommendedAction }}</p>
-                </div>
-            @endif
-
             <div class="section-card">
                 <div class="section-card-header">
                     <h3 class="font-semibold text-gray-800 dark:text-gray-200">Trend</h3>
@@ -153,8 +146,15 @@
             </div>
 
             <div class="section-card p-4">
-                <div class="flex items-center justify-between mb-1">
-                    <div class="text-xs font-semibold uppercase text-gray-500">AI Summary</div>
+                <div class="text-xs font-semibold uppercase text-gray-500 mb-1">What this means</div>
+                @if ($diagnosis['conclusion'])
+                    <p class="text-sm text-gray-800 dark:text-gray-200">{{ $diagnosis['conclusion'] }}</p>
+                @else
+                    <p class="text-sm text-gray-500">Not enough data yet to say what's driving this score.</p>
+                @endif
+
+                <div class="flex items-center justify-between mt-4 mb-1 pt-4 border-t border-gray-100 dark:border-gray-700">
+                    <div class="text-xs font-semibold uppercase text-gray-500">AI Summary (optional, deeper detail)</div>
                     @if ($latest?->score !== null)
                         <form method="POST" action="{{ route('regions.summary', ['region' => $region->region_id, 'index' => $index->code]) }}"
                               x-data="{ loading: false }" @submit="loading = true">
@@ -181,6 +181,16 @@
                     <p class="text-sm text-gray-500">No summary generated yet.</p>
                 @endif
             </div>
+
+            @if ($recommendedAction)
+                <div class="section-card p-4 border-l-4 {{ ['amber' => 'border-amber-500', 'red' => 'border-red-500'][$riskBand] ?? 'border-gano-500' }}">
+                    <div class="text-xs font-semibold uppercase text-gray-500 mb-1">Recommended action</div>
+                    @if ($diagnosis['dominantSignal'])
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Based on {{ $diagnosis['dominantSignal'] }} being the main driver above.</p>
+                    @endif
+                    <p class="text-sm text-gray-800 dark:text-gray-200">{{ $recommendedAction }}</p>
+                </div>
+            @endif
         </div>
     </div>
 </x-app-layout>

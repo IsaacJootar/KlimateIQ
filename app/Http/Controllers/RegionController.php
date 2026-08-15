@@ -8,6 +8,7 @@ use App\Models\RegionScore;
 use App\Services\Ai\RegionScoreSummaryService;
 use App\Support\IndexCoverage;
 use App\Support\RiskBand;
+use App\Support\ScoreDiagnosis;
 use App\Support\TrendSummary;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -109,6 +110,7 @@ class RegionController extends Controller
 
         $latest = $scores->last();
         $prior = $scores->where('period_start', '<=', now()->subDays(14))->last();
+        $diagnosis = ScoreDiagnosis::forBreakdown($latest?->breakdown ?? [], $latest?->score !== null ? (float) $latest->score : null);
 
         return view('regions.show', [
             'region' => $region,
@@ -119,6 +121,7 @@ class RegionController extends Controller
             'breakdown' => $latest?->breakdown ?? [],
             'aiAvailable' => app(RegionScoreSummaryService::class)->isAvailable(),
             'recommendedAction' => IndexActionRecommendation::textFor($index->index_id, $latest?->score),
+            'diagnosis' => $diagnosis,
             'trend' => TrendSummary::describe(
                 $latest?->score !== null ? (float) $latest->score : null,
                 $prior?->score !== null ? (float) $prior->score : null,
