@@ -189,4 +189,63 @@ class PipelineHealthTest extends TestCase
         $this->assertSame(0, DB::table('failed_jobs')->count());
         $this->assertSame(1, DB::table('jobs')->count());
     }
+
+    public function test_capacity_shows_zero_usage_with_no_recent_calls(): void
+    {
+        $admin = $this->admin();
+
+        $response = $this->actingAs($admin)->get(route('admin.pipeline.index'));
+
+        $response->assertSee('API capacity');
+        $response->assertSee('AIR_QUALITY_PM25');
+        $response->assertDontSee('is above 70% of its known limit');
+    }
+
+    public function test_calls_older_than_24h_do_not_count_toward_usage(): void
+    {
+        $admin = $this->admin();
+        $region = $this->activateARegion();
+        $signalType = \App\Models\SignalType::where('code', 'ELEVATION')->firstOrFail();
+
+        \App\Models\RegionSignal::create([
+            'region_id' => $region->region_id,
+            'signal_type_id' => $signalType->signal_type_id,
+            'period_start' => now()->subDays(30),
+            'period_end' => now()->subDays(24),
+            'value' => 100,
+            'source' => 'test',
+            'ingested_at' => now()->subDays(2),
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.pipeline.index'));
+
+        // The one call is 2 days old, outside the 24h window — usage should read 0%, not count it.
+        $response->assertSee('API capacity');
+        $response->assertDontSee('is above 70% of its known limit');
+    }
+
+    public function test_usage_above_the_warning_threshold_shows_the_recommendation(): void
+    {
+        $admin = $this->admin();
+        $region = $this->activateARegion();
+        $signalType = \App\Models\SignalType::where('code', 'ELEVATION')->firstOrFail();
+
+        // Elevation's known limit is 1,000/day (Open Topo Data) — the smallest of any tracked
+        // source, so it's the cheapest one to genuinely cross the 70% warning threshold with.
+        $rows = collect(range(1, 701))->map(fn ($i) => [
+            'region_id' => $region->region_id,
+            'signal_type_id' => $signalType->signal_type_id,
+            'period_start' => now()->subDays($i + 100)->toDateString(),
+            'period_end' => now()->subDays($i + 94)->toDateString(),
+            'value' => 100,
+            'source' => 'test',
+            'ingested_at' => now()->subHours(1)->toDateTimeString(),
+        ])->all();
+        \App\Models\RegionSignal::insert($rows);
+
+        $response = $this->actingAs($admin)->get(route('admin.pipeline.index'));
+
+        $response->assertSee('is above 70% of its known limit');
+        $response->assertSee('Pulled once per region on activation only', false);
+    }
 }

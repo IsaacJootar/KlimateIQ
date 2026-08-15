@@ -58,11 +58,36 @@ even move alerts to a separate deployment, without touching the other two layers
 
 That's it for `php artisan signals:ingest` with no `--source` filter — it picks up every
 configured source automatically. The two *scheduled* runs in `routes/console.php` are more
-specific, though: they each pass an explicit `--source=CODE,CODE` list (rainfall/standing water
-daily, everything else weekly) rather than "every source," because Flood Risk's inputs need a
-tighter cadence than the rest — see the comment there for why. A brand-new source needs one line
-added to whichever of those two lists fits its update frequency, or it simply won't run on a
-schedule at all (it'll still work fine via a manual `signals:ingest` or `--source=` call).
+specific, though: they each pass an explicit `--source=CODE,CODE` list built from
+`App\Support\IngestionCadence`, whose three tiers are matched to how fast each signal's
+real-world value actually changes, not grouped for convenience:
+
+- **`DAILY`** — Rainfall, Standing Water, Temperature, and Air Quality (PM2.5/PM10). All four are
+  genuinely volatile day to day, and all feed an index where a stale reading has a real cost
+  (Flood/Malaria Risk from rain and water, Heat Stress from temperature, Respiratory Risk from air
+  quality — a dust event can spike and clear inside a week, so a slower check could miss it).
+- **`WEEKLY`** — Vegetation only. Its underlying satellite product (MODIS MOD13Q1) is itself a
+  16-day composite, so weekly polling already meets or beats its natural update rate.
+- **`ONCE`** — Elevation and Population. Both are effectively static (terrain doesn't move,
+  population is a yearly-at-best figure), so they're pulled once when a region is first activated
+  (`CoveragePreferenceController::triggerFirstIngestion`) and never re-pulled automatically. A
+  recurring schedule for data that structurally can't change would just burn quota against
+  sources with real rate limits for zero benefit — see "Watching for scale problems" below.
+
+A brand-new source needs one line added to whichever tier fits its real update frequency, or it
+simply won't run on a schedule at all (it'll still work fine via a manual `signals:ingest` or
+`--source=` call).
+
+## Watching for scale problems before they're outages
+
+"This is a non-issue at our current scale" is only true until it isn't, and the failure mode is
+usually silent — a provider starts 429/403-rejecting calls with no warning beforehand. The Admin →
+Pipeline Health page's **API capacity** section (`PipelineHealthController::capacitySnapshot()`,
+config in `App\Support\ApiCapacityLimits`) tracks real calls made in the last 24h per source
+against that provider's own *published* free-tier limit — sourced from their docs, not estimated —
+and flags anything past 70% of it with a specific, written recommendation for what to actually do
+(self-host Open-Meteo, request a higher AppEEARS task quota, etc.), not just a bare warning.
+Adding a new source with a known limit means adding one entry to `ApiCapacityLimits::all()`.
 
 If your source needs outbound HTTPS and you're on the same class of dev machine as this project
 (XAMPP/Windows with an unconfigured `curl.cainfo`), use the
@@ -157,10 +182,12 @@ projection, not the newest number that exists anywhere.
 `php artisan population:import path/to/nga_admpop_2020.xlsx` reads that file and fills
 `regions.population` for every matching LGA (773 of 774 — the one gap, Bakassi, is the source's
 own documented caveat, not a matching failure). `PopulationExposureIngestionService` then just
-reads that stored column into `region_signals` on the normal weekly schedule alongside
-Temperature/Vegetation/Elevation — re-fetching an unchanging number is harmless, just slightly
-redundant, same reasoning as Elevation's docblock. When a newer LGA-level dataset is published,
-rerun `population:import` with the new file; nothing else needs to change.
+reads that stored column into `region_signals` — like Elevation, it's in `IngestionCadence::ONCE`,
+pulled only when a region first activates rather than on any recurring schedule, since re-fetching
+an unchanging number on a timer would be pure waste. When a newer LGA-level dataset is published,
+rerun `population:import` with the new file, then re-pull it for existing regions manually
+(`signals:ingest --source=POPULATION_EXPOSURE`) if you want the change to land immediately instead
+of waiting for the next region activation.
 
 ## Activating the trained-model scoring strategy
 

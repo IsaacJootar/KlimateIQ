@@ -7,6 +7,7 @@ use App\Jobs\IngestRegionSignalJob;
 use App\Models\Region;
 use App\Models\RegionSignal;
 use App\Models\SignalType;
+use App\Support\ApiCapacityLimits;
 use App\Support\IngestionWindow;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Artisan;
@@ -58,7 +59,50 @@ class PipelineHealthController extends Controller
             'grid' => $grid,
             'failures' => $failures,
             'queue' => $this->queueSnapshot(),
+            'capacity' => $this->capacitySnapshot(),
         ]);
+    }
+
+    /**
+     * "At your current scale that's a non-issue" only stays true if someone's watching for when
+     * it stops being true. Real ingestions in the last 24h per source, against that source's own
+     * published free-tier limit (App\Support\ApiCapacityLimits) — so a scale problem shows up as
+     * a specific, sourced number crossing a specific, sourced threshold, not a vague feeling.
+     *
+     * ingested_at counts are a proxy for real API calls made, not a perfect one — a request that
+     * failed before writing a row (see Recent Failures) isn't counted here. That undercount is
+     * the safe direction: this could only ever show usage as lower than reality, never higher.
+     *
+     * @return array<int, array{code: string, provider: string, callsLast24h: int, dailyLimit: ?int, percent: ?float, warning: bool, recommendation: string}>
+     */
+    private function capacitySnapshot(): array
+    {
+        $signalTypesByCode = SignalType::query()->get()->keyBy('code');
+
+        $callsLast24h = RegionSignal::query()
+            ->where('ingested_at', '>', now()->subDay())
+            ->get()
+            ->groupBy('signal_type_id')
+            ->map->count();
+
+        return collect(ApiCapacityLimits::all())
+            ->map(function (array $limit, string $code) use ($signalTypesByCode, $callsLast24h) {
+                $signalType = $signalTypesByCode->get($code);
+                $calls = $signalType ? ($callsLast24h->get($signalType->signal_type_id) ?? 0) : 0;
+                $percent = $limit['dailyLimit'] ? round(($calls / $limit['dailyLimit']) * 100, 1) : null;
+
+                return [
+                    'code' => $code,
+                    'provider' => $limit['provider'],
+                    'callsLast24h' => $calls,
+                    'dailyLimit' => $limit['dailyLimit'],
+                    'percent' => $percent,
+                    'warning' => $percent !== null && $percent >= (ApiCapacityLimits::WARNING_THRESHOLD * 100),
+                    'recommendation' => $limit['recommendation'],
+                ];
+            })
+            ->values()
+            ->all();
     }
 
     /**

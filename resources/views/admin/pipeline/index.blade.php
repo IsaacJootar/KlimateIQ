@@ -96,6 +96,53 @@
 
             <div class="section-card overflow-hidden">
                 <div class="section-card-header">
+                    <h3 class="font-semibold text-gray-800 dark:text-gray-200">API capacity</h3>
+                    <span class="text-xs text-slate-500 dark:text-slate-400">
+                        Real calls in the last 24h against each provider's own published free-tier limit
+                    </span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead>
+                            <tr class="text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
+                                <th class="px-4 py-3 whitespace-nowrap">Signal</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Provider</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Calls (24h)</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Daily limit</th>
+                                <th class="px-4 py-3 whitespace-nowrap">Usage</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                            @foreach ($capacity as $row)
+                                <tr>
+                                    <td class="px-4 py-3 text-sm font-medium whitespace-nowrap">{{ $row['code'] }}</td>
+                                    <td class="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">{{ $row['provider'] }}</td>
+                                    <td class="px-4 py-3 text-sm whitespace-nowrap">{{ number_format($row['callsLast24h']) }}</td>
+                                    <td class="px-4 py-3 text-sm whitespace-nowrap">{{ $row['dailyLimit'] ? number_format($row['dailyLimit']) : 'no published cap' }}</td>
+                                    <td class="px-4 py-3 text-sm whitespace-nowrap">
+                                        @if ($row['percent'] !== null)
+                                            <span class="risk-badge {{ $row['warning'] ? 'risk-badge-amber' : 'risk-badge-green' }}">{{ $row['percent'] }}%</span>
+                                        @else
+                                            <span class="risk-badge risk-badge-none">n/a</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                                @if ($row['warning'])
+                                    <tr>
+                                        <td colspan="5" class="px-4 pb-3 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30">
+                                            <strong>{{ $row['code'] }} is above {{ \App\Support\ApiCapacityLimits::WARNING_THRESHOLD * 100 }}% of its known limit:</strong>
+                                            {{ $row['recommendation'] }}
+                                        </td>
+                                    </tr>
+                                @endif
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="section-card overflow-hidden">
+                <div class="section-card-header">
                     <h3 class="font-semibold text-gray-800 dark:text-gray-200">Recent failures</h3>
                 </div>
                 <ul class="divide-y divide-gray-100 dark:divide-gray-700">

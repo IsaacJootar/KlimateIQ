@@ -23,15 +23,24 @@ class SignalCadenceLabelTest extends TestCase
         $this->seed(ReferenceDataSeeder::class);
     }
 
-    public function test_weekly_cadence_signal_helper_classifies_correctly(): void
+    public function test_cadence_helper_classifies_correctly(): void
     {
         $this->assertTrue(IngestionCadence::isWeekly('VEGETATION'));
-        $this->assertTrue(IngestionCadence::isWeekly('TEMPERATURE'));
+        $this->assertFalse(IngestionCadence::isWeekly('TEMPERATURE'));
+        $this->assertFalse(IngestionCadence::isWeekly('AIR_QUALITY_PM25'));
+        $this->assertFalse(IngestionCadence::isWeekly('AIR_QUALITY_PM10'));
         $this->assertFalse(IngestionCadence::isWeekly('RAINFALL'));
         $this->assertFalse(IngestionCadence::isWeekly('STANDING_WATER'));
+        $this->assertFalse(IngestionCadence::isWeekly('ELEVATION'));
+        $this->assertFalse(IngestionCadence::isWeekly('POPULATION_EXPOSURE'));
     }
 
-    public function test_a_missing_weekly_signal_shows_pending_this_weeks_update(): void
+    /**
+     * Heat Stress mixes a daily-tier signal (Temperature) and the one remaining weekly-tier
+     * signal (Vegetation) — a real scenario for checking both labels appear correctly side by
+     * side, not just in isolation.
+     */
+    public function test_a_missing_weekly_signal_shows_pending_while_a_missing_daily_signal_shows_no_data(): void
     {
         $user = User::factory()->create();
         $region = Region::query()->first();
@@ -54,6 +63,7 @@ class SignalCadenceLabelTest extends TestCase
         $response = $this->actingAs($user)->get(route('regions.show', ['region' => $region, 'index' => 'HEAT_STRESS_RISK']));
 
         $response->assertSee("pending this week's update", false);
+        $response->assertSee('<span class="text-gray-400 italic">no data</span>', false);
     }
 
     public function test_a_missing_daily_cadence_signal_still_shows_no_data(): void
