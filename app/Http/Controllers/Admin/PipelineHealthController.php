@@ -169,7 +169,7 @@ class PipelineHealthController extends Controller
         /** @var IngestRegionSignalJob|null $job */
         $job = @unserialize($payload['data']['command'] ?? '');
         $region = $job ? Region::query()->find($job->regionId) : null;
-        $source = $job ? (new $job->serviceClass)->signalTypeCode() : null;
+        $source = $job ? app($job->serviceClass)->signalTypeCode() : null;
 
         return [
             'uuid' => $row->uuid,

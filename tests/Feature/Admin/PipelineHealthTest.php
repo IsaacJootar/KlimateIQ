@@ -50,10 +50,10 @@ class PipelineHealthTest extends TestCase
      * displayName + a genuinely serialized command — so this test exercises the same
      * parsing path the controller uses on real failures, not a shortcut structure.
      */
-    private function insertFailedJob(string $regionId, string $exceptionMessage): string
+    private function insertFailedJob(string $regionId, string $exceptionMessage, string $serviceClass = RainfallIngestionService::class): string
     {
         $uuid = (string) Str::uuid();
-        $job = new IngestRegionSignalJob(RainfallIngestionService::class, (int) $regionId, '2026-07-01', '2026-07-07');
+        $job = new IngestRegionSignalJob($serviceClass, (int) $regionId, '2026-07-01', '2026-07-07');
 
         DB::table('failed_jobs')->insert([
             'uuid' => $uuid,
@@ -188,6 +188,31 @@ class PipelineHealthTest extends TestCase
 
         $this->assertSame(0, DB::table('failed_jobs')->count());
         $this->assertSame(1, DB::table('jobs')->count());
+    }
+
+    /**
+     * Regression: describeFailure() used to instantiate the failed job's service class with a
+     * bare `new`, bypassing Laravel's container — fine for RainfallIngestionService (no
+     * constructor deps at the time it was written), but a fatal ArgumentCountError for any
+     * service that needs one injected, like VegetationIngestionService's AppEearsClient. The
+     * fix is app($class) instead of new $class; this exercises a real dependency-requiring
+     * service so the failures list can't silently crash the whole admin page again.
+     */
+    public function test_a_failure_for_a_service_with_constructor_dependencies_renders_without_crashing(): void
+    {
+        $admin = $this->admin();
+        $region = $this->activateARegion();
+        $this->insertFailedJob(
+            $region->region_id,
+            'RuntimeException: AppEEARS task submission failed with status 403.',
+            \App\Services\Ingestion\VegetationIngestionService::class,
+        );
+
+        $response = $this->actingAs($admin)->get(route('admin.pipeline.index'));
+
+        $response->assertOk();
+        $response->assertSee('VEGETATION');
+        $response->assertSee('AppEEARS task submission failed with status 403.');
     }
 
     public function test_capacity_shows_zero_usage_with_no_recent_calls(): void
