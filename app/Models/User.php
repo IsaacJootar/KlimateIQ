@@ -30,6 +30,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'onboarded_at' => 'datetime',
             'password' => 'hashed',
             'disabled_at' => 'datetime',
         ];
@@ -86,6 +87,11 @@ class User extends Authenticatable
             ['user_id' => $this->id],
             ['default_view' => 'list', 'alert_channels' => ['in_app']]
         );
+    }
+
+    public function sectorSubscriptions(): HasMany
+    {
+        return $this->hasMany(UserSectorSubscription::class, 'user_id');
     }
 
     public function indexSubscriptions(): HasMany

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
@@ -38,5 +39,12 @@ class ScoringIndex extends Model
     public function calibrationParameters(): HasMany
     {
         return $this->hasMany(ScoringCalibrationParameter::class, 'index_id', 'index_id');
+    }
+
+    public function sectors(): BelongsToMany
+    {
+        return $this->belongsToMany(Sector::class, 'index_sector', 'index_id', 'sector_id')
+            ->withPivot('theme', 'sort_order')
+            ->orderBy('sectors.sort_order');
     }
 }
