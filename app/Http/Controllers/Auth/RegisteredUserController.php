@@ -74,6 +74,7 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return redirect(route('dashboard', absolute: false));
+        // Straight into the first-run workspace setup, not the dashboard.
+        return redirect(route('onboarding.show', absolute: false));
     }
 }

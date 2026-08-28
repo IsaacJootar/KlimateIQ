@@ -1,9 +1,9 @@
 <?php
 
+use App\Http\Controllers\Admin\ActionRecommendationController;
 use App\Http\Controllers\Admin\AgencyManagementController;
 use App\Http\Controllers\Admin\ApiTokenController;
 use App\Http\Controllers\Admin\PipelineHealthController;
-use App\Http\Controllers\Admin\ActionRecommendationController;
 use App\Http\Controllers\Admin\PlatformSettingController;
 use App\Http\Controllers\Admin\ScoringConfigController;
 use App\Http\Controllers\Admin\ScoringStrategyController;
@@ -12,6 +12,7 @@ use App\Http\Controllers\AlertController;
 use App\Http\Controllers\CoveragePreferenceController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InAppNotificationController;
+use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\PlatformOverviewController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegionController;
@@ -23,9 +24,17 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('login'));
 
-Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified', 'onboarded'])->name('dashboard');
 
+// First-run workspace setup. Deliberately outside the 'onboarded' gate so a not-yet-onboarded
+// user can actually reach it.
 Route::middleware('auth')->group(function () {
+    Route::get('/onboarding', [OnboardingController::class, 'show'])->name('onboarding.show');
+    Route::post('/onboarding', [OnboardingController::class, 'store'])->name('onboarding.store');
+    Route::post('/onboarding/skip', [OnboardingController::class, 'skip'])->name('onboarding.skip');
+});
+
+Route::middleware(['auth', 'onboarded'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::patch('/profile/notifications', [ProfileController::class, 'updateNotifications'])->name('profile.notifications.update');
@@ -61,11 +70,11 @@ Route::middleware('auth')->group(function () {
     Route::put('/coverage', [CoveragePreferenceController::class, 'update'])->name('coverage.update');
 });
 
-Route::middleware(['auth', 'federal.oversight'])->group(function () {
+Route::middleware(['auth', 'onboarded', 'federal.oversight'])->group(function () {
     Route::get('/overview', [PlatformOverviewController::class, 'index'])->name('overview.index');
 });
 
-Route::middleware(['auth', 'platform.admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'onboarded', 'platform.admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('settings', [PlatformSettingController::class, 'index'])->name('settings.index');
     Route::put('settings', [PlatformSettingController::class, 'update'])->name('settings.update');
 

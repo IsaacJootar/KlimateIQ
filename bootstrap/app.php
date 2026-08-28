@@ -1,9 +1,14 @@
 <?php
 
+use App\Http\Middleware\EnsureAccountIsActive;
+use App\Http\Middleware\EnsureFederalOversight;
+use App\Http\Middleware\EnsureOnboarded;
+use App\Http\Middleware\EnsurePlatformAdmin;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Sentry\Laravel\Integration;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -14,13 +19,14 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'platform.admin' => \App\Http\Middleware\EnsurePlatformAdmin::class,
-            'federal.oversight' => \App\Http\Middleware\EnsureFederalOversight::class,
+            'platform.admin' => EnsurePlatformAdmin::class,
+            'federal.oversight' => EnsureFederalOversight::class,
+            'onboarded' => EnsureOnboarded::class,
         ]);
 
         // Global, not just on auth-gated routes — a disabled account's existing session must
         // be cut off on its very next request, not just blocked from a fresh login.
-        $middleware->web(append: [\App\Http\Middleware\EnsureAccountIsActive::class]);
+        $middleware->web(append: [EnsureAccountIsActive::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
@@ -29,5 +35,5 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Sentry — a no-op until SENTRY_LARAVEL_DSN is set (see config/sentry.php), same
         // "works if configured, silently inert if not" pattern as Resend/OpenAI/Termii.
-        \Sentry\Laravel\Integration::handles($exceptions);
+        Integration::handles($exceptions);
     })->create();

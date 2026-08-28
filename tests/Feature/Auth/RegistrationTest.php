@@ -29,7 +29,8 @@ class RegistrationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        // Straight into the first-run workspace setup wizard, not the dashboard.
+        $response->assertRedirect(route('onboarding.show', absolute: false));
         $this->assertDatabaseHas('users', ['email' => 'test@example.com', 'designation' => 'Researcher', 'state' => 'Lagos']);
         $this->assertDatabaseHas('agencies', ['name' => 'Test Health Agency']);
     }
