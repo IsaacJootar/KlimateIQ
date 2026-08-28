@@ -14,7 +14,7 @@
             @else
                 — no specific index selected, so every index is shown.
             @endif
-            <a href="{{ route('coverage.edit') }}" class="link-nav">Change coverage</a>
+            <a href="{{ route('coverage.edit') }}" class="link-nav">Edit workspace</a>
         </p>
     </x-slot>
 

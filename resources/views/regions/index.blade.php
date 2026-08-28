@@ -15,7 +15,7 @@
                 Your configured regions, color-coded by current risk. Switch the index above to see a different score.
             @else
                 Every region currently active on the platform — you haven't set your own coverage yet.
-                <a href="{{ route('coverage.edit') }}" class="link-nav">Set your coverage &rarr;</a>
+                <a href="{{ route('coverage.edit') }}" class="link-nav">Set up your workspace &rarr;</a>
             @endif
         </p>
     </x-slot>

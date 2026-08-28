@@ -23,7 +23,7 @@
                         {{ __('Regions') }}
                     </x-nav-link>
                     <x-nav-link :href="route('coverage.edit')" :active="request()->routeIs('coverage.*')">
-                        {{ __('My Coverage') }}
+                        {{ __('Workspace') }}
                     </x-nav-link>
                     <x-nav-link :href="route('alerts.index')" :active="request()->routeIs('alerts.*')">
                         {{ __('Alerts') }}
@@ -142,7 +142,7 @@
                 {{ __('Regions') }}
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('coverage.edit')" :active="request()->routeIs('coverage.*')">
-                {{ __('My Coverage') }}
+                {{ __('Workspace') }}
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('alerts.index')" :active="request()->routeIs('alerts.*')">
                 {{ __('Alerts') }}

@@ -2,22 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use App\Jobs\IngestRegionSignalJob;
+use App\Actions\WriteCoverage;
 use App\Models\Region;
 use App\Models\ScoringIndex;
-use App\Models\UserIndexSubscription;
-use App\Models\UserRegionSubscription;
-use App\Support\IngestionWindow;
+use App\Models\Sector;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 /**
- * Lets a user pick which regions and indices they cover — the "one platform, personalized per
- * user" seam. An empty subscription set means "see everything" (the default for a new user);
- * once a user picks specific regions/indices, other pages scope to just those. Always
- * reconfigurable — this never locks a user out of anything, it only changes their default view.
+ * The "Workspace" page — a user picks the sectors that match their job, refines the indices
+ * under them, and (optionally) narrows the regions they watch. An empty selection means "see
+ * everything" (the default for a new user); once a user picks specifics, other pages scope to
+ * just those. Always reconfigurable — this never locks a user out of anything.
+ *
+ * All persistence goes through App\Actions\WriteCoverage, shared with the onboarding wizard.
  */
 class CoveragePreferenceController extends Controller
 {
@@ -26,75 +26,44 @@ class CoveragePreferenceController extends Controller
         $user = Auth::user();
 
         return view('coverage.edit', [
+            'sectors' => Sector::query()->with('indices')->orderBy('sort_order')->get(),
             'regions' => Region::query()->orderBy('name')->get(),
-            'indices' => ScoringIndex::all(),
+            'indices' => ScoringIndex::query()->orderBy('name')->get(),
+            'subscribedSectorIds' => $user->sectorSubscriptions()->pluck('sector_id')->all(),
             'subscribedRegionIds' => $user->regionSubscriptions()->pluck('region_id')->all(),
             'subscribedIndexIds' => $user->indexSubscriptions()->pluck('index_id')->all(),
         ]);
     }
 
-    public function update(Request $request): RedirectResponse
+    public function update(Request $request, WriteCoverage $writeCoverage): RedirectResponse
     {
         $validated = $request->validate([
-            'region_scope' => ['required', 'in:all,specific'],
-            'region_ids' => ['nullable', 'array'],
-            'region_ids.*' => ['exists:regions,region_id'],
+            'sector_ids' => ['nullable', 'array'],
+            'sector_ids.*' => ['integer', 'exists:sectors,sector_id'],
             'index_scope' => ['required', 'in:all,specific'],
             'index_ids' => ['nullable', 'array'],
             'index_ids.*' => ['exists:indices,index_id'],
+            'region_scope' => ['required', 'in:all,specific'],
+            'region_ids' => ['nullable', 'array'],
+            'region_ids.*' => ['exists:regions,region_id'],
         ]);
 
-        $userId = Auth::id();
+        $sectorIds = $validated['sector_ids'] ?? [];
 
-        UserRegionSubscription::where('user_id', $userId)->delete();
-        if ($validated['region_scope'] === 'specific') {
-            $regionIds = $validated['region_ids'] ?? [];
+        // "All indices" = no filter. "Only the ones I pick" uses the ticked boxes, or — if a
+        // sector was picked but nothing was refined — every index in those sectors.
+        $indexIds = $validated['index_scope'] === 'all'
+            ? []
+            : (($validated['index_ids'] ?? []) ?: WriteCoverage::indicesForSectors($sectorIds));
 
-            // Dormant regions among the ones being picked — nobody has ever pulled data
-            // for them and nobody else is currently watching them either. Must be checked
-            // before creating the subscription rows below, or every region would look
-            // "already watched" by the time we check.
-            $newlyActivated = Region::query()
-                ->whereIn('region_id', $regionIds)
-                ->whereDoesntHave('signals')
-                ->whereDoesntHave('subscribers')
-                ->get();
+        $writeCoverage(
+            Auth::user(),
+            $sectorIds,
+            $indexIds,
+            $validated['region_scope'],
+            $validated['region_ids'] ?? [],
+        );
 
-            foreach ($regionIds as $regionId) {
-                UserRegionSubscription::create(['user_id' => $userId, 'region_id' => $regionId]);
-            }
-
-            foreach ($newlyActivated as $region) {
-                $this->triggerFirstIngestion($region);
-            }
-        }
-
-        UserIndexSubscription::where('user_id', $userId)->delete();
-        if ($validated['index_scope'] === 'specific') {
-            foreach ($validated['index_ids'] ?? [] as $indexId) {
-                UserIndexSubscription::create(['user_id' => $userId, 'index_id' => $indexId, 'wants_alerts' => true]);
-            }
-        }
-
-        return back()->with('status', 'Coverage updated.');
-    }
-
-    /**
-     * A region going from dormant to watched shouldn't leave the user staring at "no
-     * data" for up to a week — pull its first real data right away, on top of it now
-     * joining the normal weekly cycle automatically (see IngestSignalsCommand).
-     */
-    private function triggerFirstIngestion(Region $region): void
-    {
-        [$periodStart, $periodEnd] = IngestionWindow::lastComplete();
-
-        foreach (config('ingestion.sources', []) as $serviceClass) {
-            IngestRegionSignalJob::dispatch(
-                $serviceClass,
-                $region->region_id,
-                $periodStart->toDateString(),
-                $periodEnd->toDateString(),
-            );
-        }
+        return back()->with('status', 'Workspace updated.');
     }
 }
