@@ -1,6 +1,6 @@
 # KlimateIQ — Climate-Health Intelligence Platform
 
-Built for NigComSat Accelerator 3.0, Track C: Public Health Intelligence.
+Winner of NigComSat Accelerator 3.0, Track C: Public Health Intelligence.
 
 **Live**: [klimateiq.org](https://klimateiq.org) (product site) · [app.klimateiq.org](https://app.klimateiq.org) (the platform itself, deployed on AWS — EC2 + managed RDS Postgres)
 
@@ -218,6 +218,11 @@ Uses a dedicated `gano_ai_test` Postgres database (see `phpunit.xml`) rather tha
 migrations use Postgres-specific constraints.
 
 ## Roadmap
+
+Where the platform goes next — sector expansion (agriculture, disaster response, water,
+climate planning), the additional indices each sector can carry, and the engineering for
+each — is laid out in [`docs/ROADMAP_SECTORS.md`](docs/ROADMAP_SECTORS.md) and its code-level
+companion [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md).
 
 Two things are engineering estimates today, not finished claims — stated plainly rather than
 buried, because that's consistent with how the rest of the product works:
