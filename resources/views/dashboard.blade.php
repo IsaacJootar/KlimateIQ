@@ -5,14 +5,14 @@
         </h2>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
             @if ($hasCoverage)
-                Your coverage, at a glance
+                Your workspace, at a glance
             @else
-                Showing every region currently active on the platform — you haven't scoped your own region coverage yet
+                Showing every region currently active on the platform — you haven't narrowed your regions yet
             @endif
             @if ($hasIndexCoverage)
                 — configured for {{ $availableIndices->pluck('name')->join(', ', ', and ') }}.
             @else
-                — no specific index selected, so every index is shown.
+                — no sectors picked, so every index is shown.
             @endif
             <a href="{{ route('coverage.edit') }}" class="link-nav">Edit workspace</a>
         </p>
