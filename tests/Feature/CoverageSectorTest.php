@@ -7,15 +7,16 @@ use App\Models\Region;
 use App\Models\ScoringIndex;
 use App\Models\Sector;
 use App\Models\User;
+use App\Support\IndexCoverage;
 use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 /**
- * M2 of the sector-first workspace: the Workspace page persists sectors and expands them to
- * the underlying index subscriptions the rest of the app already understands. All writes go
- * through App\Actions\WriteCoverage.
+ * The sector-first workspace. Sectors are the primary control: a user's sectors define which
+ * indices their dashboard shows (App\Support\IndexCoverage). An explicit per-index refinement
+ * only narrows within the sector set. All writes go through App\Actions\WriteCoverage.
  */
 class CoverageSectorTest extends TestCase
 {
@@ -28,18 +29,26 @@ class CoverageSectorTest extends TestCase
         $this->seed(ReferenceDataSeeder::class);
     }
 
-    private function idsFor(string $model, array $codes): array
+    private function sectorIds(array $codes): array
     {
-        return $model::query()->whereIn('code', $codes)->pluck($model === Sector::class ? 'sector_id' : 'index_id')->all();
+        return Sector::query()->whereIn('code', $codes)->pluck('sector_id')->all();
     }
 
-    private function update(User $user, array $payload): void
+    private function indexIds(array $codes): array
+    {
+        return ScoringIndex::query()->whereIn('code', $codes)->pluck('index_id')->all();
+    }
+
+    /** @return array<string> the codes of the indices this user's dashboard would show */
+    private function visibleIndexCodes(User $user): array
+    {
+        return IndexCoverage::resolve($user->fresh(), null)['available']->pluck('code')->sort()->values()->all();
+    }
+
+    private function saveWorkspace(User $user, array $payload): void
     {
         $this->actingAs($user)
-            ->put(route('coverage.update'), array_merge([
-                'index_scope' => 'specific',
-                'region_scope' => 'all',
-            ], $payload))
+            ->put(route('coverage.update'), array_merge(['region_scope' => 'all'], $payload))
             ->assertRedirect();
     }
 
@@ -65,62 +74,88 @@ class CoverageSectorTest extends TestCase
     public function test_the_dashboard_nudge_disappears_once_a_sector_is_picked(): void
     {
         $user = User::factory()->create();
-        $this->update($user, [
-            'sector_ids' => $this->idsFor(Sector::class, ['PUBLIC_HEALTH']),
-            'index_ids' => [],
-        ]);
+        $this->saveWorkspace($user, ['sector_ids' => $this->sectorIds(['PUBLIC_HEALTH'])]);
 
         $this->actingAs($user)->get(route('dashboard'))
             ->assertOk()
             ->assertDontSee('Focus your dashboard on what you monitor');
     }
 
-    public function test_picking_a_sector_persists_it_and_expands_to_its_indices(): void
+    public function test_a_users_sectors_define_which_indices_the_dashboard_shows(): void
     {
         $user = User::factory()->create();
 
-        $this->update($user, [
-            'sector_ids' => $this->idsFor(Sector::class, ['PUBLIC_HEALTH']),
-            // no index_ids sent -> WriteCoverage derives them from the sector
-            'index_ids' => [],
+        $this->saveWorkspace($user, [
+            'sector_ids' => $this->sectorIds(['PUBLIC_HEALTH']),
+            'index_ids' => $this->indexIds(['MALARIA_RISK', 'RESPIRATORY_RISK', 'HEAT_STRESS_RISK']),
         ]);
 
         $this->assertSame(['PUBLIC_HEALTH'], $user->sectorSubscriptions()->with('sector')->get()->pluck('sector.code')->all());
+        // Kept everything the sector contains -> no refinement stored, sectors drive.
+        $this->assertSame(0, $user->indexSubscriptions()->count());
         $this->assertEqualsCanonicalizing(
             ['MALARIA_RISK', 'RESPIRATORY_RISK', 'HEAT_STRESS_RISK'],
-            $user->indexSubscriptions()->with('index')->get()->pluck('index.code')->all(),
+            $this->visibleIndexCodes($user),
         );
     }
 
-    public function test_an_index_can_be_unticked_within_a_picked_sector(): void
+    public function test_a_new_index_added_to_a_followed_sector_appears_automatically(): void
     {
         $user = User::factory()->create();
-        $keep = $this->idsFor(ScoringIndex::class, ['MALARIA_RISK', 'HEAT_STRESS_RISK']);
+        $this->saveWorkspace($user, ['sector_ids' => $this->sectorIds(['AGRICULTURE'])]);
 
-        $this->update($user, [
-            'sector_ids' => $this->idsFor(Sector::class, ['PUBLIC_HEALTH']),
-            'index_ids' => $keep,
+        $this->assertSame(['DROUGHT_RISK'], $this->visibleIndexCodes($user));
+
+        // A future roadmap index attached to Agriculture — no action from the user.
+        $newIndex = ScoringIndex::query()->create(['code' => 'AGRI_STRESS', 'name' => 'Agriculture Stress Index']);
+        Sector::query()->where('code', 'AGRICULTURE')->firstOrFail()->indices()->attach($newIndex->index_id);
+
+        $this->assertEqualsCanonicalizing(['DROUGHT_RISK', 'AGRI_STRESS'], $this->visibleIndexCodes($user));
+    }
+
+    public function test_hiding_an_index_within_a_sector_persists_as_a_refinement(): void
+    {
+        $user = User::factory()->create();
+
+        $this->saveWorkspace($user, [
+            'sector_ids' => $this->sectorIds(['PUBLIC_HEALTH']),
+            // dropped RESPIRATORY_RISK
+            'index_ids' => $this->indexIds(['MALARIA_RISK', 'HEAT_STRESS_RISK']),
         ]);
 
         $this->assertEqualsCanonicalizing(
             ['MALARIA_RISK', 'HEAT_STRESS_RISK'],
             $user->indexSubscriptions()->with('index')->get()->pluck('index.code')->all(),
         );
+        $this->assertEqualsCanonicalizing(['MALARIA_RISK', 'HEAT_STRESS_RISK'], $this->visibleIndexCodes($user));
     }
 
-    public function test_index_scope_all_means_no_index_filter_even_with_a_sector_picked(): void
+    public function test_a_refinement_can_never_widen_beyond_the_sector_set(): void
     {
         $user = User::factory()->create();
 
-        $this->update($user, [
-            'index_scope' => 'all',
-            'sector_ids' => $this->idsFor(Sector::class, ['AGRICULTURE']),
-            'index_ids' => $this->idsFor(ScoringIndex::class, ['DROUGHT_RISK']),
+        $this->saveWorkspace($user, [
+            'sector_ids' => $this->sectorIds(['AGRICULTURE']),
+            // FLOOD_RISK isn't in Agriculture — it must be ignored
+            'index_ids' => $this->indexIds(['DROUGHT_RISK', 'FLOOD_RISK']),
         ]);
 
-        // Sector intent is recorded, but effective index coverage is empty = "see everything".
-        $this->assertSame(['AGRICULTURE'], $user->sectorSubscriptions()->with('sector')->get()->pluck('sector.code')->all());
+        $this->assertSame(['DROUGHT_RISK'], $this->visibleIndexCodes($user));
+    }
+
+    public function test_clearing_all_sectors_returns_to_see_everything(): void
+    {
+        $user = User::factory()->create();
+        $this->saveWorkspace($user, ['sector_ids' => $this->sectorIds(['PUBLIC_HEALTH'])]);
+
+        $this->saveWorkspace($user, ['sector_ids' => []]);
+
+        $this->assertSame(0, $user->sectorSubscriptions()->count());
         $this->assertSame(0, $user->indexSubscriptions()->count());
+        $this->assertSame(
+            ScoringIndex::query()->count(),
+            IndexCoverage::resolve($user->fresh(), null)['available']->count(),
+        );
     }
 
     public function test_narrowing_to_a_dormant_region_activates_it_and_triggers_first_ingestion(): void
@@ -130,9 +165,8 @@ class CoverageSectorTest extends TestCase
         $user = User::factory()->create();
         $dormant = Region::query()->firstOrFail();
 
-        $this->update($user, [
-            'sector_ids' => $this->idsFor(Sector::class, ['PUBLIC_HEALTH']),
-            'index_ids' => [],
+        $this->saveWorkspace($user, [
+            'sector_ids' => $this->sectorIds(['PUBLIC_HEALTH']),
             'region_scope' => 'specific',
             'region_ids' => [$dormant->region_id],
         ]);
@@ -147,11 +181,7 @@ class CoverageSectorTest extends TestCase
         $region = Region::query()->firstOrFail();
         $user->regionSubscriptions()->create(['region_id' => $region->region_id]);
 
-        $this->update($user, [
-            'sector_ids' => [],
-            'index_ids' => [],
-            'region_scope' => 'all',
-        ]);
+        $this->saveWorkspace($user, ['sector_ids' => [], 'region_scope' => 'all']);
 
         $this->assertSame(0, $user->regionSubscriptions()->count());
     }

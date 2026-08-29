@@ -12,10 +12,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 /**
- * The "Workspace" page — a user picks the sectors that match their job, refines the indices
- * under them, and (optionally) narrows the regions they watch. An empty selection means "see
- * everything" (the default for a new user); once a user picks specifics, other pages scope to
- * just those. Always reconfigurable — this never locks a user out of anything.
+ * The "Workspace" page. Sectors are the primary control: a user picks the sectors they monitor
+ * and their dashboard + alerts scope to every risk index in those sectors (see
+ * App\Support\IndexCoverage). Optionally they can hide a few of those indices — a refinement
+ * that only ever narrows within the sector set. Regions are an independent, optional narrowing.
+ * An empty selection means "see everything". Always reconfigurable.
  *
  * All persistence goes through App\Actions\WriteCoverage, shared with the onboarding wizard.
  */
@@ -27,11 +28,12 @@ class CoveragePreferenceController extends Controller
 
         return view('coverage.edit', [
             'sectors' => Sector::query()->with('indices')->orderBy('sort_order')->get(),
-            'regions' => Region::query()->orderBy('name')->get(),
             'indices' => ScoringIndex::query()->orderBy('name')->get(),
+            'regions' => Region::query()->orderBy('name')->get(),
             'subscribedSectorIds' => $user->sectorSubscriptions()->pluck('sector_id')->all(),
             'subscribedRegionIds' => $user->regionSubscriptions()->pluck('region_id')->all(),
-            'subscribedIndexIds' => $user->indexSubscriptions()->pluck('index_id')->all(),
+            // The stored refinement, if any — an explicit "keep only these" within the sectors.
+            'refinedIndexIds' => $user->indexSubscriptions()->pluck('index_id')->all(),
         ]);
     }
 
@@ -40,7 +42,6 @@ class CoveragePreferenceController extends Controller
         $validated = $request->validate([
             'sector_ids' => ['nullable', 'array'],
             'sector_ids.*' => ['integer', 'exists:sectors,sector_id'],
-            'index_scope' => ['required', 'in:all,specific'],
             'index_ids' => ['nullable', 'array'],
             'index_ids.*' => ['exists:indices,index_id'],
             'region_scope' => ['required', 'in:all,specific'],
@@ -50,16 +51,12 @@ class CoveragePreferenceController extends Controller
 
         $sectorIds = $validated['sector_ids'] ?? [];
 
-        // "All indices" = no filter. "Only the ones I pick" uses the ticked boxes, or — if a
-        // sector was picked but nothing was refined — every index in those sectors.
-        $indexIds = $validated['index_scope'] === 'all'
-            ? []
-            : (($validated['index_ids'] ?? []) ?: WriteCoverage::indicesForSectors($sectorIds));
-
         $writeCoverage(
             Auth::user(),
             $sectorIds,
-            $indexIds,
+            // The ticked index boxes are the "keep" set; refinementFor() stores nothing unless
+            // it's a genuine narrowing within the sectors.
+            WriteCoverage::refinementFor($sectorIds, $validated['index_ids'] ?? []),
             $validated['region_scope'],
             $validated['region_ids'] ?? [],
         );

@@ -42,6 +42,40 @@ class WriteCoverage
     }
 
     /**
+     * Turn a set of ticked index boxes into what should actually be stored as the refinement.
+     *
+     * Sector-primary rule: if the user kept every index their sectors contain (or touched
+     * nothing), store NO refinement — the sectors drive coverage and future sector additions
+     * flow through automatically. Only a genuine narrowing is persisted, and only within the
+     * sector set.
+     *
+     * @param  array<int>  $sectorIds
+     * @param  array<int>  $keptIndexIds  the boxes still ticked
+     * @return array<int>
+     */
+    public static function refinementFor(array $sectorIds, array $keptIndexIds): array
+    {
+        $kept = array_values(array_unique(array_map('intval', $keptIndexIds)));
+
+        if ($sectorIds === []) {
+            // No sectors: the ticked list is the coverage as-is (legacy behaviour).
+            return $kept;
+        }
+
+        $sectorIndexIds = self::indicesForSectors($sectorIds);
+        sort($sectorIndexIds);
+        $keptInSector = array_values(array_intersect($kept, $sectorIndexIds));
+        sort($keptInSector);
+
+        // Kept everything (or nothing meaningful) → let the sectors drive, store no refinement.
+        if ($keptInSector === [] || $keptInSector === $sectorIndexIds) {
+            return [];
+        }
+
+        return $keptInSector;
+    }
+
+    /**
      * Every index_id contained in the given sectors, de-duplicated. Used by callers that want
      * "picked a sector, didn't refine" to mean "all of that sector's indices".
      *

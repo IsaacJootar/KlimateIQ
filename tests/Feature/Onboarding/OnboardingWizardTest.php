@@ -4,8 +4,10 @@ namespace Tests\Feature\Onboarding;
 
 use App\Jobs\IngestRegionSignalJob;
 use App\Models\Region;
+use App\Models\ScoringIndex;
 use App\Models\Sector;
 use App\Models\User;
+use App\Support\IndexCoverage;
 use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
@@ -39,11 +41,30 @@ class OnboardingWizardTest extends TestCase
         $user->refresh();
         $this->assertNotNull($user->onboarded_at);
         $this->assertSame(['PUBLIC_HEALTH'], $user->sectorSubscriptions()->with('sector')->get()->pluck('sector.code')->all());
+        // No refinement stored — the sector drives coverage.
+        $this->assertSame(0, $user->indexSubscriptions()->count());
         $this->assertEqualsCanonicalizing(
             ['MALARIA_RISK', 'RESPIRATORY_RISK', 'HEAT_STRESS_RISK'],
-            $user->indexSubscriptions()->with('index')->get()->pluck('index.code')->all(),
+            IndexCoverage::resolve($user, null)['available']->pluck('code')->all(),
         );
         $this->assertSame(0, $user->regionSubscriptions()->count());
+    }
+
+    public function test_unticking_an_index_in_the_wizard_is_kept_as_a_refinement(): void
+    {
+        $user = User::factory()->unonboarded()->create();
+        $keep = ScoringIndex::query()->whereIn('code', ['MALARIA_RISK', 'HEAT_STRESS_RISK'])->pluck('index_id')->all();
+
+        $this->actingAs($user)->post(route('onboarding.store'), [
+            'sector_ids' => $this->sectorIds(['PUBLIC_HEALTH']),
+            'index_ids' => $keep,
+            'region_scope' => 'all',
+        ])->assertRedirect(route('dashboard'));
+
+        $this->assertEqualsCanonicalizing(
+            ['MALARIA_RISK', 'HEAT_STRESS_RISK'],
+            IndexCoverage::resolve($user->fresh(), null)['available']->pluck('code')->all(),
+        );
     }
 
     public function test_the_state_region_option_resolves_to_that_states_lgas(): void

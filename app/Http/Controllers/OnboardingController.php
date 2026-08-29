@@ -47,8 +47,10 @@ class OnboardingController extends Controller
 
         $sectorIds = $validated['sector_ids'] ?? [];
 
-        // Ticked indices, or — if a sector was picked but not refined — all of its indices.
-        $indexIds = ($validated['index_ids'] ?? []) ?: WriteCoverage::indicesForSectors($sectorIds);
+        // Step 2's boxes are the "keep" set. If the user left every index of their sectors
+        // ticked, nothing is stored and the sectors drive coverage; only a real narrowing is
+        // persisted.
+        $indexIds = WriteCoverage::refinementFor($sectorIds, $validated['index_ids'] ?? []);
 
         [$regionScope, $regionIds] = match ($validated['region_scope']) {
             'state' => ['specific', $this->regionIdsForState(Auth::user()->state)],

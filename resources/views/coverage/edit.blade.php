@@ -1,10 +1,21 @@
+@php
+    use Illuminate\Support\Js;
+
+    $sectorIndexMap = $sectors->mapWithKeys(fn ($s) => [
+        (string) $s->sector_id => $s->indices->pluck('index_id')->map('strval')->values(),
+    ]);
+    $indexNames = $indices->mapWithKeys(fn ($i) => [
+        (string) $i->index_id => str_replace(' Index', '', $i->name),
+    ]);
+@endphp
+
 <x-app-layout title="Workspace">
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
             {{ __('Workspace') }}
         </h2>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Start with the sectors you monitor — that picks the risk indices under them. Then narrow the
+            Pick the sectors you monitor — your dashboard and alerts cover every risk index in them. Narrow the
             regions if you want. Change any of this whenever you like.
         </p>
     </x-slot>
@@ -13,18 +24,28 @@
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <form method="POST" action="{{ route('coverage.update') }}"
                   x-data="{
-                      sectorIds: {{ Illuminate\Support\Js::from(array_map('strval', $subscribedSectorIds)) }},
-                      indexIds: {{ Illuminate\Support\Js::from(array_map('strval', $subscribedIndexIds)) }},
-                      indexScope: '{{ $subscribedIndexIds ? 'specific' : 'all' }}',
+                      sectorIds: {{ Js::from(array_map('strval', $subscribedSectorIds)) }},
+                      keptIndexIds: [],
+                      refineOpen: {{ $refinedIndexIds ? 'true' : 'false' }},
                       regionScope: '{{ $subscribedRegionIds ? 'specific' : 'all' }}',
                       regionSearch: '',
-                      onSectorChange(event, indexIds) {
-                          if (event.target.checked) {
-                              this.indexScope = 'specific';
-                              indexIds.forEach(id => {
-                                  if (! this.indexIds.includes(String(id))) this.indexIds.push(String(id));
-                              });
-                          }
+                      sectorIndexMap: {{ Js::from($sectorIndexMap) }},
+                      indexNames: {{ Js::from($indexNames) }},
+                      init() {
+                          const stored = {{ Js::from(array_map('strval', $refinedIndexIds)) }};
+                          this.keptIndexIds = stored.length ? stored : this.inScopeIndexIds();
+                          this.$watch('sectorIds', () => { this.keptIndexIds = this.inScopeIndexIds(); });
+                      },
+                      inScopeIndexIds() {
+                          const s = new Set();
+                          this.sectorIds.forEach(id => (this.sectorIndexMap[id] || []).forEach(ix => s.add(ix)));
+                          return [...s];
+                      },
+                      indexInScope(id) {
+                          return this.inScopeIndexIds().includes(String(id));
+                      },
+                      includedNames() {
+                          return this.inScopeIndexIds().map(id => this.indexNames[id]).filter(Boolean).sort();
                       },
                       matchesSearch(haystack) {
                           return this.regionSearch === '' || haystack.includes(this.regionSearch.toLowerCase());
@@ -34,14 +55,12 @@
                 @csrf
                 @method('PUT')
 
-                <x-form-section title="Sectors" description="What do you monitor? Picking a sector ticks its risk indices below — you can fine-tune from there.">
+                <x-form-section title="Sectors" description="What do you monitor? Your dashboard and alerts scope to every risk index in the sectors you pick.">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         @foreach ($sectors as $sector)
                             <label class="flex gap-3 rounded-lg border border-slate-200 dark:border-slate-700 p-3 cursor-pointer hover:border-primary/60 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
                                 <input type="checkbox" name="sector_ids[]" value="{{ $sector->sector_id }}"
-                                       class="mt-0.5 rounded"
-                                       x-model="sectorIds"
-                                       @change="onSectorChange($event, {{ Illuminate\Support\Js::from($sector->indices->pluck('index_id')) }})">
+                                       class="mt-0.5 rounded" x-model="sectorIds">
                                 <span class="text-sm">
                                     <span class="font-semibold text-slate-900 dark:text-white block">{{ $sector->name }}</span>
                                     <span class="text-slate-500 dark:text-slate-400">{{ $sector->description }}</span>
@@ -54,24 +73,27 @@
                     </div>
                 </x-form-section>
 
-                <x-form-section title="Risk indices" description="The specific indices your dashboard and alerts will use. Leave on “All” to always see every index, including new ones as they’re added.">
-                    <div class="space-y-2">
-                        <label class="flex items-center gap-2 text-sm">
-                            <input type="radio" name="index_scope" value="all" x-model="indexScope">
-                            All indices <span class="text-slate-400">— no filtering</span>
-                        </label>
-                        <label class="flex items-center gap-2 text-sm">
-                            <input type="radio" name="index_scope" value="specific" x-model="indexScope">
-                            Only the indices I pick
-                        </label>
-                    </div>
-                    <div x-show="indexScope === 'specific'" x-cloak class="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-6">
+                <x-form-section title="Risk indices">
+                    <p class="text-sm text-slate-600 dark:text-slate-300" x-show="sectorIds.length">
+                        Your dashboard covers:
+                        <span class="font-medium text-slate-900 dark:text-white" x-text="includedNames().join(', ')"></span>.
+                        New indices added to these sectors show up automatically.
+                    </p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400" x-show="! sectorIds.length" x-cloak>
+                        No sectors picked — you’ll see every risk index until you choose one above.
+                    </p>
+
+                    <button type="button" x-show="sectorIds.length" x-cloak
+                            class="mt-1 text-sm font-medium text-primary hover:underline"
+                            @click="refineOpen = ! refineOpen"
+                            x-text="refineOpen ? 'Done hiding' : 'Hide some of these'"></button>
+
+                    <div x-show="refineOpen && sectorIds.length" x-cloak class="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-1 pt-1">
                         @foreach ($indices as $idx)
-                            <label class="flex items-center gap-2 text-sm">
+                            <label class="flex items-center gap-2 text-sm" x-show="indexInScope({{ $idx->index_id }})" x-cloak>
                                 <input type="checkbox" name="index_ids[]" value="{{ $idx->index_id }}" class="rounded"
-                                       x-model="indexIds"
-                                       :disabled="indexScope !== 'specific'">
-                                {{ $idx->name }}
+                                       x-model="keptIndexIds" :disabled="! indexInScope({{ $idx->index_id }})">
+                                {{ str_replace(' Index', '', $idx->name) }}
                             </label>
                         @endforeach
                     </div>
