@@ -29,9 +29,9 @@
                         <circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>
                     </svg>
                     <div class="flex-1 text-sm">
-                        <p class="font-semibold text-slate-900 dark:text-white">Focus your dashboard on what you work on</p>
+                        <p class="font-semibold text-slate-900 dark:text-white">Focus your dashboard on what you monitor</p>
                         <p class="mt-0.5 text-slate-600 dark:text-slate-300">
-                            Pick your sectors — public health, agriculture, emergency response — and KlimateIQ will scope your dashboard and alerts to the risks that matter to your role. Takes a minute, change it anytime.
+                            Pick your sectors — public health, agriculture, emergency response — and KlimateIQ will focus your dashboard and alerts on the risks you monitor. Takes a minute, change it anytime.
                         </p>
                         <a href="{{ route('coverage.edit') }}" class="mt-2 inline-block font-semibold text-primary hover:underline">Set up your workspace &rarr;</a>
                     </div>

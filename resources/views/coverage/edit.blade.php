@@ -4,7 +4,7 @@
             {{ __('Workspace') }}
         </h2>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Start with the sectors that match your work — that picks the risk indices under them. Then narrow the
+            Start with the sectors you monitor — that picks the risk indices under them. Then narrow the
             regions if you want. Change any of this whenever you like.
         </p>
     </x-slot>
@@ -34,7 +34,7 @@
                 @csrf
                 @method('PUT')
 
-                <x-form-section title="Sectors" description="What do you work on? Picking a sector ticks its risk indices below — you can fine-tune from there.">
+                <x-form-section title="Sectors" description="What do you monitor? Picking a sector ticks its risk indices below — you can fine-tune from there.">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         @foreach ($sectors as $sector)
                             <label class="flex gap-3 rounded-lg border border-slate-200 dark:border-slate-700 p-3 cursor-pointer hover:border-primary/60 has-[:checked]:border-primary has-[:checked]:bg-primary/5">

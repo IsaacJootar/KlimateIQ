@@ -34,9 +34,9 @@
     >
         <p class="text-sm font-semibold text-primary">Set up your workspace</p>
         <h1 class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
-            <span x-show="step === 1">What do you work on?</span>
-            <span x-show="step === 2" x-cloak>Which risks matter most?</span>
-            <span x-show="step === 3" x-cloak>Which areas do you cover?</span>
+            <span x-show="step === 1">What do you monitor?</span>
+            <span x-show="step === 2" x-cloak>Which risks do you monitor?</span>
+            <span x-show="step === 3" x-cloak>Which areas do you monitor?</span>
         </h1>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Step <span x-text="step"></span> of 3 — you can change all of this later from the Workspace page.

@@ -59,7 +59,7 @@ class CoverageSectorTest extends TestCase
 
         $this->actingAs($user)->get(route('dashboard'))
             ->assertOk()
-            ->assertSee('Focus your dashboard on what you work on');
+            ->assertSee('Focus your dashboard on what you monitor');
     }
 
     public function test_the_dashboard_nudge_disappears_once_a_sector_is_picked(): void
@@ -72,7 +72,7 @@ class CoverageSectorTest extends TestCase
 
         $this->actingAs($user)->get(route('dashboard'))
             ->assertOk()
-            ->assertDontSee('Focus your dashboard on what you work on');
+            ->assertDontSee('Focus your dashboard on what you monitor');
     }
 
     public function test_picking_a_sector_persists_it_and_expands_to_its_indices(): void
