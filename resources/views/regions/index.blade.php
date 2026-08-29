@@ -12,7 +12,7 @@
         </h2>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
             @if ($hasCoverage)
-                Your configured regions, color-coded by current risk. Switch the index above to see a different score.
+                Your configured regions, color-coded by current risk. Switch the index below to see a different score.
             @else
                 Every region currently active on the platform — you haven't set your own coverage yet.
                 <a href="{{ route('coverage.edit') }}" class="link-nav">Set up your workspace &rarr;</a>
