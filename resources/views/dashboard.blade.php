@@ -21,6 +21,28 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
+            @if ($needsSectorSetup)
+                <div x-data="{ show: (localStorage.getItem('kiq_sector_nudge_dismissed') !== '1') }"
+                     x-show="show" x-cloak
+                     class="flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 dark:bg-primary/10 p-4">
+                    <svg class="mt-0.5 h-5 w-5 shrink-0 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>
+                    </svg>
+                    <div class="flex-1 text-sm">
+                        <p class="font-semibold text-slate-900 dark:text-white">Focus your dashboard on what you work on</p>
+                        <p class="mt-0.5 text-slate-600 dark:text-slate-300">
+                            Pick your sectors — public health, agriculture, emergency response — and KlimateIQ will scope your dashboard and alerts to the risks that matter to your role. Takes a minute, change it anytime.
+                        </p>
+                        <a href="{{ route('coverage.edit') }}" class="mt-2 inline-block font-semibold text-primary hover:underline">Set up your workspace &rarr;</a>
+                    </div>
+                    <button type="button" aria-label="Dismiss"
+                            @click="show = false; localStorage.setItem('kiq_sector_nudge_dismissed', '1')"
+                            class="shrink-0 rounded p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                    </button>
+                </div>
+            @endif
+
             @if ($availableIndices->count() > 1)
                 <div class="flex flex-wrap gap-2">
                     @foreach ($availableIndices as $idx)

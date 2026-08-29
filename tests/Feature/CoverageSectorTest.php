@@ -53,6 +53,28 @@ class CoverageSectorTest extends TestCase
             ->assertSee('Agriculture & Food Security');
     }
 
+    public function test_the_dashboard_nudges_users_who_have_no_sectors(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Focus your dashboard on what you work on');
+    }
+
+    public function test_the_dashboard_nudge_disappears_once_a_sector_is_picked(): void
+    {
+        $user = User::factory()->create();
+        $this->update($user, [
+            'sector_ids' => $this->idsFor(Sector::class, ['PUBLIC_HEALTH']),
+            'index_ids' => [],
+        ]);
+
+        $this->actingAs($user)->get(route('dashboard'))
+            ->assertOk()
+            ->assertDontSee('Focus your dashboard on what you work on');
+    }
+
     public function test_picking_a_sector_persists_it_and_expands_to_its_indices(): void
     {
         $user = User::factory()->create();

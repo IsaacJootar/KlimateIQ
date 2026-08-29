@@ -101,6 +101,9 @@ class DashboardController extends Controller
         return view('dashboard', [
             'hasCoverage' => $regionIds->isNotEmpty(),
             'hasIndexCoverage' => $user->indexSubscriptions()->exists(),
+            // A soft nudge for anyone who never picked sectors — existing users from before
+            // the sector model, and new users who skipped the setup wizard.
+            'needsSectorSetup' => ! $user->sectorSubscriptions()->exists(),
             'regionsCount' => $regions->count(),
             'highRiskCount' => $highRiskCount,
             'openAlertsCount' => $openAlertsCount,
