@@ -43,8 +43,8 @@ class SectorSeeder extends Seeder
             [
                 'code' => 'EMERGENCY_RESPONSE',
                 'name' => 'Emergency Response & Infrastructure',
-                'description' => 'Forward signal on which areas are closest to flooding or dangerous heat.',
-                'indices' => ['FLOOD_RISK', 'HEAT_STRESS_RISK'],
+                'description' => 'Forward signal on which areas are closest to flooding, dangerous heat, wildfire or dust storms.',
+                'indices' => ['FLOOD_RISK', 'HEAT_STRESS_RISK', 'WILDFIRE_RISK', 'DUST_STORM_RISK'],
             ],
             [
                 'code' => 'WATER_SANITATION',
@@ -56,7 +56,7 @@ class SectorSeeder extends Seeder
                 'code' => 'AIR_ENVIRONMENT',
                 'name' => 'Environment & Air Quality',
                 'description' => 'Particulate pollution and harmattan dust, refreshed daily.',
-                'indices' => ['RESPIRATORY_RISK'],
+                'indices' => ['RESPIRATORY_RISK', 'DUST_STORM_RISK'],
             ],
         ];
 

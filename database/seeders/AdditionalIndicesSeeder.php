@@ -19,10 +19,11 @@ use Illuminate\Database\Seeder;
  * calibration bounds and action text are created only when absent (firstOrCreate), so a re-run
  * never overwrites tuning done from the admin UI.
  *
- * Indices here may depend on signals beyond the original eight (Agriculture Stress needs
- * SOIL_MOISTURE and EVAPOTRANSPIRATION). Their ingestion services are registered in
- * config/ingestion.php and pull on the daily cadence / on region activation — the score simply
- * stays partial (renormalized over the signals present) until those readings land.
+ * Indices here may depend on signals beyond the original eight — the agriculture bundle needs
+ * SOIL_MOISTURE and EVAPOTRANSPIRATION; Wildfire and Dust Storm Risk need HUMIDITY, WIND_SPEED
+ * and DUST. Their ingestion services are registered in config/ingestion.php and pull on the
+ * daily cadence / on region activation — the score simply stays partial (renormalized over the
+ * signals present) until those readings land.
  *
  * Every index here ships UNCALIBRATED — the weights and bounds are transparent engineering
  * defaults, not validated against outcome data. Same honest caveat as the original six
@@ -37,6 +38,8 @@ class AdditionalIndicesSeeder extends Seeder
         $this->agricultureStress();
         $this->irrigationNeed();
         $this->rangelandStress();
+        $this->wildfireRisk();
+        $this->dustStormRisk();
     }
 
     /**
@@ -51,6 +54,10 @@ class AdditionalIndicesSeeder extends Seeder
             // Drier soil is worse for crops — inverted, like elevation. Indices override direction as needed.
             ['code' => 'SOIL_MOISTURE', 'name' => 'Root-Zone Soil Moisture', 'unit' => 'm³/m³', 'source' => 'Open-Meteo Archive API (ERA5-Land, 7–28 cm)', 'higher_is_worse' => false],
             ['code' => 'EVAPOTRANSPIRATION', 'name' => 'Reference Evapotranspiration (ET₀)', 'unit' => 'mm', 'source' => 'Open-Meteo Archive API (FAO-56 Penman-Monteith)', 'higher_is_worse' => true],
+            // Dry air drives fire spread, dust lofting and dry-season disease — inverted by default.
+            ['code' => 'HUMIDITY', 'name' => 'Relative Humidity', 'unit' => '%', 'source' => 'Open-Meteo Archive API (ERA5, 2 m)', 'higher_is_worse' => false],
+            ['code' => 'WIND_SPEED', 'name' => 'Wind Speed (10 m)', 'unit' => 'km/h', 'source' => 'Open-Meteo Archive API (ERA5, daily max)', 'higher_is_worse' => true],
+            ['code' => 'DUST', 'name' => 'Mineral Dust', 'unit' => 'µg/m³', 'source' => 'Open-Meteo Air Quality API (CAMS)', 'higher_is_worse' => true],
         ];
 
         foreach ($types as $type) {
@@ -197,6 +204,77 @@ class AdditionalIndicesSeeder extends Seeder
             'green' => 'Grazing conditions are adequate. Continue routine rangeland monitoring.',
             'amber' => 'Brief the state agriculture and livestock services and local authorities: pasture is deteriorating in this LGA. Review water-point and fodder contingency, and watch for early pastoralist movement.',
             'red' => 'Rangeland failure risk: activate dry-season grazing contingency (water points, supplementary fodder, designated grazing reserves) and pre-brief security and conflict-prevention focal points on likely herder movement through this area.',
+        ]);
+    }
+
+    /**
+     * Bush-fire weather: dry air + dry vegetation + wind + heat. NASA FIRMS active-fire
+     * detections are the intended confirmation series (weight 0, `ACTIVE_FIRE`) but need a
+     * MODAPS map key, so that's a later add — the index scores on the four weather signals
+     * today. Attached to the Emergency Response sector in SectorSeeder.
+     */
+    private function wildfireRisk(): void
+    {
+        $index = ScoringIndex::query()->updateOrCreate(
+            ['code' => 'WILDFIRE_RISK'],
+            [
+                'name' => 'Wildfire Risk Index',
+                'description' => 'Dry air, dry vegetation, wind and heat combined into a bush-fire-weather score — for land-management and emergency services during the dry season.',
+            ]
+        );
+
+        $this->seedWeights($index, [
+            'HUMIDITY' => 0.3,                                            // low humidity, more fire risk (signal default)
+            'VEGETATION' => ['weight' => 0.3, 'higher_is_worse' => false], // lower NDVI = drier, more fuel-dry risk
+            'WIND_SPEED' => 0.2,                                          // stronger wind, faster spread (signal default)
+            'TEMPERATURE' => 0.2,                                         // hotter, more fire risk (signal default)
+        ]);
+
+        $this->seedBounds($index, [
+            'HUMIDITY' => [0, 100],
+            'VEGETATION' => [-1, 1],
+            'WIND_SPEED' => [0, 40],
+            'TEMPERATURE' => [15, 45],
+        ]);
+
+        $this->seedActions($index, [
+            'green' => 'Low fire-weather risk. Continue routine monitoring.',
+            'amber' => 'Elevated fire weather in this LGA: brief land managers and fire services, restrict open burning, and pre-position firefighting resources near high-value assets.',
+            'red' => 'Severe fire weather: issue a public burn ban and fire warning for this LGA, stage suppression crews and equipment forward, and alert communities in the wildland–urban interface.',
+        ]);
+    }
+
+    /**
+     * Harmattan dust storms: airborne mineral dust plus the wind carrying it, sharpened when
+     * the air is dry. Pairs with Respiratory Risk. Attached to the Emergency Response and
+     * Environment & Air Quality sectors in SectorSeeder.
+     */
+    private function dustStormRisk(): void
+    {
+        $index = ScoringIndex::query()->updateOrCreate(
+            ['code' => 'DUST_STORM_RISK'],
+            [
+                'name' => 'Dust Storm Risk Index',
+                'description' => 'Airborne mineral dust + wind + dry air — the harmattan dust-storm hazard, for air-quality advisories, aviation/road-safety warnings and respiratory-health planning.',
+            ]
+        );
+
+        $this->seedWeights($index, [
+            'DUST' => 0.6,        // measured dust concentration (signal default)
+            'WIND_SPEED' => 0.3,  // wind mobilising and transporting dust (signal default)
+            'HUMIDITY' => 0.1,    // drier air, more lofting (signal default: low is worse)
+        ]);
+
+        $this->seedBounds($index, [
+            'DUST' => [0, 500],
+            'WIND_SPEED' => [0, 40],
+            'HUMIDITY' => [0, 100],
+        ]);
+
+        $this->seedActions($index, [
+            'green' => 'No dust-storm concern. Continue routine air-quality monitoring.',
+            'amber' => 'Dust levels rising in this LGA: issue an air-quality advisory for outdoor workers, schools and people with respiratory conditions, and warn drivers of possible reduced visibility.',
+            'red' => 'Severe dust storm likely: issue a public health warning (masks, stay indoors), advise against non-essential road travel, alert airports and health facilities, and brief the state ministry of health on the expected respiratory-case rise.',
         ]);
     }
 

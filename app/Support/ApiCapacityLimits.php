@@ -57,6 +57,21 @@ class ApiCapacityLimits
                 'dailyLimit' => 10000,
                 'recommendation' => 'Same Open-Meteo free-tier quota as Soil Moisture and the archive fallbacks — 1 call/region/day. Not a scale concern at LGA granularity.',
             ],
+            'HUMIDITY' => [
+                'provider' => 'Open-Meteo Archive API (ERA5)',
+                'dailyLimit' => 10000,
+                'recommendation' => 'Shares Open-Meteo\'s 10,000/day free tier with the other archive and air-quality pulls — 1 call/region/day. Self-hosting Open-Meteo (AGPLv3) lifts the ceiling if ever needed.',
+            ],
+            'WIND_SPEED' => [
+                'provider' => 'Open-Meteo Archive API (ERA5)',
+                'dailyLimit' => 10000,
+                'recommendation' => 'Same Open-Meteo free-tier quota — 1 call/region/day. BUILD_PLAN notes NASA POWER as a possible fallback if Open-Meteo wind coverage ever proves patchy; not wired up yet.',
+            ],
+            'DUST' => [
+                'provider' => 'Open-Meteo Air Quality API (CAMS)',
+                'dailyLimit' => 10000,
+                'recommendation' => 'Shares the Open-Meteo Air Quality quota with PM2.5 / PM10 — 1 call/region/day. CAMS dust has a shorter historical window than the ERA5 archive; the ingestion window (last complete period) sits well inside it.',
+            ],
             'STANDING_WATER' => [
                 'provider' => 'JRC Global Surface Water',
                 'dailyLimit' => null,

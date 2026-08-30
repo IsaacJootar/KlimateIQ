@@ -2,14 +2,17 @@
 
 use App\Services\Ingestion\AirQualityPm10IngestionService;
 use App\Services\Ingestion\AirQualityPm25IngestionService;
+use App\Services\Ingestion\DustIngestionService;
 use App\Services\Ingestion\ElevationIngestionService;
 use App\Services\Ingestion\EvapotranspirationIngestionService;
+use App\Services\Ingestion\HumidityIngestionService;
 use App\Services\Ingestion\PopulationExposureIngestionService;
 use App\Services\Ingestion\RainfallIngestionService;
 use App\Services\Ingestion\SoilMoistureIngestionService;
 use App\Services\Ingestion\StandingWaterIngestionService;
 use App\Services\Ingestion\TemperatureIngestionService;
 use App\Services\Ingestion\VegetationIngestionService;
+use App\Services\Ingestion\WindIngestionService;
 
 return [
 
@@ -35,6 +38,9 @@ return [
         AirQualityPm10IngestionService::class,
         SoilMoistureIngestionService::class,
         EvapotranspirationIngestionService::class,
+        HumidityIngestionService::class,
+        WindIngestionService::class,
+        DustIngestionService::class,
     ],
 
 ];

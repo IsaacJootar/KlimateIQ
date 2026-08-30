@@ -102,15 +102,20 @@ class CoverageSectorTest extends TestCase
     public function test_a_new_index_added_to_a_followed_sector_appears_automatically(): void
     {
         $user = User::factory()->create();
-        $this->saveWorkspace($user, ['sector_ids' => $this->sectorIds(['AIR_ENVIRONMENT'])]);
+        $this->saveWorkspace($user, ['sector_ids' => $this->sectorIds(['WATER_SANITATION'])]);
 
-        $this->assertSame(['RESPIRATORY_RISK'], $this->visibleIndexCodes($user));
+        $baseline = $this->visibleIndexCodes($user);
+        $this->assertContains('FLOOD_RISK', $baseline);
+        $this->assertNotContains('SYNTHETIC_ROADMAP_INDEX', $baseline);
 
         // A future roadmap index attached to the sector — no action from the user.
-        $newIndex = ScoringIndex::query()->create(['code' => 'DUST_STORM_RISK', 'name' => 'Dust Storm Risk Index']);
-        Sector::query()->where('code', 'AIR_ENVIRONMENT')->firstOrFail()->indices()->attach($newIndex->index_id);
+        $newIndex = ScoringIndex::query()->create(['code' => 'SYNTHETIC_ROADMAP_INDEX', 'name' => 'Synthetic Roadmap Index']);
+        Sector::query()->where('code', 'WATER_SANITATION')->firstOrFail()->indices()->attach($newIndex->index_id);
 
-        $this->assertEqualsCanonicalizing(['RESPIRATORY_RISK', 'DUST_STORM_RISK'], $this->visibleIndexCodes($user));
+        $this->assertEqualsCanonicalizing(
+            [...$baseline, 'SYNTHETIC_ROADMAP_INDEX'],
+            $this->visibleIndexCodes($user),
+        );
     }
 
     public function test_hiding_an_index_within_a_sector_persists_as_a_refinement(): void

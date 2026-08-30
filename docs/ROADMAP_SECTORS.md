@@ -1,11 +1,12 @@
 # Next Phase: Sector Expansion
 
-KlimateIQ today is 10 live indices — the original six (Malaria Risk, Flood Risk, Drought Risk,
+KlimateIQ today is 12 live indices — the original six (Malaria Risk, Flood Risk, Drought Risk,
 Heat Stress Risk, Respiratory Risk, Composite Climate-Health Pressure) plus Waterborne Disease
-Risk and a three-index agriculture bundle (Agriculture Stress, Irrigation Need, Rangeland
-Stress) — built from a 10-source signal set, sitting on a data spine — NASA POWER, Open-Meteo
-(archive + air quality), JRC Global Surface Water, MODIS/AppEEARS, Open Topo Data, UNFPA
-population — that is already lat/long-driven and works anywhere, not just Nigeria.
+Risk, a three-index agriculture bundle (Agriculture Stress, Irrigation Need, Rangeland Stress),
+and Wildfire Risk + Dust Storm Risk — built from a 13-source signal set, sitting on a data
+spine — NASA POWER, Open-Meteo (archive + air quality), JRC Global Surface Water, MODIS/AppEEARS,
+Open Topo Data, UNFPA population — that is already lat/long-driven and works anywhere, not just
+Nigeria.
 
 The next phase reframes that spine around **sectors**: instead of a user picking regions and
 seeing every index, they pick the sector(s) that matter to them (agriculture, emergency
@@ -71,7 +72,7 @@ support before yields visibly collapse, instead of a uniform, too-late response 
 - **Rangeland Stress** (inverse NDVI 0.6 + rainfall deficit 0.4) — pasture failure in the
   grazing belt, also an early indicator of pastoralist movement and farmer–herder pressure.
 
-### 3. Emergency Response & Infrastructure — live today via Flood Risk
+### 3. Emergency Response & Infrastructure — live today via Flood Risk + Wildfire & Dust Storm Risk
 
 **Pain point**: Emergency agencies typically mobilize after displacement has already
 happened — evacuation routes get planned mid-crisis because there's no forward signal on which
@@ -83,13 +84,17 @@ which regions are closest to flooding right now.
 **Result**: Responders pre-position shelter and clean water in the highest-risk LGA first, when
 resources are limited, not after the water's already risen.
 
-**Also buildable here**: a **Wildfire Risk** index (dryness + wind + low humidity, with NASA
-FIRMS hotspots for confirmation) and a **Dust Storm Risk** index (CAMS dust + wind) for
-harmattan season. The bigger step for this sector is forecast ingestion (see "Cross-cutting
-capabilities" below) — it turns the current now-cast Flood Risk into a days-ahead river-flood
-forecast (GloFAS discharge, free) and adds storm and heatwave early warnings.
+**Also live here** — on three new free Open-Meteo signals (`HUMIDITY`, `WIND_SPEED`, `DUST`):
+a **Wildfire Risk** index (low humidity 0.3 + dry vegetation 0.3 + wind 0.2 + heat 0.2) and a
+**Dust Storm Risk** index (CAMS dust 0.6 + wind 0.3 + low humidity 0.1), the latter also in the
+Air & Environment sector. NASA FIRMS active-fire hotspots as a confirmation series for Wildfire
+Risk are a follow-up (need a free MODAPS map key).
 
-### 4. Environmental & Air Quality Monitoring — live today via Respiratory Risk
+**Still buildable here**: the bigger step for this sector is forecast ingestion (see
+"Cross-cutting capabilities" below) — it turns the current now-cast Flood Risk into a days-ahead
+river-flood forecast (GloFAS discharge, free) and adds storm and heatwave early warnings.
+
+### 4. Environmental & Air Quality Monitoring — live today via Respiratory Risk + Dust Storm Risk
 
 **Pain point**: There's essentially no LGA-level air quality visibility in Nigeria today —
 harmattan dust events and urban pollution spikes go unmeasured locally, so nobody knows air
@@ -180,12 +185,12 @@ dashboard to build.
 These three tiers are the shape of the phase; [`docs/BUILD_PLAN.md`](BUILD_PLAN.md#2-the-build-ladder)
 breaks them into nine ordered rungs with a suggested sequence.
 
-- **Tier 1 — UI reframing** *(done)*: the ten live indices are grouped under sector labels in
+- **Tier 1 — UI reframing** *(done)*: the twelve live indices are grouped under sector labels in
   the coverage/subscription UI (see "The configured workspace" above). No new data.
 - **Tier 2 — real sector-specific signals** *(in progress)*: Waterborne Disease (no new
-  ingestion) and the agriculture bundle — Agriculture Stress, Irrigation Need, Rangeland Stress
-  (on two new free Open-Meteo signals, soil moisture + ET₀) — are live. Still ahead: the
-  fire/dust signals, the air-quality extension, forecast ingestion, probabilistic scoring, and
+  ingestion), the agriculture bundle (Agriculture Stress, Irrigation Need, Rangeland Stress, on
+  soil moisture + ET₀), and Wildfire + Dust Storm Risk (on humidity, wind and CAMS dust) are all
+  live. Still ahead: the air-quality extension, forecast ingestion, probabilistic scoring, and
   the climate-outlook module — all on free, open-licensed data
   (Open-Meteo CC-BY 4.0, NASA FIRMS). Coastal Resilience (Sector 6) is the one part of this tier
   that genuinely needs new/paid data (coastal elevation, tide).
