@@ -43,6 +43,13 @@ return [
         'password' => env('NASA_EARTHDATA_PASSWORD'),
     ],
 
+    'firms' => [
+        // NASA FIRMS active-fire API map key — free, instant, from
+        // https://firms.modaps.eosdis.nasa.gov/api/map_key/. Feeds the ACTIVE_FIRE
+        // confirmation series behind Wildfire Risk. Unset = the ingestion service is a no-op.
+        'map_key' => env('FIRMS_MAP_KEY'),
+    ],
+
     'ses' => [
         'key' => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),

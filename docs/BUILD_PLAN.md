@@ -48,7 +48,7 @@ forward-looking (forecast / ensemble) data, decadal climate projections, and the
 |---|---|---|
 | T1 | Sector grouping in the UI | nothing — ship first |
 | T2 | Config-only indices — **Waterborne Disease shipped**; Meningitis pending | T3 signals for Meningitis |
-| T3 | New free signals + their indices — **agriculture bundle + fire/dust shipped**; air-quality depth and FIRMS active-fire confirmation pending | nothing |
+| T3 | New free signals + their indices — **agriculture bundle + fire/dust + FIRMS confirmation shipped**; air-quality depth pending | nothing |
 | T4 | Forecast ingestion — store and score *future* periods | T3 (`RIVER_DISCHARGE`) |
 | T5 | Probabilistic scoring — ensemble members → a likelihood | T4 |
 | T6 | Climate outlook module — CMIP6 decadal projections | nothing (independent path) |
@@ -75,7 +75,7 @@ Keep the primary + fallback pattern `RainfallIngestionService` already uses, and
 | `OZONE` / `NO2` / `SO2` / `CO` | Open-Meteo Air Quality (CAMS) | `DAILY` | Respiratory Risk depth | Ready |
 | `UV_INDEX` | Open-Meteo (daily max + clear-sky max) | `DAILY` | occupational / skin-eye advisories | Ready |
 | `RIVER_DISCHARGE` | Open-Meteo Flood API (GloFAS) | `DAILY` + forecast | riverine flood forecasting | Ready (needs T4) |
-| `ACTIVE_FIRE` | NASA FIRMS (VIIRS/MODIS hotspots) | `DAILY` | bush-fire confirmation / backtest | Ready — needs a MODAPS map key |
+| `ACTIVE_FIRE` | NASA FIRMS area API (VIIRS NOAA-20) | `DAILY` | bush-fire confirmation / backtest | **Live** — `ActiveFireIngestionService` (needs `FIRMS_MAP_KEY`; no-op without) |
 | `SEA_STATE` | Open-Meteo Marine (wave height, SST) | `DAILY` | coastal (partial) | Needs data (+ elevation/tide) |
 
 Each new source needs an `ApiCapacityLimits::all()` entry with the provider's published free-tier
@@ -94,7 +94,7 @@ calibration against outcome data. Bounds go in `scoring_calibration_parameters`;
 | `AGRICULTURE_STRESS` | `SOIL_MOISTURE` 0.5 (inv) · `RAINFALL` 0.3 (deficit) · `EVAPOTRANSPIRATION` 0.2 | Agriculture | **Live** — `AdditionalIndicesSeeder`. Distinct from Drought Risk — soil-water focused. Uncalibrated. |
 | `IRRIGATION_NEED` | `EVAPOTRANSPIRATION` 0.5 · `SOIL_MOISTURE` 0.3 (inv) · `RAINFALL` 0.2 (inv) | Agriculture | **Live** — `AdditionalIndicesSeeder`. 0–100 targeting score; mm-of-water output still future. |
 | `RANGELAND_STRESS` | `VEGETATION` 0.6 (inv NDVI) · `RAINFALL` 0.4 (deficit) | Agriculture | **Live** — `AdditionalIndicesSeeder`. Also an emergency-planning input (pastoralist movement / herder-conflict early warning). |
-| `WILDFIRE_RISK` | `HUMIDITY` 0.3 (inv) · `VEGETATION` 0.3 (dryness) · `WIND_SPEED` 0.2 · `TEMPERATURE` 0.2 | Emergency Response | **Live** — `AdditionalIndicesSeeder`. `ACTIVE_FIRE` confirmation still to add (needs FIRMS key). |
+| `WILDFIRE_RISK` | `HUMIDITY` 0.3 (inv) · `VEGETATION` 0.3 (dryness) · `WIND_SPEED` 0.2 · `TEMPERATURE` 0.2 · `ACTIVE_FIRE` 0.0 | Emergency Response | **Live** — `AdditionalIndicesSeeder`. FIRMS fire detections ride along at weight 0 (breakdown only). |
 | `DUST_STORM_RISK` | `DUST` 0.6 · `WIND_SPEED` 0.3 · `HUMIDITY` 0.1 (inv) | Emergency Response + Air & Environment | **Live** — `AdditionalIndicesSeeder`. Harmattan season; pairs with Respiratory Risk. |
 | `RIVERINE_FLOOD_FORECAST` | `RIVER_DISCHARGE` forecast percentile vs. local return period | Water | not a weighted blend — a threshold on forecast discharge; needs T4 |
 
@@ -136,11 +136,13 @@ value-per-effort jump — it opened a whole sector. A `SoilTemperatureIngestionS
 planting-window index is a possible later add.
 
 **Fire + dust (`WILDFIRE_RISK`, `DUST_STORM_RISK`) · Live · size M.** `WindIngestionService`,
-`DustIngestionService` and `HumidityIngestionService` are registered, on `IngestionCadence::DAILY`,
-with `ApiCapacityLimits` entries; both indices are seeded via `AdditionalIndicesSeeder`. Wildfire
-Risk sits in Emergency Response; Dust Storm Risk in Emergency Response and Air & Environment.
-Still to add: `ActiveFireIngestionService` (NASA FIRMS, stored weight 0 as a confirmation series) —
-needs a free MODAPS map key, so it's a follow-up. The indices score on the weather signals today.
+`DustIngestionService`, `HumidityIngestionService` and `ActiveFireIngestionService` are all
+registered, on `IngestionCadence::DAILY`, with `ApiCapacityLimits` entries; both indices are
+seeded via `AdditionalIndicesSeeder`. Wildfire Risk sits in Emergency Response; Dust Storm Risk
+in Emergency Response and Air & Environment. FIRMS fire detections are a weight-0 confirmation
+series on Wildfire Risk — visible in the score breakdown, never affecting the number; the
+service is a no-op when `FIRMS_MAP_KEY` is unset (uses the FIRMS area API, VIIRS NOAA-20, 5-day
+window, ~2-month NRT history — a confirmation source, not a backfill one).
 
 **Deepen `RESPIRATORY_RISK` · Ready · size S.** Extend the existing air-quality ingestion to pull
 `OZONE`, `NO2`, `DUST`; add them to the `RESPIRATORY_RISK` config with modest weights and re-tune
@@ -236,7 +238,7 @@ return numbers.
 2. ~~**T2 Waterborne Disease**~~ — done. Proved "new index, no new data" end to end.
 3. ~~**T3 agriculture bundle**~~ — done. Agriculture Stress, Irrigation Need, Rangeland Stress all
    live; proved "new signal source + new indices" end to end.
-4. ~~**T3 fire + dust**~~ — done. Wildfire Risk + Dust Storm Risk live (FIRMS confirmation still to add).
+4. ~~**T3 fire + dust**~~ — done. Wildfire Risk + Dust Storm Risk live, FIRMS active-fire confirmation wired in.
 5. **T4 forecast ingestion** — the architectural investment. Ship river-flood forecasting on top of
    it as the first payoff.
 6. **T5 probabilistic scoring** — once forecasts flow.

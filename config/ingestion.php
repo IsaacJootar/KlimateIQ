@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\Ingestion\ActiveFireIngestionService;
 use App\Services\Ingestion\AirQualityPm10IngestionService;
 use App\Services\Ingestion\AirQualityPm25IngestionService;
 use App\Services\Ingestion\DustIngestionService;
@@ -41,6 +42,7 @@ return [
         HumidityIngestionService::class,
         WindIngestionService::class,
         DustIngestionService::class,
+        ActiveFireIngestionService::class,
     ],
 
 ];

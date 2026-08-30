@@ -3,10 +3,10 @@
 KlimateIQ today is 12 live indices — the original six (Malaria Risk, Flood Risk, Drought Risk,
 Heat Stress Risk, Respiratory Risk, Composite Climate-Health Pressure) plus Waterborne Disease
 Risk, a three-index agriculture bundle (Agriculture Stress, Irrigation Need, Rangeland Stress),
-and Wildfire Risk + Dust Storm Risk — built from a 13-source signal set, sitting on a data
-spine — NASA POWER, Open-Meteo (archive + air quality), JRC Global Surface Water, MODIS/AppEEARS,
-Open Topo Data, UNFPA population — that is already lat/long-driven and works anywhere, not just
-Nigeria.
+and Wildfire Risk + Dust Storm Risk — built from a 14-source signal set, sitting on a data
+spine — NASA POWER, Open-Meteo (archive + air quality), NASA FIRMS, JRC Global Surface Water,
+MODIS/AppEEARS, Open Topo Data, UNFPA population — that is already lat/long-driven and works
+anywhere, not just Nigeria.
 
 The next phase reframes that spine around **sectors**: instead of a user picking regions and
 seeing every index, they pick the sector(s) that matter to them (agriculture, emergency
@@ -87,8 +87,8 @@ resources are limited, not after the water's already risen.
 **Also live here** — on three new free Open-Meteo signals (`HUMIDITY`, `WIND_SPEED`, `DUST`):
 a **Wildfire Risk** index (low humidity 0.3 + dry vegetation 0.3 + wind 0.2 + heat 0.2) and a
 **Dust Storm Risk** index (CAMS dust 0.6 + wind 0.3 + low humidity 0.1), the latter also in the
-Air & Environment sector. NASA FIRMS active-fire hotspots as a confirmation series for Wildfire
-Risk are a follow-up (need a free MODAPS map key).
+Air & Environment sector. NASA FIRMS satellite fire detections ride along on Wildfire Risk as a
+weight-0 confirmation series — shown next to the score, never affecting it.
 
 **Still buildable here**: the bigger step for this sector is forecast ingestion (see
 "Cross-cutting capabilities" below) — it turns the current now-cast Flood Risk into a days-ahead

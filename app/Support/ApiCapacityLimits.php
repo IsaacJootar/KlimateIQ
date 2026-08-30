@@ -72,6 +72,11 @@ class ApiCapacityLimits
                 'dailyLimit' => 10000,
                 'recommendation' => 'Shares the Open-Meteo Air Quality quota with PM2.5 / PM10 — 1 call/region/day. CAMS dust has a shorter historical window than the ERA5 archive; the ingestion window (last complete period) sits well inside it.',
             ],
+            'ACTIVE_FIRE' => [
+                'provider' => 'NASA FIRMS area API',
+                'dailyLimit' => null,
+                'recommendation' => 'FIRMS meters by transaction count (~5,000 per 10-minute window on a free map key), not a daily cap — 1 call/region/day is nowhere near it. If ingestion starts erroring with a rate message, spread the fire pull onto its own schedule slot. NRT data only goes back ~2 months and serves 5 days per request, so this is a confirmation series, not a backfill source.',
+            ],
             'STANDING_WATER' => [
                 'provider' => 'JRC Global Surface Water',
                 'dailyLimit' => null,

@@ -21,9 +21,10 @@ use Illuminate\Database\Seeder;
  *
  * Indices here may depend on signals beyond the original eight — the agriculture bundle needs
  * SOIL_MOISTURE and EVAPOTRANSPIRATION; Wildfire and Dust Storm Risk need HUMIDITY, WIND_SPEED
- * and DUST. Their ingestion services are registered in config/ingestion.php and pull on the
- * daily cadence / on region activation — the score simply stays partial (renormalized over the
- * signals present) until those readings land.
+ * and DUST; Wildfire also carries a weight-0 ACTIVE_FIRE confirmation series (NASA FIRMS, needs
+ * a map key — no-op without one). Their ingestion services are registered in config/ingestion.php
+ * and pull on the daily cadence / on region activation — the score simply stays partial
+ * (renormalized over the signals present) until those readings land.
  *
  * Every index here ships UNCALIBRATED — the weights and bounds are transparent engineering
  * defaults, not validated against outcome data. Same honest caveat as the original six
@@ -58,6 +59,8 @@ class AdditionalIndicesSeeder extends Seeder
             ['code' => 'HUMIDITY', 'name' => 'Relative Humidity', 'unit' => '%', 'source' => 'Open-Meteo Archive API (ERA5, 2 m)', 'higher_is_worse' => false],
             ['code' => 'WIND_SPEED', 'name' => 'Wind Speed (10 m)', 'unit' => 'km/h', 'source' => 'Open-Meteo Archive API (ERA5, daily max)', 'higher_is_worse' => true],
             ['code' => 'DUST', 'name' => 'Mineral Dust', 'unit' => 'µg/m³', 'source' => 'Open-Meteo Air Quality API (CAMS)', 'higher_is_worse' => true],
+            // Confirmation series only — carries weight 0 on Wildfire Risk, never drives a score.
+            ['code' => 'ACTIVE_FIRE', 'name' => 'Active Fire Detections', 'unit' => 'detections', 'source' => 'NASA FIRMS (VIIRS NOAA-20)', 'higher_is_worse' => true],
         ];
 
         foreach ($types as $type) {
@@ -209,9 +212,9 @@ class AdditionalIndicesSeeder extends Seeder
 
     /**
      * Bush-fire weather: dry air + dry vegetation + wind + heat. NASA FIRMS active-fire
-     * detections are the intended confirmation series (weight 0, `ACTIVE_FIRE`) but need a
-     * MODAPS map key, so that's a later add — the index scores on the four weather signals
-     * today. Attached to the Emergency Response sector in SectorSeeder.
+     * detections ride along as a weight-0 confirmation series (`ACTIVE_FIRE`) — visible in the
+     * score breakdown, never affecting the number. Attached to the Emergency Response sector
+     * in SectorSeeder.
      */
     private function wildfireRisk(): void
     {
@@ -219,7 +222,7 @@ class AdditionalIndicesSeeder extends Seeder
             ['code' => 'WILDFIRE_RISK'],
             [
                 'name' => 'Wildfire Risk Index',
-                'description' => 'Dry air, dry vegetation, wind and heat combined into a bush-fire-weather score — for land-management and emergency services during the dry season.',
+                'description' => 'Dry air, dry vegetation, wind and heat combined into a bush-fire-weather score — for land-management and emergency services during the dry season. Satellite fire detections are shown alongside as confirmation.',
             ]
         );
 
@@ -228,6 +231,7 @@ class AdditionalIndicesSeeder extends Seeder
             'VEGETATION' => ['weight' => 0.3, 'higher_is_worse' => false], // lower NDVI = drier, more fuel-dry risk
             'WIND_SPEED' => 0.2,                                          // stronger wind, faster spread (signal default)
             'TEMPERATURE' => 0.2,                                         // hotter, more fire risk (signal default)
+            'ACTIVE_FIRE' => 0.0,                                         // confirmation only — shown, never scored
         ]);
 
         $this->seedBounds($index, [
@@ -235,6 +239,7 @@ class AdditionalIndicesSeeder extends Seeder
             'VEGETATION' => [-1, 1],
             'WIND_SPEED' => [0, 40],
             'TEMPERATURE' => [15, 45],
+            'ACTIVE_FIRE' => [0, 50], // only frames the breakdown bar; weight 0 keeps it out of the score
         ]);
 
         $this->seedActions($index, [

@@ -80,9 +80,14 @@ class FireAndDustIndexTest extends TestCase
             ->get()
             ->keyBy('signalType.code');
 
-        $this->assertEqualsCanonicalizing(['HUMIDITY', 'VEGETATION', 'WIND_SPEED', 'TEMPERATURE'], $configs->keys()->all());
+        $this->assertEqualsCanonicalizing(
+            ['HUMIDITY', 'VEGETATION', 'WIND_SPEED', 'TEMPERATURE', 'ACTIVE_FIRE'],
+            $configs->keys()->all(),
+        );
         $this->assertEquals(0.3, $configs['HUMIDITY']->weight);
         $this->assertFalse((bool) $configs['VEGETATION']->higher_is_worse);
+        // Fire detections ride along as confirmation only.
+        $this->assertEquals(0.0, $configs['ACTIVE_FIRE']->weight);
     }
 
     public function test_dust_storm_risk_is_seeded_and_attached_to_two_sectors(): void
@@ -129,10 +134,15 @@ class FireAndDustIndexTest extends TestCase
         $this->signal($region, 'VEGETATION', 0.0, $start, $end);
         $this->signal($region, 'WIND_SPEED', 20, $start, $end);
         $this->signal($region, 'TEMPERATURE', 39, $start, $end);
+        // A pile of fire detections must not move the score — weight 0.
+        $this->signal($region, 'ACTIVE_FIRE', 40, $start, $end);
 
         $result = app(RegionScoringService::class)->calculate($this->index('WILDFIRE_RISK'), $region, $start, $end);
 
         $this->assertSame(65.0, $result->score);
+
+        $fireRow = collect($result->breakdown)->firstWhere('signal_type_code', 'ACTIVE_FIRE');
+        $this->assertSame(0.0, $fireRow['contribution_to_final_score']);
     }
 
     public function test_dust_storm_risk_leads_with_measured_dust(): void
