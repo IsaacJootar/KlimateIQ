@@ -93,12 +93,10 @@ class AgricultureStressIndexTest extends TestCase
             $this->index()->sectors->pluck('code')->all(),
         );
 
-        // Drought Risk stays in the sector alongside it.
+        // Drought Risk stays in the sector alongside the new agriculture indices.
         $agriculture = Sector::query()->where('code', 'AGRICULTURE')->firstOrFail();
-        $this->assertEqualsCanonicalizing(
-            ['DROUGHT_RISK', 'AGRICULTURE_STRESS'],
-            $agriculture->indices->pluck('code')->all(),
-        );
+        $this->assertContains('DROUGHT_RISK', $agriculture->indices->pluck('code')->all());
+        $this->assertContains('AGRICULTURE_STRESS', $agriculture->indices->pluck('code')->all());
     }
 
     public function test_an_agriculture_sector_follower_sees_it_on_their_dashboard(): void

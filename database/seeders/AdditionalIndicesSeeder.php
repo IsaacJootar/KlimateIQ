@@ -35,6 +35,8 @@ class AdditionalIndicesSeeder extends Seeder
         $this->ensureSignalTypes();
         $this->waterborneDiseaseRisk();
         $this->agricultureStress();
+        $this->irrigationNeed();
+        $this->rangelandStress();
     }
 
     /**
@@ -125,6 +127,76 @@ class AdditionalIndicesSeeder extends Seeder
             'green' => 'No action needed. Continue routine agronomic monitoring.',
             'amber' => 'Alert agricultural extension officers for this LGA. Begin water-conservation and supplementary-irrigation messaging to farmers, and prioritise field visits here.',
             'red' => 'Activate the crop water-stress response: prioritise irrigation support and drought-tolerant input distribution for this LGA, and brief the state agriculture ministry on the areas most at risk of yield loss this season.',
+        ]);
+    }
+
+    /**
+     * "How much supplementary irrigation does this LGA need right now" — atmospheric water
+     * demand (ET₀) against what the soil and recent rain have supplied. Same three signals as
+     * Agriculture Stress, re-weighted to lead with demand rather than soil deficit. The 0–100
+     * score is a targeting aid, not a literal mm figure — a mm-of-water output is a future
+     * enhancement (see docs/BUILD_PLAN.md). Attached to the Agriculture sector in SectorSeeder.
+     */
+    private function irrigationNeed(): void
+    {
+        $index = ScoringIndex::query()->updateOrCreate(
+            ['code' => 'IRRIGATION_NEED'],
+            [
+                'name' => 'Irrigation Need Index',
+                'description' => 'Evapotranspiration demand against soil moisture and recent rainfall — where supplementary irrigation would do the most good this week. A targeting score, not a literal water volume.',
+            ]
+        );
+
+        $this->seedWeights($index, [
+            'EVAPOTRANSPIRATION' => 0.5,                                       // atmospheric water demand (signal default)
+            'SOIL_MOISTURE' => ['weight' => 0.3, 'higher_is_worse' => false],  // drier soil, more need
+            'RAINFALL' => ['weight' => 0.2, 'higher_is_worse' => false],       // less recent rain, more need
+        ]);
+
+        $this->seedBounds($index, [
+            'EVAPOTRANSPIRATION' => [0, 50],
+            'SOIL_MOISTURE' => [0.05, 0.40],
+            'RAINFALL' => [0, 200],
+        ]);
+
+        $this->seedActions($index, [
+            'green' => 'No supplementary irrigation indicated. Recent rainfall and soil moisture are meeting crop water demand.',
+            'amber' => 'Advise farmers in this LGA to plan supplementary irrigation for water-sensitive crops, and check that irrigation infrastructure and water allocations are ready.',
+            'red' => 'High irrigation need: prioritise this LGA for irrigation water release and extension support, and warn of likely yield loss on rain-fed plots without intervention.',
+        ]);
+    }
+
+    /**
+     * Grazing-land condition for pastoralist areas — low vegetation against a rainfall deficit.
+     * A sustained rangeland-stress signal in the dry-season grazing belt is an early indicator
+     * of southward pastoralist movement and the farmer–herder friction that follows it, so this
+     * is as much an emergency-planning input as an agricultural one. Attached to the Agriculture
+     * sector in SectorSeeder.
+     */
+    private function rangelandStress(): void
+    {
+        $index = ScoringIndex::query()->updateOrCreate(
+            ['code' => 'RANGELAND_STRESS'],
+            [
+                'name' => 'Rangeland Stress Index',
+                'description' => 'Vegetation loss + rainfall deficit across grazing land — an early signal of pasture failure, and of the pastoralist movement and farmer–herder pressure that tends to follow it.',
+            ]
+        );
+
+        $this->seedWeights($index, [
+            'VEGETATION' => ['weight' => 0.6, 'higher_is_worse' => false], // lower NDVI, more pasture stress
+            'RAINFALL' => ['weight' => 0.4, 'higher_is_worse' => false],   // rainfall deficit
+        ]);
+
+        $this->seedBounds($index, [
+            'VEGETATION' => [-1, 1], // NDVI is mathematically defined on this range
+            'RAINFALL' => [0, 200],
+        ]);
+
+        $this->seedActions($index, [
+            'green' => 'Grazing conditions are adequate. Continue routine rangeland monitoring.',
+            'amber' => 'Brief the state agriculture and livestock services and local authorities: pasture is deteriorating in this LGA. Review water-point and fodder contingency, and watch for early pastoralist movement.',
+            'red' => 'Rangeland failure risk: activate dry-season grazing contingency (water points, supplementary fodder, designated grazing reserves) and pre-brief security and conflict-prevention focal points on likely herder movement through this area.',
         ]);
     }
 

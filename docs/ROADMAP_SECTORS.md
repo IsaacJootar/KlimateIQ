@@ -1,10 +1,11 @@
 # Next Phase: Sector Expansion
 
-KlimateIQ today is 8 live indices — the original six (Malaria Risk, Flood Risk, Drought Risk,
+KlimateIQ today is 10 live indices — the original six (Malaria Risk, Flood Risk, Drought Risk,
 Heat Stress Risk, Respiratory Risk, Composite Climate-Health Pressure) plus Waterborne Disease
-Risk and Agriculture Stress — built from a 10-source signal set, sitting on a data spine —
-NASA POWER, Open-Meteo (archive + air quality), JRC Global Surface Water, MODIS/AppEEARS, Open
-Topo Data, UNFPA population — that is already lat/long-driven and works anywhere, not just Nigeria.
+Risk and a three-index agriculture bundle (Agriculture Stress, Irrigation Need, Rangeland
+Stress) — built from a 10-source signal set, sitting on a data spine — NASA POWER, Open-Meteo
+(archive + air quality), JRC Global Surface Water, MODIS/AppEEARS, Open Topo Data, UNFPA
+population — that is already lat/long-driven and works anywhere, not just Nigeria.
 
 The next phase reframes that spine around **sectors**: instead of a user picking regions and
 seeing every index, they pick the sector(s) that matter to them (agriculture, emergency
@@ -47,7 +48,7 @@ low humidity + airborne dust + heat — all free Open-Meteo/CAMS signals, `regio
 doesn't render nationwide), plus the Waterborne Disease index from Sector 5. Dengue and Lassa
 fever have their own environmental lead indicators and are further-out candidates.
 
-### 2. Agriculture & Food Security — live today via Drought Risk + Agriculture Stress
+### 2. Agriculture & Food Security — live today via Drought Risk + a three-index agriculture bundle
 
 **Pain point**: Extension officers covering hundreds of LGAs have no forward-looking signal —
 they find out a season is bad when crops are already visibly wilting, too late to adjust
@@ -59,14 +60,16 @@ Drought Risk score per LGA.
 **Result**: An extension officer prioritizes which specific LGAs need water-conservation
 support before yields visibly collapse, instead of a uniform, too-late response everywhere.
 
-**Also live here**: an **Agriculture Stress** index (root-zone soil moisture 0.5 + rainfall
-deficit 0.3 + evapotranspiration demand 0.2) — a pre-visible signal of crop water stress that
-moves weeks before NDVI does. Shipped via `AdditionalIndicesSeeder` on two new free Open-Meteo
-signals (`SOIL_MOISTURE`, `EVAPOTRANSPIRATION`), uncalibrated like the rest.
+**Also live here** — three indices on two new free Open-Meteo signals (`SOIL_MOISTURE`,
+`EVAPOTRANSPIRATION`), all via `AdditionalIndicesSeeder`, uncalibrated like the rest:
 
-**Still buildable here**: an **Irrigation Need** index (ET₀-led, outputting mm of water to
-apply) and a **Rangeland Stress** index (inverse NDVI + rainfall deficit) that also feeds
-pastoralist-movement and farmer–herder-conflict early warning.
+- **Agriculture Stress** (soil moisture 0.5 + rainfall deficit 0.3 + ET₀ demand 0.2) — a
+  pre-visible crop-water-stress signal that moves weeks before NDVI does.
+- **Irrigation Need** (ET₀ 0.5 + soil moisture 0.3 + rainfall 0.2) — where supplementary
+  irrigation would do the most good this week. A 0–100 targeting score; a literal mm-of-water
+  output is a future enhancement.
+- **Rangeland Stress** (inverse NDVI 0.6 + rainfall deficit 0.4) — pasture failure in the
+  grazing belt, also an early indicator of pastoralist movement and farmer–herder pressure.
 
 ### 3. Emergency Response & Infrastructure — live today via Flood Risk
 
@@ -177,12 +180,13 @@ dashboard to build.
 These three tiers are the shape of the phase; [`docs/BUILD_PLAN.md`](BUILD_PLAN.md#2-the-build-ladder)
 breaks them into nine ordered rungs with a suggested sequence.
 
-- **Tier 1 — UI reframing** *(done)*: the eight live indices are grouped under sector labels in
+- **Tier 1 — UI reframing** *(done)*: the ten live indices are grouped under sector labels in
   the coverage/subscription UI (see "The configured workspace" above). No new data.
 - **Tier 2 — real sector-specific signals** *(in progress)*: Waterborne Disease (no new
-  ingestion) and Agriculture Stress (soil moisture + ET₀, two new free Open-Meteo signals) are
-  live. Still ahead: the fire/dust signals, the air-quality extension, forecast ingestion,
-  probabilistic scoring, and the climate-outlook module — all on free, open-licensed data
+  ingestion) and the agriculture bundle — Agriculture Stress, Irrigation Need, Rangeland Stress
+  (on two new free Open-Meteo signals, soil moisture + ET₀) — are live. Still ahead: the
+  fire/dust signals, the air-quality extension, forecast ingestion, probabilistic scoring, and
+  the climate-outlook module — all on free, open-licensed data
   (Open-Meteo CC-BY 4.0, NASA FIRMS). Coastal Resilience (Sector 6) is the one part of this tier
   that genuinely needs new/paid data (coastal elevation, tide).
 - **Tier 3 — pan-African expansion, one country at a time**: `regions` currently has no
