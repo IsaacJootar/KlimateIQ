@@ -11,7 +11,8 @@ namespace App\Support;
  *   - DAILY: genuinely volatile day to day, and feeds an index where freshness matters
  *     (rainfall/standing water for Flood+Malaria, temperature for Heat Stress, air quality for
  *     Respiratory — a dust event can spike and clear inside a week, a weekly check could miss it
- *     entirely).
+ *     entirely; soil moisture and ET₀ for Agriculture Stress, where a drying trend needs to be
+ *     caught while there's still time to act on it).
  *   - WEEKLY: Vegetation's underlying satellite product (MOD13Q1) is itself a 16-day composite —
  *     weekly polling already meets or beats its natural update rate.
  *   - ONCE: Elevation (terrain doesn't move) and Population (a yearly-at-best census figure).
@@ -23,7 +24,7 @@ namespace App\Support;
  */
 class IngestionCadence
 {
-    public const DAILY = ['RAINFALL', 'STANDING_WATER', 'TEMPERATURE', 'AIR_QUALITY_PM25', 'AIR_QUALITY_PM10'];
+    public const DAILY = ['RAINFALL', 'STANDING_WATER', 'TEMPERATURE', 'AIR_QUALITY_PM25', 'AIR_QUALITY_PM10', 'SOIL_MOISTURE', 'EVAPOTRANSPIRATION'];
 
     public const WEEKLY = ['VEGETATION'];
 

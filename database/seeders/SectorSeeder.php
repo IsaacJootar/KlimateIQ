@@ -37,8 +37,8 @@ class SectorSeeder extends Seeder
             [
                 'code' => 'AGRICULTURE',
                 'name' => 'Agriculture & Food Security',
-                'description' => 'Rainfall deficit and vegetation stress ahead of a bad season.',
-                'indices' => ['DROUGHT_RISK'],
+                'description' => 'Rainfall deficit, soil-water stress and vegetation stress ahead of a bad season.',
+                'indices' => ['DROUGHT_RISK', 'AGRICULTURE_STRESS'],
             ],
             [
                 'code' => 'EMERGENCY_RESPONSE',

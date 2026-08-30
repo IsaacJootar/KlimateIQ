@@ -48,7 +48,7 @@ forward-looking (forecast / ensemble) data, decadal climate projections, and the
 |---|---|---|
 | T1 | Sector grouping in the UI | nothing — ship first |
 | T2 | Config-only indices — **Waterborne Disease shipped**; Meningitis pending | T3 signals for Meningitis |
-| T3 | New free signals + their indices (agriculture, fire, dust, air-quality depth) | nothing |
+| T3 | New free signals + their indices — **Agriculture Stress shipped** (soil moisture + ET₀); fire, dust, air-quality depth pending | nothing |
 | T4 | Forecast ingestion — store and score *future* periods | T3 (`RIVER_DISCHARGE`) |
 | T5 | Probabilistic scoring — ensemble members → a likelihood | T4 |
 | T6 | Climate outlook module — CMIP6 decadal projections | nothing (independent path) |
@@ -66,9 +66,9 @@ Keep the primary + fallback pattern `RainfallIngestionService` already uses, and
 
 | `signal_types` code | Source / API | Cadence | Feeds | Status |
 |---|---|---|---|---|
-| `SOIL_MOISTURE` | Open-Meteo (0–1 … 27–81 cm; use 9–27 cm) | `DAILY` | agriculture, irrigation, drought depth | Ready |
+| `SOIL_MOISTURE` | Open-Meteo Archive (ERA5-Land, 7–28 cm) | `DAILY` | agriculture, irrigation, drought depth | **Live** — `SoilMoistureIngestionService` |
 | `SOIL_TEMPERATURE` | Open-Meteo (0–54 cm) | `DAILY` | planting window | Ready |
-| `EVAPOTRANSPIRATION` | Open-Meteo ET₀ (FAO-56 Penman-Monteith) | `DAILY` | irrigation demand, crop water stress | Ready |
+| `EVAPOTRANSPIRATION` | Open-Meteo ET₀ (FAO-56 Penman-Monteith) | `DAILY` | irrigation demand, crop water stress | **Live** — `EvapotranspirationIngestionService` |
 | `HUMIDITY` | Open-Meteo relative humidity 2 m | `DAILY` | meningitis, fire, heat index, VPD | Ready |
 | `WIND_SPEED` | Open-Meteo wind 10 m (fallback: NASA POWER) | `DAILY` | fire spread, dust transport | Ready |
 | `DUST` | Open-Meteo Air Quality (CAMS dust / aerosol) | `DAILY` | respiratory, meningitis, dust-storm | Ready |
@@ -91,7 +91,7 @@ calibration against outcome data. Bounds go in `scoring_calibration_parameters`;
 |---|---|---|---|
 | `WATERBORNE_DISEASE_RISK` | `STANDING_WATER` 0.5 · `RAINFALL` 0.5 | Health / Water | **Live** — `AdditionalIndicesSeeder`. Future: a recent-flood boost term. |
 | `MENINGITIS_RISK` | `HUMIDITY` 0.4 (inv) · `DUST` 0.4 · `TEMPERATURE` 0.2 | Health | `region_id`-scoped to the Sahel belt, not system-wide |
-| `AGRICULTURE_STRESS` | `SOIL_MOISTURE` 0.5 (inv) · `RAINFALL` 0.3 (deficit) · `EVAPOTRANSPIRATION` 0.2 | Agriculture | distinct from Drought Risk — soil-water focused, near-term |
+| `AGRICULTURE_STRESS` | `SOIL_MOISTURE` 0.5 (inv) · `RAINFALL` 0.3 (deficit) · `EVAPOTRANSPIRATION` 0.2 | Agriculture | **Live** — `AdditionalIndicesSeeder`. Distinct from Drought Risk — soil-water focused. Uncalibrated. |
 | `IRRIGATION_NEED` | `EVAPOTRANSPIRATION` 0.5 · `SOIL_MOISTURE` 0.3 (inv) · `RAINFALL` 0.2 (inv) | Agriculture | actionable output: mm of water to apply |
 | `RANGELAND_STRESS` | `VEGETATION` 0.6 (inv NDVI) · `RAINFALL` 0.4 (deficit) | Agriculture | feeds pastoralist-movement / herder-conflict early warning |
 | `WILDFIRE_RISK` | `HUMIDITY` 0.3 (inv) · `VEGETATION` 0.3 (dryness) · `WIND_SPEED` 0.2 · `TEMPERATURE` 0.2 | Disaster | `ACTIVE_FIRE` used for confirmation, not as input |
@@ -126,10 +126,12 @@ region with those two signals.
 
 ### T3 — New free signals and their indices
 
-**Agriculture bundle (`AGRICULTURE_STRESS`, `IRRIGATION_NEED`, `RANGELAND_STRESS`) · Ready · size M.**
-Add `SoilMoistureIngestionService`, `EvapotranspirationIngestionService`, `SoilTemperatureIngestionService`
-(Open-Meteo). Register, add to `IngestionCadence::DAILY`, add `ApiCapacityLimits` entries. Seed three
-indices + weights. This is the widest value-per-effort jump — it opens a whole sector.
+**Agriculture bundle (`AGRICULTURE_STRESS`, `IRRIGATION_NEED`, `RANGELAND_STRESS`) · in progress · size M.**
+`AGRICULTURE_STRESS` is **live**: `SoilMoistureIngestionService` and `EvapotranspirationIngestionService`
+(Open-Meteo Archive) are registered, on `IngestionCadence::DAILY`, with `ApiCapacityLimits` entries; the
+index is seeded via `AdditionalIndicesSeeder` and attached to the Agriculture sector. Still pending:
+`IRRIGATION_NEED` and `RANGELAND_STRESS` (the latter also needs a `SoilTemperatureIngestionService` for
+the planting-window angle). This is the widest value-per-effort jump — it opens a whole sector.
 
 **Fire + dust (`WILDFIRE_RISK`, `DUST_STORM_RISK`) · Ready · size M.** Add `WindIngestionService`,
 `DustIngestionService`, `HumidityIngestionService`, plus `ActiveFireIngestionService` (NASA FIRMS,
@@ -227,7 +229,8 @@ return numbers.
 
 1. **T1 sector UI** — days. Clarity win, no risk.
 2. ~~**T2 Waterborne Disease**~~ — done. Proved "new index, no new data" end to end.
-3. **T3 agriculture bundle** — the widest value-per-effort jump; opens a whole sector.
+3. **T3 agriculture bundle** — ~~Agriculture Stress~~ done (proved "new signal source + new index" end to
+   end); Irrigation Need and Rangeland Stress still to ship.
 4. **T3 fire + dust** — small; rounds out disaster-response coverage.
 5. **T4 forecast ingestion** — the architectural investment. Ship river-flood forecasting on top of
    it as the first payoff.

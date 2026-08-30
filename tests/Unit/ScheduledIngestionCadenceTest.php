@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use Illuminate\Console\Scheduling\Event;
 use Illuminate\Console\Scheduling\Schedule;
 use Tests\TestCase;
 
@@ -15,7 +16,7 @@ class ScheduledIngestionCadenceTest extends TestCase
 {
     public function test_volatile_signals_are_ingested_daily(): void
     {
-        $event = $this->findEvent('signals:ingest --source=RAINFALL,STANDING_WATER,TEMPERATURE,AIR_QUALITY_PM25,AIR_QUALITY_PM10');
+        $event = $this->findEvent('signals:ingest --source=RAINFALL,STANDING_WATER,TEMPERATURE,AIR_QUALITY_PM25,AIR_QUALITY_PM10,SOIL_MOISTURE,EVAPOTRANSPIRATION');
 
         $this->assertSame('0 2 * * *', $event->expression);
     }
@@ -45,7 +46,7 @@ class ScheduledIngestionCadenceTest extends TestCase
         $this->assertSame('0 4 * * *', $event->expression);
     }
 
-    private function findEvent(string $commandContains): \Illuminate\Console\Scheduling\Event
+    private function findEvent(string $commandContains): Event
     {
         $schedule = app(Schedule::class);
 

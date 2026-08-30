@@ -102,15 +102,15 @@ class CoverageSectorTest extends TestCase
     public function test_a_new_index_added_to_a_followed_sector_appears_automatically(): void
     {
         $user = User::factory()->create();
-        $this->saveWorkspace($user, ['sector_ids' => $this->sectorIds(['AGRICULTURE'])]);
+        $this->saveWorkspace($user, ['sector_ids' => $this->sectorIds(['AIR_ENVIRONMENT'])]);
 
-        $this->assertSame(['DROUGHT_RISK'], $this->visibleIndexCodes($user));
+        $this->assertSame(['RESPIRATORY_RISK'], $this->visibleIndexCodes($user));
 
-        // A future roadmap index attached to Agriculture — no action from the user.
-        $newIndex = ScoringIndex::query()->create(['code' => 'AGRI_STRESS', 'name' => 'Agriculture Stress Index']);
-        Sector::query()->where('code', 'AGRICULTURE')->firstOrFail()->indices()->attach($newIndex->index_id);
+        // A future roadmap index attached to the sector — no action from the user.
+        $newIndex = ScoringIndex::query()->create(['code' => 'DUST_STORM_RISK', 'name' => 'Dust Storm Risk Index']);
+        Sector::query()->where('code', 'AIR_ENVIRONMENT')->firstOrFail()->indices()->attach($newIndex->index_id);
 
-        $this->assertEqualsCanonicalizing(['DROUGHT_RISK', 'AGRI_STRESS'], $this->visibleIndexCodes($user));
+        $this->assertEqualsCanonicalizing(['RESPIRATORY_RISK', 'DUST_STORM_RISK'], $this->visibleIndexCodes($user));
     }
 
     public function test_hiding_an_index_within_a_sector_persists_as_a_refinement(): void

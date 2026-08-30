@@ -1,9 +1,10 @@
 # Next Phase: Sector Expansion
 
-KlimateIQ today is 6 live indices (Malaria Risk, Flood Risk, Drought Risk, Heat Stress Risk,
-Respiratory Risk, Composite Climate-Health Pressure) built from an 8-source signal set, sitting
-on a data spine — NASA POWER, Open-Meteo, JRC Global Surface Water, MODIS/AppEEARS, Open Topo
-Data, UNFPA population — that is already lat/long-driven and works anywhere, not just Nigeria.
+KlimateIQ today is 8 live indices — the original six (Malaria Risk, Flood Risk, Drought Risk,
+Heat Stress Risk, Respiratory Risk, Composite Climate-Health Pressure) plus Waterborne Disease
+Risk and Agriculture Stress — built from a 10-source signal set, sitting on a data spine —
+NASA POWER, Open-Meteo (archive + air quality), JRC Global Surface Water, MODIS/AppEEARS, Open
+Topo Data, UNFPA population — that is already lat/long-driven and works anywhere, not just Nigeria.
 
 The next phase reframes that spine around **sectors**: instead of a user picking regions and
 seeing every index, they pick the sector(s) that matter to them (agriculture, emergency
@@ -21,9 +22,9 @@ doc into a nine-rung ladder.
 
 ## The 6 sectors
 
-Sectors 1–4 map directly to indices that are live today. Sectors 5–6 are real, buildable
-next-phase proposals — not yet built, called out honestly below. Each sector can carry more
-than its one live index; the additional indices per sector are noted below and specified in
+Sectors 1–5 have at least one index live today. Sector 6 (Coastal Resilience) is a real,
+buildable proposal not yet built, called out honestly below. Each sector can carry more than
+one index; the additional indices per sector are noted below and specified in
 [`docs/BUILD_PLAN.md`](BUILD_PLAN.md#4-new-indices). Almost all of them build on free,
 open-licensed data (Open-Meteo is CC-BY 4.0) with no new data cost — the exceptions are called
 out explicitly.
@@ -46,7 +47,7 @@ low humidity + airborne dust + heat — all free Open-Meteo/CAMS signals, `regio
 doesn't render nationwide), plus the Waterborne Disease index from Sector 5. Dengue and Lassa
 fever have their own environmental lead indicators and are further-out candidates.
 
-### 2. Agriculture & Food Security — live today via Drought Risk
+### 2. Agriculture & Food Security — live today via Drought Risk + Agriculture Stress
 
 **Pain point**: Extension officers covering hundreds of LGAs have no forward-looking signal —
 they find out a season is bad when crops are already visibly wilting, too late to adjust
@@ -58,12 +59,14 @@ Drought Risk score per LGA.
 **Result**: An extension officer prioritizes which specific LGAs need water-conservation
 support before yields visibly collapse, instead of a uniform, too-late response everywhere.
 
-**Also buildable here**: Drought Risk is a coarse start. Three near-term additions build on free
-Open-Meteo signals (soil moisture, soil temperature, FAO-56 reference evapotranspiration) —
-an **Agriculture Stress** index (soil moisture + rainfall deficit + evapotranspiration, a
-much stronger pre-visible signal than NDVI alone), an **Irrigation Need** index (ET₀-led,
-outputting mm of water to apply), and a **Rangeland Stress** index (inverse NDVI + rainfall
-deficit) that also feeds pastoralist-movement and farmer–herder-conflict early warning.
+**Also live here**: an **Agriculture Stress** index (root-zone soil moisture 0.5 + rainfall
+deficit 0.3 + evapotranspiration demand 0.2) — a pre-visible signal of crop water stress that
+moves weeks before NDVI does. Shipped via `AdditionalIndicesSeeder` on two new free Open-Meteo
+signals (`SOIL_MOISTURE`, `EVAPOTRANSPIRATION`), uncalibrated like the rest.
+
+**Still buildable here**: an **Irrigation Need** index (ET₀-led, outputting mm of water to
+apply) and a **Rangeland Stress** index (inverse NDVI + rainfall deficit) that also feeds
+pastoralist-movement and farmer–herder-conflict early warning.
 
 ### 3. Emergency Response & Infrastructure — live today via Flood Risk
 
@@ -174,14 +177,12 @@ dashboard to build.
 These three tiers are the shape of the phase; [`docs/BUILD_PLAN.md`](BUILD_PLAN.md#2-the-build-ladder)
 breaks them into nine ordered rungs with a suggested sequence.
 
-- **Tier 1 — UI reframing**: group the existing 6 (soon 7, with Waterborne Disease) indices
-  under sector labels in the coverage/subscription UI (see "The configured workspace" above).
-  No new data, no new code beyond the
-  grouping and copy.
-- **Tier 2 — real sector-specific signals**: Sector 5 (Waterborne Disease index) fits here first
-  since it needs no new ingestion. The agriculture depth signals (soil moisture, evapotranspiration),
-  the fire/dust signals, the air-quality extension, forecast ingestion, probabilistic scoring, and
-  the climate-outlook module all fit here too — and all of them run on free, open-licensed data
+- **Tier 1 — UI reframing** *(done)*: the eight live indices are grouped under sector labels in
+  the coverage/subscription UI (see "The configured workspace" above). No new data.
+- **Tier 2 — real sector-specific signals** *(in progress)*: Waterborne Disease (no new
+  ingestion) and Agriculture Stress (soil moisture + ET₀, two new free Open-Meteo signals) are
+  live. Still ahead: the fire/dust signals, the air-quality extension, forecast ingestion,
+  probabilistic scoring, and the climate-outlook module — all on free, open-licensed data
   (Open-Meteo CC-BY 4.0, NASA FIRMS). Coastal Resilience (Sector 6) is the one part of this tier
   that genuinely needs new/paid data (coastal elevation, tide).
 - **Tier 3 — pan-African expansion, one country at a time**: `regions` currently has no

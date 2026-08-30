@@ -47,6 +47,16 @@ class ApiCapacityLimits
                 'dailyLimit' => 10000,
                 'recommendation' => 'Same as PM2.5 — shares the same daily quota.',
             ],
+            'SOIL_MOISTURE' => [
+                'provider' => 'Open-Meteo Archive API (ERA5-Land)',
+                'dailyLimit' => 10000,
+                'recommendation' => 'Primary source, 1 call/region/day — shares Open-Meteo\'s 10,000/day free-tier quota with the other archive and air-quality pulls. Well clear of Nigeria\'s 774 LGAs; self-hosting Open-Meteo (AGPLv3) lifts the ceiling if the platform ever needs it.',
+            ],
+            'EVAPOTRANSPIRATION' => [
+                'provider' => 'Open-Meteo Archive API',
+                'dailyLimit' => 10000,
+                'recommendation' => 'Same Open-Meteo free-tier quota as Soil Moisture and the archive fallbacks — 1 call/region/day. Not a scale concern at LGA granularity.',
+            ],
             'STANDING_WATER' => [
                 'provider' => 'JRC Global Surface Water',
                 'dailyLimit' => null,

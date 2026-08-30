@@ -40,6 +40,9 @@ class ReferenceDataSeeder extends Seeder
             ['code' => 'ELEVATION', 'name' => 'Elevation / Terrain', 'unit' => 'm', 'source' => 'SRTM', 'higher_is_worse' => false],
             ['code' => 'AIR_QUALITY_PM25', 'name' => 'Fine Particulate Matter (PM2.5)', 'unit' => 'µg/m³', 'source' => 'Open-Meteo Air Quality API (CAMS)', 'higher_is_worse' => true],
             ['code' => 'AIR_QUALITY_PM10', 'name' => 'Coarse Particulate Matter (PM10)', 'unit' => 'µg/m³', 'source' => 'Open-Meteo Air Quality API (CAMS)', 'higher_is_worse' => true],
+            // Signals added after the original set — SOIL_MOISTURE, EVAPOTRANSPIRATION — are
+            // defined in AdditionalIndicesSeeder so production picks them up without re-running
+            // this seeder's calibration/weight blocks.
         ];
 
         foreach ($types as $type) {
