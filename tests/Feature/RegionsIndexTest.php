@@ -40,6 +40,16 @@ class RegionsIndexTest extends TestCase
         $response->assertDontSee($other->name);
     }
 
+    public function test_the_active_index_shows_its_plain_language_description(): void
+    {
+        $user = User::factory()->create();
+        $this->activate(Region::query()->first());
+
+        $this->actingAs($user)->get(route('regions.index', ['index' => 'MALARIA_RISK']))
+            ->assertOk()
+            ->assertSee('for programme officers pre-positioning nets', false);
+    }
+
     /**
      * Regression test: the Regions page previously only respected an explicit ?regions=
      * URL parameter and otherwise always showed every active region, silently ignoring

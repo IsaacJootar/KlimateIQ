@@ -11,7 +11,12 @@
             {{ __('Regions') }}
         </h2>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            @if ($hasCoverage)
+            @if ($followedSectors->isNotEmpty())
+                <span class="font-medium text-slate-700 dark:text-slate-200">{{ $followedSectors->pluck('name')->join(', ', ' and ') }}</span>
+                &middot; {{ $indices->count() }} {{ $indices->count() === 1 ? 'index' : 'indices' }}
+                &middot; {{ $hasCoverage ? $regions->count().' '.($regions->count() === 1 ? 'LGA' : 'LGAs') : 'all active LGAs' }}.
+                Colour-coded by current risk; switch the index below to see a different score.
+            @elseif ($hasCoverage)
                 Your configured regions, color-coded by current risk. Switch the index below to see a different score.
             @else
                 Every region currently active on the platform — you haven't set your own coverage yet.
@@ -26,11 +31,16 @@
             <div class="flex flex-wrap gap-2">
                 @foreach ($indices as $idx)
                     <a href="{{ route('regions.index', ['index' => $idx->code]) }}"
+                       @if ($idx->description) title="{{ $idx->description }}" @endif
                        class="pill-tab {{ $idx->index_id === $index->index_id ? 'pill-tab-active' : '' }}">
                         {{ $idx->name }}
                     </a>
                 @endforeach
             </div>
+
+            @if ($index->description)
+                <p class="-mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-3xl">{{ $index->description }}</p>
+            @endif
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="metric-card metric-teal">

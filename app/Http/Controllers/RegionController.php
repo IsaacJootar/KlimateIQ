@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\IndexActionRecommendation;
 use App\Models\Region;
 use App\Models\RegionScore;
+use App\Models\SignalType;
 use App\Services\Ai\RegionScoreSummaryService;
 use App\Support\IndexCoverage;
 use App\Support\RiskBand;
@@ -86,10 +87,14 @@ class RegionController extends Controller
                 return $region;
             });
 
+        $followedSectors = Auth::user()->sectorSubscriptions()->with('sector')->get()
+            ->pluck('sector')->filter()->sortBy('sort_order')->values();
+
         return view('regions.index', [
             'regions' => $regions,
             'indices' => $indices,
             'index' => $index,
+            'followedSectors' => $followedSectors,
             // Drives the "Your Regions" vs "Active Regions" label below — the count alone
             // doesn't tell a new user whether they're looking at their own coverage or the
             // platform-wide fallback, which is exactly what caused the "is this a bug?"
@@ -110,7 +115,12 @@ class RegionController extends Controller
 
         $latest = $scores->last();
         $prior = $scores->where('period_start', '<=', now()->subDays(14))->last();
-        $diagnosis = ScoreDiagnosis::forBreakdown($latest?->breakdown ?? [], $latest?->score !== null ? (float) $latest->score : null);
+        $signalNames = SignalType::codeToName();
+        $diagnosis = ScoreDiagnosis::forBreakdown(
+            $latest?->breakdown ?? [],
+            $latest?->score !== null ? (float) $latest->score : null,
+            $signalNames,
+        );
 
         return view('regions.show', [
             'region' => $region,
@@ -119,6 +129,7 @@ class RegionController extends Controller
             'scores' => $scores,
             'latest' => $latest,
             'breakdown' => $latest?->breakdown ?? [],
+            'signalNames' => $signalNames,
             'aiAvailable' => app(RegionScoreSummaryService::class)->isAvailable(),
             'recommendedAction' => IndexActionRecommendation::textFor($index->index_id, $latest?->score),
             'diagnosis' => $diagnosis,

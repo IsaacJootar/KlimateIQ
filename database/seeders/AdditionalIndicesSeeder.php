@@ -56,14 +56,15 @@ class AdditionalIndicesSeeder extends Seeder
      */
     private function ensureSignalTypes(): void
     {
+        // Names are the reader-facing labels (Clarity Pass A1 / migration friendly_signal_type_names).
         $types = [
             // Drier soil is worse for crops — inverted, like elevation. Indices override direction as needed.
-            ['code' => 'SOIL_MOISTURE', 'name' => 'Root-Zone Soil Moisture', 'unit' => 'm³/m³', 'source' => 'Open-Meteo Archive API (ERA5-Land, 7–28 cm)', 'higher_is_worse' => false],
-            ['code' => 'EVAPOTRANSPIRATION', 'name' => 'Reference Evapotranspiration (ET₀)', 'unit' => 'mm', 'source' => 'Open-Meteo Archive API (FAO-56 Penman-Monteith)', 'higher_is_worse' => true],
+            ['code' => 'SOIL_MOISTURE', 'name' => 'Soil Moisture (Root Zone)', 'unit' => 'm³/m³', 'source' => 'Open-Meteo Archive API (ERA5-Land, 7–28 cm)', 'higher_is_worse' => false],
+            ['code' => 'EVAPOTRANSPIRATION', 'name' => 'Evaporation Demand (ET₀)', 'unit' => 'mm', 'source' => 'Open-Meteo Archive API (FAO-56 Penman-Monteith)', 'higher_is_worse' => true],
             // Dry air drives fire spread, dust lofting and dry-season disease — inverted by default.
-            ['code' => 'HUMIDITY', 'name' => 'Relative Humidity', 'unit' => '%', 'source' => 'Open-Meteo Archive API (ERA5, 2 m)', 'higher_is_worse' => false],
-            ['code' => 'WIND_SPEED', 'name' => 'Wind Speed (10 m)', 'unit' => 'km/h', 'source' => 'Open-Meteo Archive API (ERA5, daily max)', 'higher_is_worse' => true],
-            ['code' => 'DUST', 'name' => 'Mineral Dust', 'unit' => 'µg/m³', 'source' => 'Open-Meteo Air Quality API (CAMS)', 'higher_is_worse' => true],
+            ['code' => 'HUMIDITY', 'name' => 'Air Humidity', 'unit' => '%', 'source' => 'Open-Meteo Archive API (ERA5, 2 m)', 'higher_is_worse' => false],
+            ['code' => 'WIND_SPEED', 'name' => 'Wind Speed', 'unit' => 'km/h', 'source' => 'Open-Meteo Archive API (ERA5, daily max)', 'higher_is_worse' => true],
+            ['code' => 'DUST', 'name' => 'Airborne Dust', 'unit' => 'µg/m³', 'source' => 'Open-Meteo Air Quality API (CAMS)', 'higher_is_worse' => true],
             // Confirmation series only — carries weight 0 on Wildfire Risk, never drives a score.
             ['code' => 'ACTIVE_FIRE', 'name' => 'Active Fire Detections', 'unit' => 'detections', 'source' => 'NASA FIRMS (VIIRS NOAA-20)', 'higher_is_worse' => true],
             // Respiratory Risk depth — gaseous pollutants alongside the PM series.
@@ -87,7 +88,7 @@ class AdditionalIndicesSeeder extends Seeder
             ['code' => 'WATERBORNE_DISEASE_RISK'],
             [
                 'name' => 'Waterborne Disease Risk Index',
-                'description' => 'Standing water + rainfall, weighted for cholera and typhoid risk after flooding — for WASH programmes and water-treatment targeting.',
+                'description' => 'Standing water and rainfall weighted for cholera and typhoid risk after flooding — for WASH teams targeting water treatment and safe-water messaging.',
             ]
         );
 
@@ -122,7 +123,7 @@ class AdditionalIndicesSeeder extends Seeder
             ['code' => 'AGRICULTURE_STRESS'],
             [
                 'name' => 'Agriculture Stress Index',
-                'description' => 'Root-zone soil moisture + rainfall deficit + evapotranspiration demand — an early, pre-visible signal of crop water stress for extension officers, ahead of what vegetation imagery would show.',
+                'description' => 'Soil moisture, rainfall shortfall and evaporation demand as an early crop water-stress score — for extension officers deciding where to send support before crops visibly wilt.',
             ]
         );
 
@@ -161,7 +162,7 @@ class AdditionalIndicesSeeder extends Seeder
             ['code' => 'IRRIGATION_NEED'],
             [
                 'name' => 'Irrigation Need Index',
-                'description' => 'Evapotranspiration demand against soil moisture and recent rainfall — where supplementary irrigation would do the most good this week. A targeting score, not a literal water volume.',
+                'description' => 'Evaporation demand against soil moisture and recent rain — where supplementary irrigation would do the most good this week. A targeting score, not a water volume.',
             ]
         );
 
@@ -197,7 +198,7 @@ class AdditionalIndicesSeeder extends Seeder
             ['code' => 'RANGELAND_STRESS'],
             [
                 'name' => 'Rangeland Stress Index',
-                'description' => 'Vegetation loss + rainfall deficit across grazing land — an early signal of pasture failure, and of the pastoralist movement and farmer–herder pressure that tends to follow it.',
+                'description' => 'Vegetation loss and rainfall shortfall across grazing land — an early signal of pasture failure and the pastoralist movement that can follow it, for agriculture and security planners.',
             ]
         );
 
@@ -230,7 +231,7 @@ class AdditionalIndicesSeeder extends Seeder
             ['code' => 'WILDFIRE_RISK'],
             [
                 'name' => 'Wildfire Risk Index',
-                'description' => 'Dry air, dry vegetation, wind and heat combined into a bush-fire-weather score — for land-management and emergency services during the dry season. Satellite fire detections are shown alongside as confirmation.',
+                'description' => 'Dry air, dry vegetation, wind and heat as a bush-fire-weather score, with satellite fire detections shown alongside for confirmation — for land management and fire services in the dry season.',
             ]
         );
 
@@ -268,7 +269,7 @@ class AdditionalIndicesSeeder extends Seeder
             ['code' => 'DUST_STORM_RISK'],
             [
                 'name' => 'Dust Storm Risk Index',
-                'description' => 'Airborne mineral dust + wind + dry air — the harmattan dust-storm hazard, for air-quality advisories, aviation/road-safety warnings and respiratory-health planning.',
+                'description' => 'Airborne dust, wind and dry air as a harmattan dust-storm score — for air-quality, road-safety and respiratory-health warnings.',
             ]
         );
 

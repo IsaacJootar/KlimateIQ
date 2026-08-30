@@ -38,6 +38,7 @@ class RegionScoreSummaryServiceTest extends TestCase
             'breakdown' => [
                 [
                     'signal_type_code' => 'RAINFALL',
+                    'signal_type_name' => 'Rainfall',
                     'raw_value' => 150,
                     'unit' => 'mm',
                     'normalized_score' => 75.0,
@@ -46,6 +47,7 @@ class RegionScoreSummaryServiceTest extends TestCase
                 ],
                 [
                     'signal_type_code' => 'STANDING_WATER',
+                    'signal_type_name' => 'Standing Water',
                     'status' => 'no_data',
                 ],
             ],
@@ -82,5 +84,8 @@ class RegionScoreSummaryServiceTest extends TestCase
         $this->assertSame('A test summary.', $result['body']);
         $this->assertStringContainsString('Risk band: red', $fakeClient->captured);
         $this->assertStringContainsString('contribution to final score 44.5', $fakeClient->captured);
+        // Clarity Pass A1 — the prompt names signals the way a reader would, not by code.
+        $this->assertStringContainsString('- Rainfall:', $fakeClient->captured);
+        $this->assertStringNotContainsString('RAINFALL', $fakeClient->captured);
     }
 }

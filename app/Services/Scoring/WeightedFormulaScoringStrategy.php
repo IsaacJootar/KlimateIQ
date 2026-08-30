@@ -60,6 +60,7 @@ class WeightedFormulaScoringStrategy implements ScoringStrategy
             if ($signal === null) {
                 $breakdown[] = [
                     'signal_type_code' => $signalType->code,
+                    'signal_type_name' => $signalType->name,
                     'status' => 'no_data',
                     'weight' => (float) $config->weight,
                 ];
@@ -83,6 +84,7 @@ class WeightedFormulaScoringStrategy implements ScoringStrategy
 
             $breakdown[] = [
                 'signal_type_code' => $signalType->code,
+                'signal_type_name' => $signalType->name,
                 'raw_value' => (float) $signal->value,
                 'unit' => $signalType->unit,
                 'normalized_score' => round($normalized, 2),

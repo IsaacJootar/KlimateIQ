@@ -4,17 +4,16 @@
             {{ __('Dashboard') }}
         </h2>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            @if ($hasCoverage)
-                Your workspace, at a glance
+            @if ($followedSectors->isNotEmpty())
+                <span class="font-medium text-slate-700 dark:text-slate-200">{{ $followedSectors->pluck('name')->join(', ', ' and ') }}</span>
+                &middot; {{ $availableIndices->count() }} {{ $availableIndices->count() === 1 ? 'index' : 'indices' }}
+                &middot; {{ $hasCoverage ? $regionsCount.' '.($regionsCount === 1 ? 'LGA' : 'LGAs') : 'all active LGAs' }}
+                <a href="{{ route('coverage.edit') }}" class="link-nav">Edit workspace</a>
             @else
-                Showing every region currently active on the platform — you haven't narrowed your regions yet
+                No sectors picked yet, so you're seeing every index across
+                {{ $hasCoverage ? 'your regions' : 'all active regions' }}.
+                <a href="{{ route('coverage.edit') }}" class="link-nav">Pick your sectors</a>
             @endif
-            @if ($hasIndexCoverage)
-                — configured for {{ $availableIndices->pluck('name')->join(', ', ', and ') }}.
-            @else
-                — no sectors picked, so every index is shown.
-            @endif
-            <a href="{{ route('coverage.edit') }}" class="link-nav">Edit workspace</a>
         </p>
     </x-slot>
 
@@ -47,11 +46,16 @@
                 <div class="flex flex-wrap gap-2">
                     @foreach ($availableIndices as $idx)
                         <a href="{{ route('dashboard', ['index' => $idx->code]) }}"
+                           @if ($idx->description) title="{{ $idx->description }}" @endif
                            class="pill-tab {{ $idx->index_id === $defaultIndex->index_id ? 'pill-tab-active' : '' }}">
                             {{ $idx->name }}
                         </a>
                     @endforeach
                 </div>
+            @endif
+
+            @if ($defaultIndex->description)
+                <p class="-mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-3xl">{{ $defaultIndex->description }}</p>
             @endif
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

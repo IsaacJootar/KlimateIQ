@@ -30,16 +30,18 @@ class ReferenceDataSeeder extends Seeder
 
     private function seedSignalTypes(): void
     {
+        // Names here are the reader-facing labels (Clarity Pass A1 / migration
+        // friendly_signal_type_names). Keep the two in sync.
         $types = [
             ['code' => 'RAINFALL', 'name' => 'Rainfall', 'unit' => 'mm', 'source' => 'NASA POWER / CHIRPS', 'higher_is_worse' => true],
             ['code' => 'STANDING_WATER', 'name' => 'Standing Water', 'unit' => '%', 'source' => 'JRC Global Surface Water / Sentinel-2 NDWI', 'higher_is_worse' => true],
             ['code' => 'TEMPERATURE', 'name' => 'Temperature', 'unit' => '°C', 'source' => 'NASA POWER / ERA5', 'higher_is_worse' => true],
-            ['code' => 'VEGETATION', 'name' => 'Vegetation / Humidity', 'unit' => 'NDVI', 'source' => 'MODIS', 'higher_is_worse' => true],
+            ['code' => 'VEGETATION', 'name' => 'Vegetation Cover', 'unit' => 'NDVI', 'source' => 'MODIS', 'higher_is_worse' => true],
             ['code' => 'POPULATION_EXPOSURE', 'name' => 'Population Exposure', 'unit' => 'people', 'source' => 'UNFPA/US Census Bureau via HDX (2020 LGA-level projection)', 'higher_is_worse' => true],
             // Lower ground floods first — the only inverted signal in the catalogue.
-            ['code' => 'ELEVATION', 'name' => 'Elevation / Terrain', 'unit' => 'm', 'source' => 'SRTM', 'higher_is_worse' => false],
-            ['code' => 'AIR_QUALITY_PM25', 'name' => 'Fine Particulate Matter (PM2.5)', 'unit' => 'µg/m³', 'source' => 'Open-Meteo Air Quality API (CAMS)', 'higher_is_worse' => true],
-            ['code' => 'AIR_QUALITY_PM10', 'name' => 'Coarse Particulate Matter (PM10)', 'unit' => 'µg/m³', 'source' => 'Open-Meteo Air Quality API (CAMS)', 'higher_is_worse' => true],
+            ['code' => 'ELEVATION', 'name' => 'Elevation', 'unit' => 'm', 'source' => 'SRTM', 'higher_is_worse' => false],
+            ['code' => 'AIR_QUALITY_PM25', 'name' => 'Fine Particle Pollution (PM2.5)', 'unit' => 'µg/m³', 'source' => 'Open-Meteo Air Quality API (CAMS)', 'higher_is_worse' => true],
+            ['code' => 'AIR_QUALITY_PM10', 'name' => 'Coarse Particle Pollution (PM10)', 'unit' => 'µg/m³', 'source' => 'Open-Meteo Air Quality API (CAMS)', 'higher_is_worse' => true],
             // Signals added after the original set — SOIL_MOISTURE, EVAPOTRANSPIRATION — are
             // defined in AdditionalIndicesSeeder so production picks them up without re-running
             // this seeder's calibration/weight blocks.
@@ -52,36 +54,38 @@ class ReferenceDataSeeder extends Seeder
 
     private function seedIndices(): void
     {
+        // Descriptions here are the reader-facing text (Clarity Pass A2 / migration
+        // friendly_index_descriptions). Keep the two in sync.
         $indices = [
             [
                 'code' => 'MALARIA_RISK',
                 'name' => 'Malaria Risk Index',
-                'description' => 'Rainfall + standing water, weighted for malaria programme officers.',
+                'description' => 'Rainfall and standing water turned into a per-LGA malaria risk score — for programme officers pre-positioning nets, tests and treatment before cases climb.',
             ],
             [
                 'code' => 'FLOOD_RISK',
                 'name' => 'Flood Risk Index',
-                'description' => 'Rainfall + standing water + elevation/terrain, for emergency response.',
+                'description' => 'Rainfall, standing water and terrain combined to rank which LGAs are closest to flooding — for emergency agencies staging shelter and clean water ahead of displacement.',
             ],
             [
                 'code' => 'COMPOSITE_PRESSURE',
                 'name' => 'Composite Climate-Health Pressure Index',
-                'description' => 'All active signals, weighted, for an overall regional snapshot.',
+                'description' => 'Every active signal, weighted into one overall climate-health pressure score — a cross-cutting snapshot for anyone who needs the big picture before drilling in.',
             ],
             [
                 'code' => 'HEAT_STRESS_RISK',
                 'name' => 'Heat Stress Risk Index',
-                'description' => 'Temperature + vegetation loss, for occupational and public heat-health planning.',
+                'description' => 'Temperature and loss of vegetation cover as a heat-health score — for occupational-safety and public-health teams timing heat advisories.',
             ],
             [
                 'code' => 'DROUGHT_RISK',
                 'name' => 'Drought Risk Index',
-                'description' => 'Rainfall deficit + vegetation stress, for agricultural and water-security planning.',
+                'description' => 'Rainfall shortfall and vegetation stress as a drought score — for agriculture and water-security planners acting before a season visibly fails.',
             ],
             [
                 'code' => 'RESPIRATORY_RISK',
                 'name' => 'Respiratory Risk Index',
-                'description' => 'Fine and coarse particulate matter (PM2.5 + PM10), for air-quality and respiratory-health planning — especially relevant during harmattan/dust season.',
+                'description' => 'Fine and coarse particle pollution, ozone, NO₂ and harmattan dust as a respiratory-health score — for air-quality advisories, especially in dust season.',
             ],
         ];
 

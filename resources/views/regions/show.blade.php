@@ -30,11 +30,16 @@
             <div class="flex flex-wrap gap-2">
                 @foreach ($indices as $idx)
                     <a href="{{ route('regions.show', ['region' => $region->region_id, 'index' => $idx->code]) }}"
+                       @if ($idx->description) title="{{ $idx->description }}" @endif
                        class="pill-tab {{ $idx->index_id === $index->index_id ? 'pill-tab-active' : '' }}">
                         {{ $idx->name }}
                     </a>
                 @endforeach
             </div>
+
+            @if ($index->description)
+                <p class="-mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-3xl">{{ $index->description }}</p>
+            @endif
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div class="metric-card {{ $metricClass }}">
@@ -110,8 +115,9 @@
                         </thead>
                         <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                             @forelse ($breakdown as $signal)
+                                @php $signalLabel = $signalNames[$signal['signal_type_code']] ?? $signal['signal_type_name'] ?? $signal['signal_type_code']; @endphp
                                 <tr>
-                                    <td class="px-4 py-3 text-sm font-medium whitespace-nowrap">{{ $signal['signal_type_code'] }}</td>
+                                    <td class="px-4 py-3 text-sm font-medium whitespace-nowrap">{{ $signalLabel }}</td>
                                     <td class="px-4 py-3 text-sm">
                                         @if (($signal['status'] ?? null) === 'no_data')
                                             @if (\App\Support\IngestionCadence::isWeekly($signal['signal_type_code']))

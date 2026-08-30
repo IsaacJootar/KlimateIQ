@@ -27,4 +27,15 @@ class SignalType extends Model
     {
         return $this->hasMany(RegionSignal::class, 'signal_type_id', 'signal_type_id');
     }
+
+    /**
+     * code => reader-facing name, for turning a stored breakdown (which only carries the code)
+     * into something legible. Cached for the request — every score page needs the whole map.
+     *
+     * @return array<string, string>
+     */
+    public static function codeToName(): array
+    {
+        return once(fn () => static::query()->pluck('name', 'code')->all());
+    }
 }

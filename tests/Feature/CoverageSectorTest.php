@@ -81,6 +81,20 @@ class CoverageSectorTest extends TestCase
             ->assertDontSee('Focus your dashboard on what you monitor');
     }
 
+    public function test_the_dashboard_and_regions_headers_name_the_followed_sector(): void
+    {
+        $user = User::factory()->create();
+        $this->saveWorkspace($user, ['sector_ids' => $this->sectorIds(['AGRICULTURE'])]);
+
+        $this->actingAs($user)->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Agriculture &amp; Food Security', false);
+
+        $this->actingAs($user)->get(route('regions.index'))
+            ->assertOk()
+            ->assertSee('Agriculture &amp; Food Security', false);
+    }
+
     public function test_a_users_sectors_define_which_indices_the_dashboard_shows(): void
     {
         $user = User::factory()->create();

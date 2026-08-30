@@ -11,6 +11,16 @@ calibration, ingestion — is untouched by this pass.**
 Rendered plan (with the worked example and before/after): the "KlimateIQ Clarity Pass" artifact.
 Status: **approved 2026-08-30, all 12 items in scope, then T4.**
 
+### Progress
+
+| item | state |
+|---|---|
+| A1 signal names | ✅ shipped |
+| A2 index "what it measures" | ✅ shipped |
+| B1 sector in the header | ✅ shipped |
+| C region-page rebuild (+ A3, A4) | next |
+| B3, D2, D1, D3, B2, B4, E1, E2 | pending |
+
 ## Why
 
 The engine is strong (12 indices, 16 free sources, every score traceable). The screens haven't
@@ -63,6 +73,24 @@ be `state` later. Lookup prefers a `state` row over a `zone` row for the same cr
 per-state override is data, not a migration. v1 seeds ~6 agro-ecological zones × ~6 principal
 crops from public FEWS NET / FAO crop calendars, each with the months the crop is in a
 water-sensitive growth stage. Nigerian states map to zones via a static table.
+
+## Where AI fits (and where it doesn't)
+
+The OpenAI API is configured and live (`RegionScoreSummaryService`, the optional "AI Summary"
+on the region page). It stays inside one boundary through this whole pass:
+
+- **AI writes language, never facts.** It turns verified structured data — the score breakdown,
+  the crop-calendar row, the facility list — into fluent, sector-appropriate prose. The
+  "This week in {LGA}" summary (Part C step 1) and richer recommendation phrasing are good uses.
+- **Facts stay deterministic and checkable.** Scores come from the engine. Named facilities come
+  from GRID3. Crop stages come from published calendars. `ScoreDiagnosis` stays a no-AI function.
+  The AI is never asked "which clinics are near here" — the first hallucinated clinic name would
+  cost more trust than every summary ever earned.
+- **`RegionScoreSummaryService`'s existing rule holds:** *"may only restate what is already in
+  the breakdown."* Any new AI use states the same boundary in its prompt and is clearly labelled
+  in the UI as the generated layer, sitting below the deterministic one.
+- Genuinely dynamic external facts with no dataset (rare) may use a real API or AI+web, cited and
+  kept visually separate from the core.
 
 ## Part A — Language
 

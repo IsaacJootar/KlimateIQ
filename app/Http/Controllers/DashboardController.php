@@ -98,12 +98,16 @@ class DashboardController extends Controller
             ->take(8)
             ->values();
 
+        $followedSectors = $user->sectorSubscriptions()->with('sector')->get()
+            ->pluck('sector')->filter()->sortBy('sort_order')->values();
+
         return view('dashboard', [
             'hasCoverage' => $regionIds->isNotEmpty(),
             'hasIndexCoverage' => $user->indexSubscriptions()->exists(),
             // A soft nudge for anyone who never picked sectors — existing users from before
             // the sector model, and new users who skipped the setup wizard.
             'needsSectorSetup' => ! $user->sectorSubscriptions()->exists(),
+            'followedSectors' => $followedSectors,
             'regionsCount' => $regions->count(),
             'highRiskCount' => $highRiskCount,
             'openAlertsCount' => $openAlertsCount,

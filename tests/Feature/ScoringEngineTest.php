@@ -61,6 +61,10 @@ class ScoringEngineTest extends TestCase
         // whole score itself.
         $rainfallRow = collect($result->breakdown)->firstWhere('signal_type_code', 'RAINFALL');
         $this->assertSame(50.0, $rainfallRow['contribution_to_final_score']);
+
+        // Clarity Pass A1 — every breakdown row carries the reader-facing name, data or not.
+        $this->assertSame('Rainfall', $rainfallRow['signal_type_name']);
+        $this->assertSame('Standing Water', collect($result->breakdown)->firstWhere('signal_type_code', 'STANDING_WATER')['signal_type_name']);
     }
 
     public function test_contribution_to_final_score_sums_to_the_score_across_multiple_signals(): void

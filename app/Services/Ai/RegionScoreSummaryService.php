@@ -88,13 +88,15 @@ class RegionScoreSummaryService
         ];
 
         foreach ($score->breakdown ?? [] as $signal) {
+            $label = $signal['signal_type_name'] ?? $signal['signal_type_code'];
+
             if (($signal['status'] ?? null) === 'no_data') {
-                $lines[] = "- {$signal['signal_type_code']}: no data available this period";
+                $lines[] = "- {$label}: no data available this period";
 
                 continue;
             }
 
-            $lines[] = "- {$signal['signal_type_code']}: raw value {$signal['raw_value']} {$signal['unit']}, ".
+            $lines[] = "- {$label}: raw value {$signal['raw_value']} {$signal['unit']}, ".
                 "normalized {$signal['normalized_score']}, weight {$signal['weight']}, ".
                 "contribution to final score {$signal['contribution_to_final_score']}";
         }

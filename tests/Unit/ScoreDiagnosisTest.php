@@ -22,6 +22,29 @@ class ScoreDiagnosisTest extends TestCase
         $this->assertStringContainsString('high-risk', $result['conclusion']);
     }
 
+    public function test_uses_the_reader_facing_label_when_one_is_supplied(): void
+    {
+        $breakdown = [
+            ['signal_type_code' => 'STANDING_WATER', 'contribution_to_final_score' => 55.5],
+        ];
+
+        $result = ScoreDiagnosis::forBreakdown($breakdown, 68.0, ['STANDING_WATER' => 'Standing Water']);
+
+        $this->assertSame('Standing Water', $result['dominantSignal']);
+        $this->assertStringContainsString('Standing Water', $result['conclusion']);
+        $this->assertStringNotContainsString('STANDING_WATER', $result['conclusion']);
+    }
+
+    public function test_falls_back_to_the_name_in_the_breakdown_row_then_the_code(): void
+    {
+        $result = ScoreDiagnosis::forBreakdown(
+            [['signal_type_code' => 'EVAPOTRANSPIRATION', 'signal_type_name' => 'Evaporation Demand (ET₀)', 'contribution_to_final_score' => 20.0]],
+            50.0,
+        );
+
+        $this->assertSame('Evaporation Demand (ET₀)', $result['dominantSignal']);
+    }
+
     public function test_no_data_rows_are_ignored_when_picking_the_driver(): void
     {
         $breakdown = [

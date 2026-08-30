@@ -43,8 +43,8 @@ class ScoreDiagnosisDisplayTest extends TestCase
             'score' => 72.0,
             'scoring_strategy' => 'formula',
             'breakdown' => [
-                ['signal_type_code' => 'RAINFALL', 'raw_value' => 10, 'unit' => 'mm', 'normalized_score' => 20, 'weight' => 0.3, 'contribution_to_final_score' => 12.0],
-                ['signal_type_code' => 'STANDING_WATER', 'raw_value' => 90, 'unit' => '%', 'normalized_score' => 90, 'weight' => 0.7, 'contribution_to_final_score' => 60.0],
+                ['signal_type_code' => 'RAINFALL', 'signal_type_name' => 'Rainfall', 'raw_value' => 10, 'unit' => 'mm', 'normalized_score' => 20, 'weight' => 0.3, 'contribution_to_final_score' => 12.0],
+                ['signal_type_code' => 'STANDING_WATER', 'signal_type_name' => 'Standing Water', 'raw_value' => 90, 'unit' => '%', 'normalized_score' => 90, 'weight' => 0.7, 'contribution_to_final_score' => 60.0],
             ],
             'calculated_at' => now(),
         ]);
@@ -53,8 +53,10 @@ class ScoreDiagnosisDisplayTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('What this means');
-        $response->assertSee('driven mainly by STANDING_WATER', false);
-        $response->assertSee('Based on STANDING_WATER being the main driver above.', false);
+        // Clarity Pass A1 — reader-facing names, not codes.
+        $response->assertSee('driven mainly by Standing Water', false);
+        $response->assertSee('Based on Standing Water being the main driver above.', false);
+        $response->assertDontSee('STANDING_WATER');
         $response->assertSee('Distribute RDTs and pre-position ACTs', false);
     }
 

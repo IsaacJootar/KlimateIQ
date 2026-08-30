@@ -15,9 +15,10 @@ class ScoreDiagnosis
 
     /**
      * @param  array<int, array<string, mixed>>  $breakdown
+     * @param  array<string, string>  $signalLabels  code => reader-facing name; falls back to the code
      * @return array{dominantSignal: ?string, dominantContribution: ?float, conclusion: ?string}
      */
-    public static function forBreakdown(array $breakdown, ?float $score): array
+    public static function forBreakdown(array $breakdown, ?float $score, array $signalLabels = []): array
     {
         $available = collect($breakdown)->reject(fn (array $row) => ($row['status'] ?? null) === 'no_data');
 
@@ -29,10 +30,13 @@ class ScoreDiagnosis
         $bandLabel = self::BAND_LABELS[RiskBand::forScore($score)] ?? 'unknown';
         $formattedScore = rtrim(rtrim(number_format($score, 1), '0'), '.');
 
+        $code = $dominant['signal_type_code'];
+        $label = $signalLabels[$code] ?? $dominant['signal_type_name'] ?? $code;
+
         return [
-            'dominantSignal' => $dominant['signal_type_code'],
+            'dominantSignal' => $label,
             'dominantContribution' => $dominant['contribution_to_final_score'] ?? null,
-            'conclusion' => "This is a {$bandLabel}-risk score, driven mainly by {$dominant['signal_type_code']} ".
+            'conclusion' => "This is a {$bandLabel}-risk score, driven mainly by {$label} ".
                 "({$dominant['contribution_to_final_score']} of the {$formattedScore} points).",
         ];
     }
