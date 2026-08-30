@@ -309,9 +309,11 @@ class ReferenceDataSeeder extends Seeder
                 'RAINFALL' => ['weight' => 0.5, 'higher_is_worse' => false], // less rain, more drought
                 'VEGETATION' => ['weight' => 0.5, 'higher_is_worse' => false], // lower NDVI, more vegetation stress
             ],
-            // PM2.5 weighted higher — finer particulate, the more health-critical of the two per
-            // WHO guidance.
-            'RESPIRATORY_RISK' => ['AIR_QUALITY_PM25' => 0.6, 'AIR_QUALITY_PM10' => 0.4],
+            // PM2.5 weighted higher — finer particulate, the more health-critical per WHO
+            // guidance. The gaseous pollutants (OZONE, NO2) and CAMS dust are folded in by
+            // AdditionalIndicesSeeder::deepenRespiratoryRisk(); these two PM weights leave room
+            // for them (0.4 + 0.2 + 0.15 + 0.1 + 0.15 = 1.0).
+            'RESPIRATORY_RISK' => ['AIR_QUALITY_PM25' => 0.4, 'AIR_QUALITY_PM10' => 0.2],
         ];
 
         foreach ($weights as $indexCode => $signalWeights) {

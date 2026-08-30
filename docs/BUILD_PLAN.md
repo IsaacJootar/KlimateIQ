@@ -48,7 +48,7 @@ forward-looking (forecast / ensemble) data, decadal climate projections, and the
 |---|---|---|
 | T1 | Sector grouping in the UI | nothing — ship first |
 | T2 | Config-only indices — **Waterborne Disease shipped**; Meningitis pending | T3 signals for Meningitis |
-| T3 | New free signals + their indices — **agriculture bundle + fire/dust + FIRMS confirmation shipped**; air-quality depth pending | nothing |
+| T3 | New free signals + their indices — **agriculture bundle, fire/dust, FIRMS confirmation, Respiratory depth all shipped** | nothing |
 | T4 | Forecast ingestion — store and score *future* periods | T3 (`RIVER_DISCHARGE`) |
 | T5 | Probabilistic scoring — ensemble members → a likelihood | T4 |
 | T6 | Climate outlook module — CMIP6 decadal projections | nothing (independent path) |
@@ -72,7 +72,8 @@ Keep the primary + fallback pattern `RainfallIngestionService` already uses, and
 | `HUMIDITY` | Open-Meteo relative humidity 2 m | `DAILY` | meningitis, fire, heat index, VPD | **Live** — `HumidityIngestionService` |
 | `WIND_SPEED` | Open-Meteo wind 10 m daily max (NASA POWER fallback: not wired yet) | `DAILY` | fire spread, dust transport | **Live** — `WindIngestionService` |
 | `DUST` | Open-Meteo Air Quality (CAMS dust) | `DAILY` | respiratory, meningitis, dust-storm | **Live** — `DustIngestionService` |
-| `OZONE` / `NO2` / `SO2` / `CO` | Open-Meteo Air Quality (CAMS) | `DAILY` | Respiratory Risk depth | Ready |
+| `OZONE` / `NO2` | Open-Meteo Air Quality (CAMS) | `DAILY` | Respiratory Risk depth | **Live** — `AirQuality{Ozone,No2}IngestionService` |
+| `SO2` / `CO` | Open-Meteo Air Quality (CAMS) | `DAILY` | Respiratory Risk depth (further) | Ready — same API call |
 | `UV_INDEX` | Open-Meteo (daily max + clear-sky max) | `DAILY` | occupational / skin-eye advisories | Ready |
 | `RIVER_DISCHARGE` | Open-Meteo Flood API (GloFAS) | `DAILY` + forecast | riverine flood forecasting | Ready (needs T4) |
 | `ACTIVE_FIRE` | NASA FIRMS area API (VIIRS NOAA-20) | `DAILY` | bush-fire confirmation / backtest | **Live** — `ActiveFireIngestionService` (needs `FIRMS_MAP_KEY`; no-op without) |
@@ -144,9 +145,13 @@ series on Wildfire Risk — visible in the score breakdown, never affecting the 
 service is a no-op when `FIRMS_MAP_KEY` is unset (uses the FIRMS area API, VIIRS NOAA-20, 5-day
 window, ~2-month NRT history — a confirmation source, not a backfill one).
 
-**Deepen `RESPIRATORY_RISK` · Ready · size S.** Extend the existing air-quality ingestion to pull
-`OZONE`, `NO2`, `DUST`; add them to the `RESPIRATORY_RISK` config with modest weights and re-tune
-the PM weights.
+**Deepen `RESPIRATORY_RISK` · Live · size S.** `AirQualityOzoneIngestionService` and
+`AirQualityNo2IngestionService` pull ground-level ozone and NO₂ from the same Open-Meteo Air
+Quality API as the PM series; `DUST` (already live for Dust Storm Risk) is folded in too.
+`AdditionalIndicesSeeder::deepenRespiratoryRisk()` rebalances the index to PM2.5 0.4 · PM10 0.2 ·
+OZONE 0.15 · NO2 0.1 · DUST 0.15 — and only touches the PM weights when they're still at the
+original default, so an admin-tuned value survives. `SO2` / `CO` are the same API call if wanted
+later.
 
 ### T4 — Forecast ingestion · Ready · size L
 

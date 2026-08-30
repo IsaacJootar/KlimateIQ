@@ -47,6 +47,16 @@ class ApiCapacityLimits
                 'dailyLimit' => 10000,
                 'recommendation' => 'Same as PM2.5 — shares the same daily quota.',
             ],
+            'OZONE' => [
+                'provider' => 'Open-Meteo Air Quality API (CAMS)',
+                'dailyLimit' => 10000,
+                'recommendation' => 'Shares the Open-Meteo Air Quality quota with the PM, NO2 and dust pulls — 1 call/region/day. Not a scale concern at LGA granularity.',
+            ],
+            'NO2' => [
+                'provider' => 'Open-Meteo Air Quality API (CAMS)',
+                'dailyLimit' => 10000,
+                'recommendation' => 'Same shared Open-Meteo Air Quality quota as ozone and the PM series.',
+            ],
             'SOIL_MOISTURE' => [
                 'provider' => 'Open-Meteo Archive API (ERA5-Land)',
                 'dailyLimit' => 10000,

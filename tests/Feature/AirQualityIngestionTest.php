@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\Region;
+use App\Models\RegionScoringConfig;
 use App\Models\RegionSignal;
+use App\Models\ScoringIndex;
 use App\Services\Ingestion\AirQualityPm10IngestionService;
 use App\Services\Ingestion\AirQualityPm25IngestionService;
 use Database\Seeders\ReferenceDataSeeder;
@@ -89,10 +91,22 @@ class AirQualityIngestionTest extends TestCase
 
     public function test_respiratory_risk_index_and_its_scoring_configs_are_seeded(): void
     {
-        $index = \App\Models\ScoringIndex::where('code', 'RESPIRATORY_RISK')->first();
+        $index = ScoringIndex::where('code', 'RESPIRATORY_RISK')->first();
         $this->assertNotNull($index);
 
-        $configs = \App\Models\RegionScoringConfig::where('index_id', $index->index_id)->whereNull('region_id')->get();
-        $this->assertCount(2, $configs);
+        // PM2.5 + PM10 + the depth pass (ozone, NO2, dust) — see AdditionalIndicesSeeder.
+        $configs = RegionScoringConfig::where('index_id', $index->index_id)
+            ->whereNull('region_id')
+            ->with('signalType')
+            ->get()
+            ->keyBy('signalType.code');
+
+        $this->assertEqualsCanonicalizing(
+            ['AIR_QUALITY_PM25', 'AIR_QUALITY_PM10', 'OZONE', 'NO2', 'DUST'],
+            $configs->keys()->all(),
+        );
+        $this->assertEquals(0.4, $configs['AIR_QUALITY_PM25']->weight);
+        $this->assertEquals(0.2, $configs['AIR_QUALITY_PM10']->weight);
+        $this->assertEqualsWithDelta(1.0, $configs->sum('weight'), 0.0001);
     }
 }

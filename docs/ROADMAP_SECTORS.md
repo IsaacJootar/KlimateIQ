@@ -3,7 +3,7 @@
 KlimateIQ today is 12 live indices — the original six (Malaria Risk, Flood Risk, Drought Risk,
 Heat Stress Risk, Respiratory Risk, Composite Climate-Health Pressure) plus Waterborne Disease
 Risk, a three-index agriculture bundle (Agriculture Stress, Irrigation Need, Rangeland Stress),
-and Wildfire Risk + Dust Storm Risk — built from a 14-source signal set, sitting on a data
+and Wildfire Risk + Dust Storm Risk — built from a 16-source signal set, sitting on a data
 spine — NASA POWER, Open-Meteo (archive + air quality), NASA FIRMS, JRC Global Surface Water,
 MODIS/AppEEARS, Open Topo Data, UNFPA population — that is already lat/long-driven and works
 anywhere, not just Nigeria.
@@ -100,14 +100,16 @@ river-flood forecast (GloFAS discharge, free) and adds storm and heatwave early 
 harmattan dust events and urban pollution spikes go unmeasured locally, so nobody knows air
 quality got dangerous until people start showing up at clinics.
 
-**What KlimateIQ does**: Real PM2.5/PM10 readings per region, refreshed daily.
+**What KlimateIQ does**: Real per-region readings, refreshed daily, for five pollutants —
+PM2.5, PM10, ground-level ozone, NO₂ and CAMS mineral dust — blended into the Respiratory Risk
+Index (PM2.5 0.4 · PM10 0.2 · ozone 0.15 · NO₂ 0.1 · dust 0.15). Dust Storm Risk sits in this
+sector too.
 
 **Result**: An advisory (masks, reduced outdoor exposure) goes out timed to actual measured
 pollution, not guesswork or hospital-admission lag.
 
-**Also buildable here**: Respiratory Risk is PM2.5/PM10 only today. Extending the *same*
-Open-Meteo Air Quality pull to ozone, NO₂ and harmattan dust deepens the index with no new
-source — it's the same API call.
+**Still buildable here**: SO₂ and CO are the same Open-Meteo Air Quality call again if a future
+use case needs them.
 
 ### 5. Water Resources & Sanitation — live today via Waterborne Disease Risk
 
@@ -190,8 +192,8 @@ breaks them into nine ordered rungs with a suggested sequence.
 - **Tier 2 — real sector-specific signals** *(in progress)*: Waterborne Disease (no new
   ingestion), the agriculture bundle (Agriculture Stress, Irrigation Need, Rangeland Stress, on
   soil moisture + ET₀), and Wildfire + Dust Storm Risk (on humidity, wind and CAMS dust) are all
-  live. Still ahead: the air-quality extension, forecast ingestion, probabilistic scoring, and
-  the climate-outlook module — all on free, open-licensed data
+  live, along with the Respiratory Risk depth pass (ozone + NO₂). Still ahead: forecast
+  ingestion, probabilistic scoring, and the climate-outlook module — all on free, open-licensed data
   (Open-Meteo CC-BY 4.0, NASA FIRMS). Coastal Resilience (Sector 6) is the one part of this tier
   that genuinely needs new/paid data (coastal elevation, tide).
 - **Tier 3 — pan-African expansion, one country at a time**: `regions` currently has no

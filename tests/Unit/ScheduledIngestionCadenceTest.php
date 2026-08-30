@@ -16,7 +16,7 @@ class ScheduledIngestionCadenceTest extends TestCase
 {
     public function test_volatile_signals_are_ingested_daily(): void
     {
-        $event = $this->findEvent('signals:ingest --source=RAINFALL,STANDING_WATER,TEMPERATURE,AIR_QUALITY_PM25,AIR_QUALITY_PM10,SOIL_MOISTURE,EVAPOTRANSPIRATION,HUMIDITY,WIND_SPEED,DUST,ACTIVE_FIRE');
+        $event = $this->findEvent('signals:ingest --source=RAINFALL,STANDING_WATER,TEMPERATURE,AIR_QUALITY_PM25,AIR_QUALITY_PM10,OZONE,NO2,SOIL_MOISTURE,EVAPOTRANSPIRATION,HUMIDITY,WIND_SPEED,DUST,ACTIVE_FIRE');
 
         $this->assertSame('0 2 * * *', $event->expression);
     }

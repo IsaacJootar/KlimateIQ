@@ -22,9 +22,13 @@ use Illuminate\Database\Seeder;
  * Indices here may depend on signals beyond the original eight — the agriculture bundle needs
  * SOIL_MOISTURE and EVAPOTRANSPIRATION; Wildfire and Dust Storm Risk need HUMIDITY, WIND_SPEED
  * and DUST; Wildfire also carries a weight-0 ACTIVE_FIRE confirmation series (NASA FIRMS, needs
- * a map key — no-op without one). Their ingestion services are registered in config/ingestion.php
- * and pull on the daily cadence / on region activation — the score simply stays partial
- * (renormalized over the signals present) until those readings land.
+ * a map key — no-op without one); the Respiratory Risk depth pass adds OZONE and NO2. Their
+ * ingestion services are registered in config/ingestion.php and pull on the daily cadence / on
+ * region activation — the score simply stays partial (renormalized over the signals present)
+ * until those readings land.
+ *
+ * This seeder also runs one in-place edit — rebalancing the Respiratory Risk PM weights — and
+ * does it only when they're still at the original default (see deepenRespiratoryRisk()).
  *
  * Every index here ships UNCALIBRATED — the weights and bounds are transparent engineering
  * defaults, not validated against outcome data. Same honest caveat as the original six
@@ -41,6 +45,7 @@ class AdditionalIndicesSeeder extends Seeder
         $this->rangelandStress();
         $this->wildfireRisk();
         $this->dustStormRisk();
+        $this->deepenRespiratoryRisk();
     }
 
     /**
@@ -61,6 +66,9 @@ class AdditionalIndicesSeeder extends Seeder
             ['code' => 'DUST', 'name' => 'Mineral Dust', 'unit' => 'µg/m³', 'source' => 'Open-Meteo Air Quality API (CAMS)', 'higher_is_worse' => true],
             // Confirmation series only — carries weight 0 on Wildfire Risk, never drives a score.
             ['code' => 'ACTIVE_FIRE', 'name' => 'Active Fire Detections', 'unit' => 'detections', 'source' => 'NASA FIRMS (VIIRS NOAA-20)', 'higher_is_worse' => true],
+            // Respiratory Risk depth — gaseous pollutants alongside the PM series.
+            ['code' => 'OZONE', 'name' => 'Ground-Level Ozone', 'unit' => 'µg/m³', 'source' => 'Open-Meteo Air Quality API (CAMS)', 'higher_is_worse' => true],
+            ['code' => 'NO2', 'name' => 'Nitrogen Dioxide', 'unit' => 'µg/m³', 'source' => 'Open-Meteo Air Quality API (CAMS)', 'higher_is_worse' => true],
         ];
 
         foreach ($types as $type) {
@@ -280,6 +288,52 @@ class AdditionalIndicesSeeder extends Seeder
             'green' => 'No dust-storm concern. Continue routine air-quality monitoring.',
             'amber' => 'Dust levels rising in this LGA: issue an air-quality advisory for outdoor workers, schools and people with respiratory conditions, and warn drivers of possible reduced visibility.',
             'red' => 'Severe dust storm likely: issue a public health warning (masks, stay indoors), advise against non-essential road travel, alert airports and health facilities, and brief the state ministry of health on the expected respiratory-case rise.',
+        ]);
+    }
+
+    /**
+     * Respiratory Risk started as PM2.5 + PM10 only. This folds in the gaseous pollutants
+     * (ground-level ozone, NO₂) and CAMS mineral dust — all from the same Open-Meteo Air
+     * Quality pull — and rebalances the PM weights down to make room.
+     *
+     * The PM rebalance is the one place this seeder edits an existing config, so it does so
+     * only when the weight is still exactly the original default (PM2.5 0.6 / PM10 0.4) — an
+     * admin-tuned value is left untouched. The new signal rows go in via firstOrCreate like
+     * everything else here.
+     */
+    private function deepenRespiratoryRisk(): void
+    {
+        $index = ScoringIndex::query()->where('code', 'RESPIRATORY_RISK')->first();
+
+        if (! $index) {
+            return;
+        }
+
+        // Migrate the original defaults only. On a fresh full seed these rows don't exist yet
+        // (ReferenceDataSeeder::seedScoringConfigs runs after this) — it's a no-op then, and
+        // that seeder writes the new 0.4 / 0.2 baseline directly.
+        foreach (['AIR_QUALITY_PM25' => [0.6, 0.4], 'AIR_QUALITY_PM10' => [0.4, 0.2]] as $signalCode => [$oldDefault, $rebalanced]) {
+            $signalTypeId = SignalType::query()->where('code', $signalCode)->value('signal_type_id');
+
+            RegionScoringConfig::query()
+                ->where('index_id', $index->index_id)
+                ->whereNull('region_id')
+                ->where('signal_type_id', $signalTypeId)
+                ->where('weight', $oldDefault)
+                ->update(['weight' => $rebalanced]);
+        }
+
+        $this->seedWeights($index, [
+            'OZONE' => 0.15,
+            'NO2' => 0.1,
+            'DUST' => 0.15,
+        ]);
+
+        $this->seedBounds($index, [
+            // WHO / EPA "very unhealthy" reference points, not epidemiologically calibrated.
+            'OZONE' => [0, 300],
+            'NO2' => [0, 200],
+            'DUST' => [0, 500],
         ]);
     }
 
