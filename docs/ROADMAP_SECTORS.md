@@ -98,20 +98,20 @@ pollution, not guesswork or hospital-admission lag.
 Open-Meteo Air Quality pull to ozone, NO₂ and harmattan dust deepens the index with no new
 source — it's the same API call.
 
-### 5. Water Resources & Sanitation — real, buildable next-phase; not live yet
+### 5. Water Resources & Sanitation — live today via Waterborne Disease Risk
 
 **Pain point**: Cholera and typhoid outbreaks are strongly tied to contaminated standing water
 after flooding, but WASH programs have no early-warning connecting "where is water
 accumulating" to "where is disease risk rising" — same reactive lag as malaria, just for a
 different disease.
 
-**What KlimateIQ would build**: A dedicated Waterborne Disease Risk index. Genuinely cheap to
-add — it reuses the Standing Water + Rainfall signals already collected, just needs its own
-calibration (a new `indices` row + weighted `region_scoring_configs` rows, per
-`docs/INGESTION_GUIDE.md`'s "Adding a new named index" section — no new ingestion needed).
+**What KlimateIQ does**: A dedicated **Waterborne Disease Risk index** (live) — Standing Water
+0.5 + Rainfall 0.5, reusing signals already collected, attached to the Water & Sanitation and
+Public Health sectors. Shipped via `Database\Seeders\AdditionalIndicesSeeder`. Uncalibrated,
+same caveat as the original six.
 
-**Result (once built)**: WASH programs target water treatment to the specific LGAs where
-contamination risk is actually rising, instead of spreading limited sanitation resources evenly.
+**Result**: WASH programs target water treatment to the specific LGAs where contamination risk
+is actually rising, instead of spreading limited sanitation resources evenly.
 
 **Also buildable here**: a **river-flood forecast** (GloFAS discharge via Open-Meteo's Flood
 API — free, but needs forecast ingestion) and a **dry-season water-availability** view (JRC

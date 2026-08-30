@@ -25,7 +25,8 @@ composer install --no-dev --optimize-autoloader --no-interaction --no-progress
 echo "==> Migrations"
 php artisan migrate --force
 
-echo "==> Idempotent data seed (sectors — safe to re-run, does not touch calibration/weights)"
+echo "==> Idempotent data seed (new indices + sectors — safe to re-run, does not touch tuned calibration/weights)"
+php artisan db:seed --class=AdditionalIndicesSeeder --force
 php artisan db:seed --class=SectorSeeder --force
 
 echo "==> Frontend build"

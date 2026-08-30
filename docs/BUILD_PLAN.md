@@ -47,7 +47,7 @@ forward-looking (forecast / ensemble) data, decadal climate projections, and the
 | Tier | What | Depends on |
 |---|---|---|
 | T1 | Sector grouping in the UI | nothing — ship first |
-| T2 | Config-only indices (Waterborne Disease, Meningitis) | T3 signals for Meningitis |
+| T2 | Config-only indices — **Waterborne Disease shipped**; Meningitis pending | T3 signals for Meningitis |
 | T3 | New free signals + their indices (agriculture, fire, dust, air-quality depth) | nothing |
 | T4 | Forecast ingestion — store and score *future* periods | T3 (`RIVER_DISCHARGE`) |
 | T5 | Probabilistic scoring — ensemble members → a likelihood | T4 |
@@ -89,7 +89,7 @@ calibration against outcome data. Bounds go in `scoring_calibration_parameters`;
 
 | Index code | Proposed signals & weights | Sector | Notes |
 |---|---|---|---|
-| `WATERBORNE_DISEASE_RISK` | `STANDING_WATER` 0.5 · `RAINFALL` 0.5 | Health | reuses existing signals; consider a recent-flood boost term |
+| `WATERBORNE_DISEASE_RISK` | `STANDING_WATER` 0.5 · `RAINFALL` 0.5 | Health / Water | **Live** — `AdditionalIndicesSeeder`. Future: a recent-flood boost term. |
 | `MENINGITIS_RISK` | `HUMIDITY` 0.4 (inv) · `DUST` 0.4 · `TEMPERATURE` 0.2 | Health | `region_id`-scoped to the Sahel belt, not system-wide |
 | `AGRICULTURE_STRESS` | `SOIL_MOISTURE` 0.5 (inv) · `RAINFALL` 0.3 (deficit) · `EVAPOTRANSPIRATION` 0.2 | Agriculture | distinct from Drought Risk — soil-water focused, near-term |
 | `IRRIGATION_NEED` | `EVAPOTRANSPIRATION` 0.5 · `SOIL_MOISTURE` 0.3 (inv) · `RAINFALL` 0.2 (inv) | Agriculture | actionable output: mm of water to apply |
@@ -115,9 +115,11 @@ warning); **Air & Environment** → Respiratory, (Dust Storm).
 
 ### T2 — Config-only indices
 
-**`WATERBORNE_DISEASE_RISK` · Ready · size S.** Seed one `ScoringIndex` + two `RegionScoringConfig`
-rows per [`docs/INGESTION_GUIDE.md`](INGESTION_GUIDE.md#adding-a-new-named-index). No new data —
-`STANDING_WATER` + `RAINFALL` are already ingested.
+**`WATERBORNE_DISEASE_RISK` · Live.** Shipped via `Database\Seeders\AdditionalIndicesSeeder`
+(kept out of `ReferenceDataSeeder` so prod re-runs don't reset tuned weights). `STANDING_WATER`
+0.5 · `RAINFALL` 0.5, attached to the Public Health and Water & Sanitation sectors. Uncalibrated,
+same caveat as the original six. `scores:calculate` picks it up automatically for any active
+region with those two signals.
 
 **`MENINGITIS_RISK` · Ready · size S–M.** Needs `HUMIDITY` and `DUST` first (T3). Then config rows,
 `region_id`-scoped to the meningitis-belt states so it doesn't render nationwide.
@@ -224,7 +226,7 @@ return numbers.
 ## 7. Suggested sequence
 
 1. **T1 sector UI** — days. Clarity win, no risk.
-2. **T2 Waterborne Disease** — days. Proves "new index, no new data" end to end.
+2. ~~**T2 Waterborne Disease**~~ — done. Proved "new index, no new data" end to end.
 3. **T3 agriculture bundle** — the widest value-per-effort jump; opens a whole sector.
 4. **T3 fire + dust** — small; rounds out disaster-response coverage.
 5. **T4 forecast ingestion** — the architectural investment. Ship river-flood forecasting on top of

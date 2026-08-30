@@ -19,6 +19,7 @@ class ReferenceDataSeeder extends Seeder
     {
         $this->seedSignalTypes();
         $this->seedIndices();
+        $this->call(AdditionalIndicesSeeder::class);
         $this->call(SectorSeeder::class);
         $this->seedActionRecommendations();
         $this->seedRegions();

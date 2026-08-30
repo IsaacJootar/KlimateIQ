@@ -87,14 +87,14 @@ class CoverageSectorTest extends TestCase
 
         $this->saveWorkspace($user, [
             'sector_ids' => $this->sectorIds(['PUBLIC_HEALTH']),
-            'index_ids' => $this->indexIds(['MALARIA_RISK', 'RESPIRATORY_RISK', 'HEAT_STRESS_RISK']),
+            'index_ids' => $this->indexIds(['MALARIA_RISK', 'WATERBORNE_DISEASE_RISK', 'RESPIRATORY_RISK', 'HEAT_STRESS_RISK']),
         ]);
 
         $this->assertSame(['PUBLIC_HEALTH'], $user->sectorSubscriptions()->with('sector')->get()->pluck('sector.code')->all());
         // Kept everything the sector contains -> no refinement stored, sectors drive.
         $this->assertSame(0, $user->indexSubscriptions()->count());
         $this->assertEqualsCanonicalizing(
-            ['MALARIA_RISK', 'RESPIRATORY_RISK', 'HEAT_STRESS_RISK'],
+            ['MALARIA_RISK', 'WATERBORNE_DISEASE_RISK', 'RESPIRATORY_RISK', 'HEAT_STRESS_RISK'],
             $this->visibleIndexCodes($user),
         );
     }

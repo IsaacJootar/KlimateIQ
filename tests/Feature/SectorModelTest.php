@@ -46,7 +46,7 @@ class SectorModelTest extends TestCase
         $health = Sector::query()->where('code', 'PUBLIC_HEALTH')->firstOrFail();
 
         $this->assertEqualsCanonicalizing(
-            ['MALARIA_RISK', 'RESPIRATORY_RISK', 'HEAT_STRESS_RISK'],
+            ['MALARIA_RISK', 'WATERBORNE_DISEASE_RISK', 'RESPIRATORY_RISK', 'HEAT_STRESS_RISK'],
             $health->indices->pluck('code')->all(),
         );
     }
@@ -67,7 +67,7 @@ class SectorModelTest extends TestCase
 
         $this->assertSame(6, Sector::query()->count());
         $this->assertSame(
-            3,
+            4,
             Sector::query()->where('code', 'PUBLIC_HEALTH')->firstOrFail()->indices()->count(),
         );
     }

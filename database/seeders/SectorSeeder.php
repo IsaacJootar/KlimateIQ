@@ -31,8 +31,8 @@ class SectorSeeder extends Seeder
             [
                 'code' => 'PUBLIC_HEALTH',
                 'name' => 'Public Health & Epidemiology',
-                'description' => 'Climate-linked disease risk — malaria, respiratory illness, heat-health.',
-                'indices' => ['MALARIA_RISK', 'RESPIRATORY_RISK', 'HEAT_STRESS_RISK'],
+                'description' => 'Climate-linked disease risk — malaria, waterborne disease, respiratory illness, heat-health.',
+                'indices' => ['MALARIA_RISK', 'WATERBORNE_DISEASE_RISK', 'RESPIRATORY_RISK', 'HEAT_STRESS_RISK'],
             ],
             [
                 'code' => 'AGRICULTURE',
@@ -49,8 +49,8 @@ class SectorSeeder extends Seeder
             [
                 'code' => 'WATER_SANITATION',
                 'name' => 'Water, Sanitation & Flooding',
-                'description' => 'Standing water and flood risk for WASH and flood-response planning.',
-                'indices' => ['FLOOD_RISK'],
+                'description' => 'Flood risk and post-flood waterborne-disease risk for WASH and flood-response planning.',
+                'indices' => ['FLOOD_RISK', 'WATERBORNE_DISEASE_RISK'],
             ],
             [
                 'code' => 'AIR_ENVIRONMENT',

@@ -44,7 +44,7 @@ class OnboardingWizardTest extends TestCase
         // No refinement stored — the sector drives coverage.
         $this->assertSame(0, $user->indexSubscriptions()->count());
         $this->assertEqualsCanonicalizing(
-            ['MALARIA_RISK', 'RESPIRATORY_RISK', 'HEAT_STRESS_RISK'],
+            ['MALARIA_RISK', 'WATERBORNE_DISEASE_RISK', 'RESPIRATORY_RISK', 'HEAT_STRESS_RISK'],
             IndexCoverage::resolve($user, null)['available']->pluck('code')->all(),
         );
         $this->assertSame(0, $user->regionSubscriptions()->count());
