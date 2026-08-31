@@ -14,11 +14,13 @@
 @endphp
 
 @if ($total > 0 && ! ($hideWhenSingle && $total === 1))
-    <div class="space-y-2.5">
+    <div class="space-y-3">
         @foreach ($groups as $group)
             <div>
                 @if ($showLabels)
-                    <p class="mb-1 text-[0.7rem] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    {{-- ps matches .pill-tab's 0.9rem inline padding so the heading text lines
+                         up with the tab labels below it, not with the pill's outer edge. --}}
+                    <p class="mb-1.5 ps-[0.9rem] text-[0.7rem] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                         {{ $group['sector']?->short_name ?? 'Other' }}
                     </p>
                 @endif
