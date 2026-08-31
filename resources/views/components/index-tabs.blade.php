@@ -2,11 +2,13 @@
 
 {{--
     The index tab strip (Clarity Pass B2). `$groups` comes from App\Support\IndexCoverage::resolve()
-    — an ordered list of ['sector' => Sector|null, 'indices' => Collection<ScoringIndex>]. With two
-    or more groups each row of pills is headed by its sector name; with one it's a plain strip (the
-    heading would only echo the page header). Every tab links to $routeName with the caller's base
-    params plus ?index=<code>. `hideWhenSingle` drops the strip entirely when only one index is
-    available (the Dashboard does this — the metric cards already name the index).
+    — an ordered list of ['sector' => Sector|null, 'indices' => Collection<ScoringIndex>]. When there
+    are two or more groups a small sector name is threaded inline ahead of each group's tabs; the
+    pills still flow as one wrapping row, so they fill the width and break where they need to rather
+    than one sector per line. With one group it's a plain strip (the label would only echo the page
+    header). Every tab links to $routeName with the caller's base params plus ?index=<code>.
+    `hideWhenSingle` drops the strip entirely when only one index is available (the Dashboard does
+    this — the metric cards already name it).
 --}}
 @php
     $total = $groups->sum(fn ($g) => $g['indices']->count());
@@ -14,26 +16,23 @@
 @endphp
 
 @if ($total > 0 && ! ($hideWhenSingle && $total === 1))
-    <div class="space-y-3">
+    <div class="flex flex-wrap items-center gap-x-2 gap-y-2">
         @foreach ($groups as $group)
-            <div>
-                @if ($showLabels)
-                    {{-- ps matches .pill-tab's 0.9rem inline padding so the heading text lines
-                         up with the tab labels below it, not with the pill's outer edge. --}}
-                    <p class="mb-1.5 ps-[0.9rem] text-[0.7rem] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                        {{ $group['sector']?->short_name ?? 'Other' }}
-                    </p>
-                @endif
-                <div class="flex flex-wrap gap-2">
-                    @foreach ($group['indices'] as $idx)
-                        <a href="{{ route($routeName, $routeParams + ['index' => $idx->code]) }}"
-                           @if ($idx->description) title="{{ $idx->description }}" @endif
-                           class="pill-tab {{ $idx->index_id === $active->index_id ? 'pill-tab-active' : '' }}">
-                            {{ $idx->name }}
-                        </a>
-                    @endforeach
-                </div>
-            </div>
+            @if ($showLabels)
+                <span @class([
+                    'whitespace-nowrap text-[0.7rem] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500',
+                    'ms-2.5' => ! $loop->first,
+                ])>
+                    {{ $group['sector']?->short_name ?? 'Other' }}
+                </span>
+            @endif
+            @foreach ($group['indices'] as $idx)
+                <a href="{{ route($routeName, $routeParams + ['index' => $idx->code]) }}"
+                   @if ($idx->description) title="{{ $idx->description }}" @endif
+                   class="pill-tab {{ $idx->index_id === $active->index_id ? 'pill-tab-active' : '' }}">
+                    {{ $idx->name }}
+                </a>
+            @endforeach
         @endforeach
     </div>
 @endif
