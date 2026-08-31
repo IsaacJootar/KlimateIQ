@@ -23,7 +23,19 @@ Status: **approved 2026-08-30, all 12 items in scope, then T4.**
 | C region-page rebuild | ✅ shipped (+ a premium restyle pass) |
 | B3 sector home | ✅ shipped |
 | D2 crop calendar | ✅ shipped (+ the agriculture half of D3) |
-| D1, D3 (health/emergency/water), B2, B4, E1, E2 | pending |
+| D1 facilities | ✅ shipped (+ the health/air half of D3) |
+| D3 (emergency + water), B2, B4, E1, E2 | pending |
+
+**D1 as shipped.** `facilities` table + `App\Models\Facility`; `App\Services\Facilities\FacilityProvider`
+interface with `Grid3StaticProvider` (reads the table) as the only implementation, bound from
+`config/facilities.php` — a live source later is a new class + one config line. `FacilitySeeder`
+seeds the 8 hand-curated LGAs (health facilities, schools, markets — well-known real institutions,
+`source` = GRID3), added to `deploy.sh` and `ReferenceDataSeeder`. Visible now: on an **amber/red
+public-health or air-quality region page**, step 6 opens with *"Places in Ikeja to reach first —
+for example: LASUTH, General Hospital Ikeja, Ojodu PHC."* + *"On record (GRID3, 2023) — confirm
+which are operating locally. [See all in this LGA]"* → a `/regions/{id}/facilities` list page.
+Still to do (D3): the same treatment for Emergency Response (shelters, roads) and Water &
+Sanitation (water points).
 
 **D2 as shipped.** `crop_calendar` table (`scope` = `zone` now, open to `state`), `App\Support\AgroZone`
 (state → agro-ecological zone), `App\Models\CropCalendar` with `exposedNow()` / `phraseFor()`,

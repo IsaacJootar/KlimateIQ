@@ -22,8 +22,9 @@ class ReferenceDataSeeder extends Seeder
         $this->call(AdditionalIndicesSeeder::class);
         $this->call(SectorSeeder::class);
         $this->call(CropCalendarSeeder::class);
-        $this->seedActionRecommendations();
         $this->seedRegions();
+        $this->call(FacilitySeeder::class);
+        $this->seedActionRecommendations();
         $this->seedCalibrationParameters();
         $this->seedScoringConfigs();
         $this->seedAgencies();

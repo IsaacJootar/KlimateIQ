@@ -315,6 +315,15 @@
                             phase — a dry spell now costs the most yield.
                         </p>
                     @endif
+                    @if ($facilities)
+                        <p class="text-sm font-semibold text-slate-900 dark:text-white">
+                            Places in {{ $region->name }} to reach first — for example: {{ implode(', ', $facilities['names']) }}.
+                        </p>
+                        <p class="mb-2 text-xs text-slate-500 dark:text-slate-400">
+                            On record ({{ $facilities['attribution'] }}) — confirm which are operating locally.
+                            <a href="{{ route('regions.facilities', $region->region_id) }}" class="font-medium text-primary hover:underline">See all in this LGA</a>.
+                        </p>
+                    @endif
                     <p class="text-sm leading-relaxed text-gray-800 dark:text-gray-200">{{ $recommendedAction }}</p>
                     @if ($diagnosis['dominantSignal'])
                         <p class="mt-2 text-xs text-slate-400">Driven mainly by {{ $diagnosis['dominantSignal'] }} (step 3 above).</p>

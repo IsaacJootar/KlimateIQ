@@ -49,6 +49,7 @@ Route::middleware(['auth', 'onboarded'])->group(function () {
 
     Route::get('/regions', [RegionController::class, 'index'])->name('regions.index');
     Route::get('/regions/{region}', [RegionController::class, 'show'])->name('regions.show');
+    Route::get('/regions/{region}/facilities', [RegionController::class, 'facilities'])->name('regions.facilities');
     Route::post('/regions/{region}/summary', [RegionController::class, 'generateSummary'])->name('regions.summary');
 
     Route::get('/thresholds', [ThresholdConfigController::class, 'index'])->name('thresholds.index');

@@ -10,6 +10,7 @@ use App\Models\RegionSignal;
 use App\Models\ScoringIndex;
 use App\Models\SignalType;
 use App\Services\Ai\RegionScoreSummaryService;
+use App\Services\Facilities\FacilityProvider;
 use App\Support\IndexCoverage;
 use App\Support\RiskBand;
 use App\Support\ScoreDiagnosis;
@@ -166,6 +167,20 @@ class RegionController extends Controller
             // Concrete crops in a water-sensitive stage here right now — only for the agriculture
             // indices, and only when the score is amber/red (there's nothing to act on below that).
             'cropLine' => $this->cropLineFor($index, $region, $latest?->score !== null ? (float) $latest->score : null),
+            // A few named schools / health facilities in this LGA — for the public-health and
+            // air-quality indices, same amber/red gate. Examples on record, not a full list.
+            'facilities' => $this->facilitiesFor($index, $region, $latest?->score !== null ? (float) $latest->score : null),
+        ]);
+    }
+
+    public function facilities(Region $region): View
+    {
+        $provider = app(FacilityProvider::class);
+
+        return view('regions.facilities', [
+            'region' => $region,
+            'byType' => $provider->allForRegion($region),
+            'attribution' => $provider->attribution(),
         ]);
     }
 
@@ -178,6 +193,35 @@ class RegionController extends Controller
         $isAgriculture = $index->sectors()->where('code', 'AGRICULTURE')->exists();
 
         return $isAgriculture ? CropCalendar::phraseFor($region->state) : null;
+    }
+
+    /**
+     * @return array{names: list<string>, attribution: string}|null
+     */
+    private function facilitiesFor(ScoringIndex $index, Region $region, ?float $score): ?array
+    {
+        if ($score === null || $score < 34) {
+            return null;
+        }
+
+        $sectors = $index->sectors()->pluck('code')->all();
+        $types = match (true) {
+            in_array('PUBLIC_HEALTH', $sectors, true) => ['health', 'school'],
+            in_array('AIR_ENVIRONMENT', $sectors, true) => ['school', 'health'],
+            default => null,
+        };
+
+        if ($types === null) {
+            return null;
+        }
+
+        $provider = app(FacilityProvider::class);
+        $names = $provider->forRegion($region, $types, 3)->pluck('name');
+
+        return $names->isEmpty() ? null : [
+            'names' => $names->all(),
+            'attribution' => $provider->attribution(),
+        ];
     }
 
     /**

@@ -51,6 +51,11 @@ class Region extends Model
         return $this->hasMany(UserRegionSubscription::class, 'region_id', 'region_id');
     }
 
+    public function facilities(): HasMany
+    {
+        return $this->hasMany(Facility::class, 'region_id', 'region_id');
+    }
+
     /**
      * A region is "active" — worth pulling live signals for — once it's ever had a signal
      * recorded, or at least one user is currently watching it. Most of Nigeria's 774 LGAs

@@ -29,6 +29,7 @@ echo "==> Idempotent data seed (new indices + sectors + crop calendar — safe t
 php artisan db:seed --class=AdditionalIndicesSeeder --force
 php artisan db:seed --class=SectorSeeder --force
 php artisan db:seed --class=CropCalendarSeeder --force
+php artisan db:seed --class=FacilitySeeder --force
 
 echo "==> Frontend build"
 npm ci --no-audit --no-fund

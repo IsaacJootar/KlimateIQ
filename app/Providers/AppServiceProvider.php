@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Services\Ai\AiChatClient;
 use App\Services\Ai\OpenAiClient;
 use App\Services\Earthdata\AppEearsClient;
+use App\Services\Facilities\FacilityProvider;
 use App\Services\Sms\SmsClient;
 use App\Services\Sms\TermiiSmsClient;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -28,6 +29,10 @@ class AppServiceProvider extends ServiceProvider
 
         // NASA Earthdata (AppEEARS) — used by VegetationIngestionService.
         $this->app->singleton(AppEearsClient::class, fn () => AppEearsClient::fromConfig());
+
+        // Where "the facilities in this LGA" comes from — GRID3's static table today, a live
+        // API later, without touching the recommendation code (config/facilities.php).
+        $this->app->bind(FacilityProvider::class, fn ($app) => $app->make(config('facilities.provider')));
     }
 
     /**
