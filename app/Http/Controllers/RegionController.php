@@ -196,7 +196,7 @@ class RegionController extends Controller
     }
 
     /**
-     * @return array{names: list<string>, attribution: string}|null
+     * @return array{label: string, names: list<string>, attribution: string}|null
      */
     private function facilitiesFor(ScoringIndex $index, Region $region, ?float $score): ?array
     {
@@ -205,10 +205,16 @@ class RegionController extends Controller
         }
 
         $sectors = $index->sectors()->pluck('code')->all();
-        $types = match (true) {
-            in_array('PUBLIC_HEALTH', $sectors, true) => ['health', 'school'],
-            in_array('AIR_ENVIRONMENT', $sectors, true) => ['school', 'health'],
-            default => null,
+
+        // [types to draw, in priority order, and the label]. Checked most operationally-specific
+        // first: a flood is a staging problem, a waterborne outbreak is a water-treatment
+        // problem, everything else health is a notify problem.
+        [$types, $label] = match (true) {
+            in_array('EMERGENCY_RESPONSE', $sectors, true) => [['shelter', 'school'], "Sites in {$region->name} to stage from"],
+            in_array('WATER_SANITATION', $sectors, true) => [['water_point', 'health'], "Water points and facilities serving {$region->name}"],
+            in_array('PUBLIC_HEALTH', $sectors, true) => [['health', 'school'], "Places in {$region->name} to notify"],
+            in_array('AIR_ENVIRONMENT', $sectors, true) => [['school', 'health'], "Places in {$region->name} to notify"],
+            default => [null, null],
         };
 
         if ($types === null) {
@@ -219,6 +225,7 @@ class RegionController extends Controller
         $names = $provider->forRegion($region, $types, 3)->pluck('name');
 
         return $names->isEmpty() ? null : [
+            'label' => $label,
             'names' => $names->all(),
             'attribution' => $provider->attribution(),
         ];

@@ -317,7 +317,7 @@
                     @endif
                     @if ($facilities)
                         <p class="text-sm font-semibold text-slate-900 dark:text-white">
-                            Places in {{ $region->name }} to reach first — for example: {{ implode(', ', $facilities['names']) }}.
+                            {{ $facilities['label'] }} — for example: {{ implode(', ', $facilities['names']) }}.
                         </p>
                         <p class="mb-2 text-xs text-slate-500 dark:text-slate-400">
                             On record ({{ $facilities['attribution'] }}) — confirm which are operating locally.

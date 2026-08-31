@@ -51,7 +51,10 @@ class FacilitiesTest extends TestCase
 
         $this->assertGreaterThanOrEqual(4, $ikeja->count());
         $this->assertTrue($ikeja->contains('name', 'Lagos State University Teaching Hospital (LASUTH)'));
-        $this->assertEqualsCanonicalizing(['health', 'school', 'market'], $ikeja->pluck('type')->unique()->values()->all());
+        $this->assertEqualsCanonicalizing(
+            ['health', 'school', 'market', 'shelter', 'water_point'],
+            $ikeja->pluck('type')->unique()->values()->all(),
+        );
     }
 
     public function test_the_provider_is_bound_from_config_and_returns_capped_typed_results(): void
@@ -91,13 +94,33 @@ class FacilitiesTest extends TestCase
 
         $this->actingAs($user)->get(route('regions.show', ['region' => $region, 'index' => 'MALARIA_RISK']))
             ->assertOk()
-            ->assertSee('Places in Ikeja to reach first', false)
+            ->assertSee('Places in Ikeja to notify', false)
             ->assertSee('Lagos State University Teaching Hospital (LASUTH)', false)
             ->assertSee('On record (GRID3, 2023)', false)
             ->assertSee(route('regions.facilities', $region->region_id), false);
     }
 
-    public function test_a_low_score_or_non_health_index_names_no_places(): void
+    public function test_the_line_is_framed_by_sector(): void
+    {
+        $user = User::factory()->create();
+        $region = $this->ikeja();
+
+        // Flood is a staging problem.
+        $this->score($region, 'FLOOD_RISK', 74.0);
+        $this->actingAs($user)->get(route('regions.show', ['region' => $region, 'index' => 'FLOOD_RISK']))
+            ->assertOk()
+            ->assertSee('Sites in Ikeja to stage from', false)
+            ->assertSee('Ikeja Township Stadium', false);
+
+        // A waterborne outbreak is a water-treatment problem.
+        $this->score($region, 'WATERBORNE_DISEASE_RISK', 74.0);
+        $this->actingAs($user)->get(route('regions.show', ['region' => $region, 'index' => 'WATERBORNE_DISEASE_RISK']))
+            ->assertOk()
+            ->assertSee('Water points and facilities serving Ikeja', false)
+            ->assertSee('Iju Waterworks', false);
+    }
+
+    public function test_a_low_score_or_an_index_with_no_facility_sector_names_no_places(): void
     {
         $user = User::factory()->create();
         $region = $this->ikeja();
@@ -105,12 +128,13 @@ class FacilitiesTest extends TestCase
         $this->score($region, 'MALARIA_RISK', 12.0);
         $this->actingAs($user)->get(route('regions.show', ['region' => $region, 'index' => 'MALARIA_RISK']))
             ->assertOk()
-            ->assertDontSee('to reach first');
+            ->assertDontSee('for example:');
 
-        $this->score($region, 'FLOOD_RISK', 80.0);
-        $this->actingAs($user)->get(route('regions.show', ['region' => $region, 'index' => 'FLOOD_RISK']))
+        // Composite Pressure sits only in the Overview sector — no facilities, no crops.
+        $this->score($region, 'COMPOSITE_PRESSURE', 80.0);
+        $this->actingAs($user)->get(route('regions.show', ['region' => $region, 'index' => 'COMPOSITE_PRESSURE']))
             ->assertOk()
-            ->assertDontSee('to reach first');
+            ->assertDontSee('for example:');
     }
 
     public function test_the_see_all_facilities_page_lists_them_by_type(): void
@@ -121,6 +145,10 @@ class FacilitiesTest extends TestCase
             ->assertOk()
             ->assertSee('facilities on record', false)
             ->assertSee('Health facilities', false)
+            ->assertSee('Shelter-capable sites', false)
+            ->assertSee('Water points', false)
+            ->assertSee('Ikeja Township Stadium', false)
+            ->assertSee('Iju Waterworks', false)
             ->assertSee('Ikeja Grammar School', false)
             ->assertSee('confirm which are open', false);
     }

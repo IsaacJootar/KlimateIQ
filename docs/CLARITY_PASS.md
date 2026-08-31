@@ -24,18 +24,31 @@ Status: **approved 2026-08-30, all 12 items in scope, then T4.**
 | B3 sector home | ✅ shipped |
 | D2 crop calendar | ✅ shipped (+ the agriculture half of D3) |
 | D1 facilities | ✅ shipped (+ the health/air half of D3) |
-| D3 (emergency + water), B2, B4, E1, E2 | pending |
+| D3 recommendation enrichment | ✅ shipped (all four sectors) |
+| B2, B4, E1, E2 | pending |
 
 **D1 as shipped.** `facilities` table + `App\Models\Facility`; `App\Services\Facilities\FacilityProvider`
 interface with `Grid3StaticProvider` (reads the table) as the only implementation, bound from
 `config/facilities.php` — a live source later is a new class + one config line. `FacilitySeeder`
 seeds the 8 hand-curated LGAs (health facilities, schools, markets — well-known real institutions,
-`source` = GRID3), added to `deploy.sh` and `ReferenceDataSeeder`. Visible now: on an **amber/red
-public-health or air-quality region page**, step 6 opens with *"Places in Ikeja to reach first —
-for example: LASUTH, General Hospital Ikeja, Ojodu PHC."* + *"On record (GRID3, 2023) — confirm
-which are operating locally. [See all in this LGA]"* → a `/regions/{id}/facilities` list page.
-Still to do (D3): the same treatment for Emergency Response (shelters, roads) and Water &
-Sanitation (water points).
+`source` = GRID3), added to `deploy.sh` and `ReferenceDataSeeder`. `FacilitySeeder` now also
+carries `shelter` (stadiums, IDP camps, designated-shelter schools) and `water_point` (treatment
+plants, water schemes) rows for all 8 LGAs. Visible now: on an **amber/red** region page, step 6
+opens with a sector-framed line + *"On record (GRID3, 2023) — confirm which are operating
+locally. [See all in this LGA]"* → a `/regions/{id}/facilities` list page.
+
+**D3 as shipped.** `RegionController::facilitiesFor()` picks the facility types and the label
+from the active index's sector, most operationally-specific first:
+
+| sector | types drawn | line |
+|---|---|---|
+| Emergency Response | shelter, school | "Sites in {LGA} to stage from" |
+| Water & Sanitation | water_point, health | "Water points and facilities serving {LGA}" |
+| Public Health | health, school | "Places in {LGA} to notify" |
+| Environment & Air | school, health | "Places in {LGA} to notify" |
+| anything else (e.g. Overview) | — | no line |
+
+Agriculture is handled separately by the D2 crop line. All lines stay gated to amber/red.
 
 **D2 as shipped.** `crop_calendar` table (`scope` = `zone` now, open to `state`), `App\Support\AgroZone`
 (state → agro-ecological zone), `App\Models\CropCalendar` with `exposedNow()` / `phraseFor()`,
@@ -43,7 +56,7 @@ Sanitation (water points).
 `deploy.sh` and `ReferenceDataSeeder`). Visible now: on an **amber/red agriculture-index region
 page**, step 6 "What to do" opens with *"Rain-fed crops most exposed here now typically include
 millet (filling grain)."* plus a muted *"Examples for this zone and month, not a full field
-survey."* The rest of D3 (facilities for health/emergency/water) is still to come.
+survey."*
 
 **Naming principle (applies to D1/D3 too).** Every named list — crops, facilities, sites — is
 framed as **examples, never the authoritative final list**: "typically include…", "for
