@@ -5,9 +5,9 @@
         </h2>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
             @if ($followedSectors->isNotEmpty())
-                @foreach ($followedSectors as $s)<a href="{{ route('sectors.show', $s->code) }}" class="font-medium text-slate-700 dark:text-slate-200 hover:text-primary hover:underline">{{ $s->name }}</a>@unless ($loop->last), @endunless @endforeach
-                &middot; {{ $availableIndices->count() }} {{ $availableIndices->count() === 1 ? 'index' : 'indices' }}
-                &middot; {{ $hasCoverage ? $regionsCount.' '.($regionsCount === 1 ? 'LGA' : 'LGAs') : 'all active LGAs' }}
+                @foreach ($followedSectors as $s)<a href="{{ route('sectors.show', $s->code) }}" class="font-medium text-slate-700 dark:text-slate-200 hover:text-primary hover:underline">{{ $s->short_name }}</a>@unless ($loop->last) <span class="text-gray-300 dark:text-gray-600">&middot;</span> @endunless @endforeach
+                <span class="text-gray-300 dark:text-gray-600">&middot;</span> {{ $availableIndices->count() }} {{ $availableIndices->count() === 1 ? 'index' : 'indices' }}
+                <span class="text-gray-300 dark:text-gray-600">&middot;</span> {{ $hasCoverage ? $regionsCount.' '.($regionsCount === 1 ? 'LGA' : 'LGAs') : 'all active LGAs' }}
                 <a href="{{ route('coverage.edit') }}" class="link-nav">Edit workspace</a>
             @else
                 No sectors picked yet, so you're seeing every index across

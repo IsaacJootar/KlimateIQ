@@ -12,12 +12,11 @@
         </h2>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
             @if ($followedSectors->isNotEmpty())
-                @foreach ($followedSectors as $s)<a href="{{ route('sectors.show', $s->code) }}" class="font-medium text-slate-700 dark:text-slate-200 hover:text-primary hover:underline">{{ $s->name }}</a>@unless ($loop->last), @endunless @endforeach
-                &middot; {{ $indices->count() }} {{ $indices->count() === 1 ? 'index' : 'indices' }}
-                &middot; {{ $hasCoverage ? $regions->count().' '.($regions->count() === 1 ? 'LGA' : 'LGAs') : 'all active LGAs' }}.
-                Colour-coded by current risk; switch the index below to see a different score.
+                @foreach ($followedSectors as $s)<a href="{{ route('sectors.show', $s->code) }}" class="font-medium text-slate-700 dark:text-slate-200 hover:text-primary hover:underline">{{ $s->short_name }}</a>@unless ($loop->last) <span class="text-gray-300 dark:text-gray-600">&middot;</span> @endunless @endforeach
+                <span class="text-gray-300 dark:text-gray-600">&middot;</span> {{ $indices->count() }} {{ $indices->count() === 1 ? 'index' : 'indices' }}
+                <span class="text-gray-300 dark:text-gray-600">&middot;</span> {{ $hasCoverage ? $regions->count().' '.($regions->count() === 1 ? 'LGA' : 'LGAs') : 'all active LGAs' }}
             @elseif ($hasCoverage)
-                Your configured regions, color-coded by current risk. Switch the index below to see a different score.
+                Your configured regions, colour-coded by current risk.
             @else
                 Every region currently active on the platform — you haven't set your own coverage yet.
                 <a href="{{ route('coverage.edit') }}" class="link-nav">Set up your workspace &rarr;</a>

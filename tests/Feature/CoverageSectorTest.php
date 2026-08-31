@@ -78,13 +78,15 @@ class CoverageSectorTest extends TestCase
         $user = User::factory()->create();
         $this->saveWorkspace($user, ['sector_ids' => $this->sectorIds(['AGRICULTURE'])]);
 
+        // The header uses the short sector name and links it to the sector home page.
         $this->actingAs($user)->get(route('dashboard'))
             ->assertOk()
-            ->assertSee('Agriculture &amp; Food Security', false);
+            ->assertSee('>Agriculture</a>', false)
+            ->assertSee(route('sectors.show', 'AGRICULTURE'), false);
 
         $this->actingAs($user)->get(route('regions.index'))
             ->assertOk()
-            ->assertSee('Agriculture &amp; Food Security', false);
+            ->assertSee('>Agriculture</a>', false);
     }
 
     public function test_a_users_sectors_define_which_indices_the_dashboard_shows(): void
