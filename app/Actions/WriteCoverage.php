@@ -105,8 +105,16 @@ class WriteCoverage
     {
         UserSectorSubscription::where('user_id', $user->id)->delete();
 
-        foreach (array_unique($sectorIds) as $sectorId) {
+        $sectorIds = array_map('intval', array_unique($sectorIds));
+
+        foreach ($sectorIds as $sectorId) {
             UserSectorSubscription::create(['user_id' => $user->id, 'sector_id' => $sectorId]);
+        }
+
+        // Drop the nav switcher's pinned sector (Clarity Pass B4) if it's no longer followed.
+        $preference = $user->getOrCreateDashboardPreference();
+        if ($preference->current_sector_id !== null && ! in_array($preference->current_sector_id, $sectorIds, true)) {
+            $preference->update(['current_sector_id' => null]);
         }
     }
 

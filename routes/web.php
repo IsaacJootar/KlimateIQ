@@ -69,6 +69,7 @@ Route::middleware(['auth', 'onboarded'])->group(function () {
     Route::post('/notifications/{notification}/read', [InAppNotificationController::class, 'markRead'])->name('notifications.read');
 
     Route::post('/preferences/theme', [UserPreferenceController::class, 'setTheme'])->name('preferences.theme');
+    Route::post('/preferences/sector', [UserPreferenceController::class, 'setSector'])->name('preferences.sector');
 
     Route::get('/coverage', [CoveragePreferenceController::class, 'edit'])->name('coverage.edit');
     Route::put('/coverage', [CoveragePreferenceController::class, 'update'])->name('coverage.update');

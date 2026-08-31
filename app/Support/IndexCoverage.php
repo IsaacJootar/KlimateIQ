@@ -60,10 +60,10 @@ class IndexCoverage
             return collect([['sector' => null, 'indices' => $available->values()]]);
         }
 
-        $followed = $user->sectorSubscriptions()->pluck('sector_id');
+        $active = self::activeSectorIds($user);
 
         $sectors = Sector::query()
-            ->when($followed->isNotEmpty(), fn ($q) => $q->whereIn('sector_id', $followed))
+            ->when($active->isNotEmpty(), fn ($q) => $q->whereIn('sector_id', $active))
             ->orderBy('sort_order')
             ->get();
 
@@ -141,7 +141,7 @@ class IndexCoverage
      */
     private static function sectorIndexIds(User $user): Collection
     {
-        $sectorIds = $user->sectorSubscriptions()->pluck('sector_id');
+        $sectorIds = self::activeSectorIds($user);
 
         if ($sectorIds->isEmpty()) {
             return collect();
@@ -152,6 +152,29 @@ class IndexCoverage
             ->pluck('index_id')
             ->unique()
             ->values();
+    }
+
+    /**
+     * The sectors in play right now: all the user follows, unless they've pinned one via the
+     * nav switcher (Clarity Pass B4) — then just that one. A pin is honoured only while it's
+     * still a followed sector and the user follows more than one (the switcher isn't shown
+     * otherwise, so a stale pin can't silently hide everything).
+     *
+     * @return Collection<int, int>
+     */
+    private static function activeSectorIds(User $user): Collection
+    {
+        $followed = $user->sectorSubscriptions()->pluck('sector_id');
+
+        if ($followed->count() < 2) {
+            return $followed;
+        }
+
+        $pinned = $user->getOrCreateDashboardPreference()->current_sector_id;
+
+        return $pinned !== null && $followed->contains($pinned)
+            ? collect([$pinned])
+            : $followed;
     }
 
     /**

@@ -17,6 +17,7 @@ class UserDashboardPreference extends Model
         'user_id',
         'default_view',
         'alert_channels',
+        'current_sector_id',
     ];
 
     protected $casts = [
@@ -26,6 +27,11 @@ class UserDashboardPreference extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function currentSector(): BelongsTo
+    {
+        return $this->belongsTo(Sector::class, 'current_sector_id', 'sector_id');
     }
 
     public function wantsChannel(string $channel): bool

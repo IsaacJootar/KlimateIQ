@@ -14,8 +14,14 @@
                     </a>
                 </div>
 
+                <!-- Sector switcher (Clarity Pass B4) — the workspace-context selector, kept
+                     next to the logo and away from the page nav links. -->
+                <div class="hidden sm:flex sm:items-center sm:ms-4">
+                    <x-sector-switcher />
+                </div>
+
                 <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                <div class="hidden space-x-6 sm:-my-px sm:ms-8 sm:flex">
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
@@ -165,6 +171,8 @@
                 {{ __('Notifications') }}
             </x-responsive-nav-link>
         </div>
+
+        <x-sector-switcher responsive />
 
         <!-- Responsive Settings Options -->
         <div class="pt-4 pb-1 border-t border-gray-200 dark:border-gray-600">

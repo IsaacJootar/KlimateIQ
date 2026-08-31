@@ -258,4 +258,100 @@ class CoverageSectorTest extends TestCase
 
         $this->actingAs($user)->get(route('dashboard'))->assertOk()->assertSee('Malaria Risk Index');
     }
+
+    // Clarity Pass B4 — the nav sector switcher pins a "current" sector.
+
+    private function pinSector(User $user, string $code): void
+    {
+        $user->getOrCreateDashboardPreference()->update([
+            'current_sector_id' => Sector::query()->where('code', $code)->value('sector_id'),
+        ]);
+    }
+
+    public function test_pinning_a_sector_scopes_coverage_to_that_sector(): void
+    {
+        $user = User::factory()->create();
+        $this->saveWorkspace($user, ['sector_ids' => $this->sectorIds(['PUBLIC_HEALTH', 'AGRICULTURE'])]);
+
+        $this->assertContains('MALARIA_RISK', $this->visibleIndexCodes($user));
+
+        $this->pinSector($user, 'AGRICULTURE');
+
+        $this->assertEqualsCanonicalizing(
+            ['DROUGHT_RISK', 'AGRICULTURE_STRESS', 'IRRIGATION_NEED', 'RANGELAND_STRESS'],
+            $this->visibleIndexCodes($user),
+        );
+
+        // And the tab strip collapses to that one sector — no headings.
+        $groups = IndexCoverage::resolve($user->fresh(), null)['groups'];
+        $this->assertCount(1, $groups);
+    }
+
+    public function test_a_pin_is_ignored_when_the_user_follows_only_one_sector(): void
+    {
+        $user = User::factory()->create();
+        $this->saveWorkspace($user, ['sector_ids' => $this->sectorIds(['PUBLIC_HEALTH'])]);
+        $this->pinSector($user, 'PUBLIC_HEALTH');
+
+        // Still resolves normally; nothing to "focus" with one sector.
+        $this->assertContains('MALARIA_RISK', $this->visibleIndexCodes($user));
+    }
+
+    public function test_a_stale_pin_to_an_unfollowed_sector_is_ignored(): void
+    {
+        $user = User::factory()->create();
+        $this->saveWorkspace($user, ['sector_ids' => $this->sectorIds(['PUBLIC_HEALTH', 'AGRICULTURE'])]);
+        $this->pinSector($user, 'EMERGENCY_RESPONSE'); // not followed
+
+        $this->assertContains('MALARIA_RISK', $this->visibleIndexCodes($user));
+        $this->assertContains('DROUGHT_RISK', $this->visibleIndexCodes($user));
+    }
+
+    public function test_the_switcher_route_sets_and_clears_the_pin(): void
+    {
+        $user = User::factory()->create();
+        $this->saveWorkspace($user, ['sector_ids' => $this->sectorIds(['PUBLIC_HEALTH', 'AGRICULTURE'])]);
+        $agriculture = Sector::query()->where('code', 'AGRICULTURE')->value('sector_id');
+
+        $this->actingAs($user)->from(route('dashboard'))
+            ->post(route('preferences.sector'), ['sector_id' => $agriculture])
+            ->assertRedirect(route('dashboard'));
+        $this->assertSame($agriculture, $user->getOrCreateDashboardPreference()->fresh()->current_sector_id);
+
+        $this->actingAs($user)->post(route('preferences.sector'), ['sector_id' => ''])->assertRedirect();
+        $this->assertNull($user->getOrCreateDashboardPreference()->fresh()->current_sector_id);
+    }
+
+    public function test_the_switcher_route_rejects_a_sector_the_user_does_not_follow(): void
+    {
+        $user = User::factory()->create();
+        $this->saveWorkspace($user, ['sector_ids' => $this->sectorIds(['PUBLIC_HEALTH', 'AGRICULTURE'])]);
+        $emergency = Sector::query()->where('code', 'EMERGENCY_RESPONSE')->value('sector_id');
+
+        $this->actingAs($user)->post(route('preferences.sector'), ['sector_id' => $emergency])->assertRedirect();
+
+        $this->assertNull($user->getOrCreateDashboardPreference()->fresh()->current_sector_id);
+    }
+
+    public function test_dropping_the_pinned_sector_from_the_workspace_clears_the_pin(): void
+    {
+        $user = User::factory()->create();
+        $this->saveWorkspace($user, ['sector_ids' => $this->sectorIds(['PUBLIC_HEALTH', 'AGRICULTURE'])]);
+        $this->pinSector($user, 'AGRICULTURE');
+
+        $this->saveWorkspace($user, ['sector_ids' => $this->sectorIds(['PUBLIC_HEALTH'])]);
+
+        $this->assertNull($user->getOrCreateDashboardPreference()->fresh()->current_sector_id);
+    }
+
+    public function test_the_switcher_shows_in_the_nav_only_when_more_than_one_sector_is_followed(): void
+    {
+        $user = User::factory()->create();
+
+        $this->saveWorkspace($user, ['sector_ids' => $this->sectorIds(['PUBLIC_HEALTH'])]);
+        $this->actingAs($user)->get(route('dashboard'))->assertOk()->assertDontSee('Focus the workspace');
+
+        $this->saveWorkspace($user, ['sector_ids' => $this->sectorIds(['PUBLIC_HEALTH', 'AGRICULTURE'])]);
+        $this->actingAs($user)->get(route('dashboard'))->assertOk()->assertSee('Focus the workspace');
+    }
 }
