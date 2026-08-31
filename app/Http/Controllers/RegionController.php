@@ -5,13 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\IndexActionRecommendation;
 use App\Models\Region;
 use App\Models\RegionScore;
+use App\Models\RegionSignal;
 use App\Models\SignalType;
 use App\Services\Ai\RegionScoreSummaryService;
 use App\Support\IndexCoverage;
 use App\Support\RiskBand;
 use App\Support\ScoreDiagnosis;
+use App\Support\SignalReading;
 use App\Support\TrendSummary;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
@@ -116,10 +119,17 @@ class RegionController extends Controller
         $latest = $scores->last();
         $prior = $scores->where('period_start', '<=', now()->subDays(14))->last();
         $signalNames = SignalType::codeToName();
+
+        $trend = TrendSummary::describe(
+            $latest?->score !== null ? (float) $latest->score : null,
+            $prior?->score !== null ? (float) $prior->score : null,
+        );
+
         $diagnosis = ScoreDiagnosis::forBreakdown(
             $latest?->breakdown ?? [],
             $latest?->score !== null ? (float) $latest->score : null,
             $signalNames,
+            $trend['direction'],
         );
 
         return view('regions.show', [
@@ -133,11 +143,90 @@ class RegionController extends Controller
             'aiAvailable' => app(RegionScoreSummaryService::class)->isAvailable(),
             'recommendedAction' => IndexActionRecommendation::textFor($index->index_id, $latest?->score),
             'diagnosis' => $diagnosis,
-            'trend' => TrendSummary::describe(
-                $latest?->score !== null ? (float) $latest->score : null,
-                $prior?->score !== null ? (float) $prior->score : null,
-            ),
+            'trend' => $trend,
+            'thisWeek' => $this->thisWeekReadings($region, $latest),
+            'projection' => $this->projection($latest?->score !== null ? (float) $latest->score : null, $prior?->score !== null ? (float) $prior->score : null),
         ]);
+    }
+
+    /**
+     * The "This week in {LGA}" list — each signal that fed the score, phrased plainly, most
+     * important first, with an "up from / down from recent weeks" clause drawn from the
+     * region's own signal history (Clarity Pass A3).
+     *
+     * @return Collection<int, array{sentence: string}>
+     */
+    private function thisWeekReadings(Region $region, ?RegionScore $latest): Collection
+    {
+        if ($latest === null || $latest->score === null) {
+            return collect();
+        }
+
+        $present = collect($latest->breakdown ?? [])
+            ->reject(fn (array $row) => ($row['status'] ?? null) === 'no_data')
+            ->sortByDesc(fn (array $row) => $row['contribution_to_final_score'] ?? 0)
+            ->take(4)
+            ->values();
+
+        if ($present->isEmpty()) {
+            return collect();
+        }
+
+        // The region's own mean for each of these signals over the ~6 periods before this one.
+        $codes = $present->pluck('signal_type_code')->all();
+        $recentMeans = RegionSignal::query()
+            ->join('signal_types', 'signal_types.signal_type_id', '=', 'region_signals.signal_type_id')
+            ->where('region_signals.region_id', $region->region_id)
+            ->whereIn('signal_types.code', $codes)
+            ->where('region_signals.period_start', '<', $latest->period_start->toDateString())
+            ->where('region_signals.period_start', '>=', $latest->period_start->copy()->subWeeks(7)->toDateString())
+            ->groupBy('signal_types.code')
+            ->selectRaw('signal_types.code as code, avg(region_signals.value) as mean, count(*) as n')
+            ->get()
+            ->mapWithKeys(fn ($r) => [$r->code => $r->n >= 2 ? (float) $r->mean : null]);
+
+        return $present->map(function (array $row) use ($recentMeans) {
+            $code = $row['signal_type_code'];
+            $value = (float) $row['raw_value'];
+            $reading = SignalReading::describe($code, $value);
+            $versus = SignalReading::versusRecent($code, $value, $recentMeans[$code] ?? null);
+
+            return ['sentence' => $reading['sentence'].($versus !== '' ? ", {$versus}" : '')];
+        });
+    }
+
+    /**
+     * A plain "if the pattern holds…" line for the "Where it's heading" step. Deliberately
+     * conservative: only speaks when the last two readings show a clear move toward a band edge.
+     */
+    private function projection(?float $latest, ?float $prior): ?string
+    {
+        if ($latest === null || $prior === null) {
+            return null;
+        }
+
+        $delta = $latest - $prior;
+
+        if (abs($delta) < 3) {
+            return null;
+        }
+
+        $projected = $latest + $delta; // one more 2-week step
+        $edge = $delta > 0 ? ($latest < 67 ? 67 : null) : ($latest >= 34 ? 34 : null);
+
+        if ($edge === null) {
+            return null;
+        }
+
+        $crosses = $delta > 0 ? $projected >= $edge : $projected <= $edge;
+
+        if (! $crosses) {
+            return null;
+        }
+
+        $band = $delta > 0 ? ($edge === 67 ? 'high risk (red)' : 'moderate risk (amber)') : ($edge === 34 ? 'low risk (green)' : 'moderate risk (amber)');
+
+        return "If it keeps moving at this rate it reaches {$band} within about two weeks.";
     }
 
     public function generateSummary(Region $region, RegionScoreSummaryService $summarizer): RedirectResponse

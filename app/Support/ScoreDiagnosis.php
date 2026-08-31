@@ -3,41 +3,91 @@
 namespace App\Support;
 
 /**
- * The always-present link between a raw score and "what does this actually mean" — the AI
- * Summary is a deliberate optional extra a user has to click for, so without this, a score with
- * no summary generated yet has no plain-English conclusion at all, just a breakdown table. This
- * is deterministic (no AI call, nothing to configure) and derived only from the same breakdown
- * the table already shows, so it can never say more than the numbers already prove.
+ * The always-present, deterministic link between a raw score and "what does this actually
+ * mean" — no AI call, nothing to configure, derived only from the same breakdown the drivers
+ * list already shows, so it can never say more than the numbers prove. The optional AI Summary
+ * is a deliberate extra a user clicks for; this is what's shown by default.
+ *
+ * Clarity Pass A4 — the conclusion is now two or three short sentences a non-analyst reads
+ * once, and the top drivers come back as structured data so the view doesn't recompute them.
  */
 class ScoreDiagnosis
 {
-    private const BAND_LABELS = ['green' => 'low', 'amber' => 'moderate', 'red' => 'high'];
+    private const BAND_PLAIN = ['green' => 'Low risk', 'amber' => 'Moderate risk', 'red' => 'High risk'];
 
     /**
      * @param  array<int, array<string, mixed>>  $breakdown
      * @param  array<string, string>  $signalLabels  code => reader-facing name; falls back to the code
-     * @return array{dominantSignal: ?string, dominantContribution: ?float, conclusion: ?string}
+     * @param  ?string  $trendDirection  'up' | 'down' | 'flat' from TrendSummary, for the headline
+     * @return array{
+     *     dominantSignal: ?string,
+     *     dominantContribution: ?float,
+     *     headline: ?string,
+     *     conclusion: ?string,
+     *     drivers: array<int, array{code: string, label: string, points: float, share: int}>,
+     * }
      */
-    public static function forBreakdown(array $breakdown, ?float $score, array $signalLabels = []): array
+    public static function forBreakdown(array $breakdown, ?float $score, array $signalLabels = [], ?string $trendDirection = null): array
     {
-        $available = collect($breakdown)->reject(fn (array $row) => ($row['status'] ?? null) === 'no_data');
+        $empty = [
+            'dominantSignal' => null,
+            'dominantContribution' => null,
+            'headline' => null,
+            'conclusion' => null,
+            'drivers' => [],
+        ];
+
+        $available = collect($breakdown)
+            ->reject(fn (array $row) => ($row['status'] ?? null) === 'no_data')
+            ->filter(fn (array $row) => ($row['contribution_to_final_score'] ?? 0) > 0)
+            ->sortByDesc(fn (array $row) => $row['contribution_to_final_score'] ?? 0)
+            ->values();
 
         if ($score === null || $available->isEmpty()) {
-            return ['dominantSignal' => null, 'dominantContribution' => null, 'conclusion' => null];
+            return $empty;
         }
 
-        $dominant = $available->sortByDesc(fn (array $row) => $row['contribution_to_final_score'] ?? 0)->first();
-        $bandLabel = self::BAND_LABELS[RiskBand::forScore($score)] ?? 'unknown';
-        $formattedScore = rtrim(rtrim(number_format($score, 1), '0'), '.');
+        $label = fn (array $row) => $signalLabels[$row['signal_type_code']] ?? $row['signal_type_name'] ?? $row['signal_type_code'];
 
-        $code = $dominant['signal_type_code'];
-        $label = $signalLabels[$code] ?? $dominant['signal_type_name'] ?? $code;
+        $drivers = $available->map(fn (array $row) => [
+            'code' => $row['signal_type_code'],
+            'label' => $label($row),
+            'points' => round((float) $row['contribution_to_final_score'], 1),
+            'share' => (int) round(($row['contribution_to_final_score'] / max($score, 0.01)) * 100),
+        ])->take(4)->all();
+
+        $band = RiskBand::forScore($score);
+        $bandPlain = self::BAND_PLAIN[$band] ?? 'Risk';
+        $top = $drivers[0];
+
+        // Headline: band + where it's going.
+        $direction = match ($trendDirection) {
+            'up' => ' and building', 'down' => ' and easing', 'flat' => ' and steady',
+            default => '',
+        };
+        $headline = "{$bandPlain} this week{$direction}.";
+
+        // Conclusion: the main driver, then whether the others agree.
+        $sentences = ["The main reason is {$top['label']} — about {$top['share']}% of the score."];
+
+        $others = array_slice($drivers, 1, 2);
+        $agreeing = array_filter($others, fn ($d) => $d['share'] >= 15);
+
+        if (count($agreeing) >= 1) {
+            $names = implode(' and ', array_map(fn ($d) => $d['label'], $agreeing));
+            $sentences[] = count($agreeing) === 1
+                ? "{$names} is pushing the same way."
+                : "{$names} are pushing the same way.";
+        } elseif ($others !== []) {
+            $sentences[] = 'The other signals are near normal.';
+        }
 
         return [
-            'dominantSignal' => $label,
-            'dominantContribution' => $dominant['contribution_to_final_score'] ?? null,
-            'conclusion' => "This is a {$bandLabel}-risk score, driven mainly by {$label} ".
-                "({$dominant['contribution_to_final_score']} of the {$formattedScore} points).",
+            'dominantSignal' => $top['label'],
+            'dominantContribution' => $top['points'],
+            'headline' => $headline,
+            'conclusion' => implode(' ', $sentences),
+            'drivers' => $drivers,
         ];
     }
 }

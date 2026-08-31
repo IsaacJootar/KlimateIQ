@@ -18,8 +18,16 @@ Status: **approved 2026-08-30, all 12 items in scope, then T4.**
 | A1 signal names | ✅ shipped |
 | A2 index "what it measures" | ✅ shipped |
 | B1 sector in the header | ✅ shipped |
-| C region-page rebuild (+ A3, A4) | next |
+| A3 plain-language readings | ✅ shipped (with C) — see note |
+| A4 rewritten "what it means" | ✅ shipped (with C) |
+| C region-page rebuild | ✅ shipped |
 | B3, D2, D1, D3, B2, B4, E1, E2 | pending |
+
+**A3 scope note.** Shipped: `App\Support\SignalReading` (plain phrasing + a climatology-grounded
+qualitative word per signal) and a "vs. recent weeks" clause computed from the region's own
+`region_signals` history. **Deferred:** the curated month-by-zone `signal_context` table — it
+would be ~1,000 fabricated normal-range numbers; the region's own history is honest and sharpens
+as it accumulates. Revisit if officers want sharper "normal for the season" language.
 
 ## Why
 
