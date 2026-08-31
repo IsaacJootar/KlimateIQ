@@ -20,8 +20,12 @@ class Grid3StaticProvider implements FacilityProvider
             ->whereIn('type', $types)
             ->orderBy('sort_order')
             ->orderBy('name')
-            ->limit($limit)
-            ->get();
+            ->get()
+            // Honour the caller's type priority — for a health advisory, health facilities
+            // before schools — then the seeded rank within each type.
+            ->sortBy(fn (Facility $f) => array_search($f->type, $types, true), SORT_NUMERIC)
+            ->take($limit)
+            ->values();
     }
 
     public function allForRegion(Region $region): Collection
