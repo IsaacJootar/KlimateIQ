@@ -28,7 +28,13 @@ Status: **approved 2026-08-30, all 12 items in scope, then T4.**
 | B2 grouped index tabs | ✅ shipped |
 | B4 sector switcher in the nav | ✅ shipped |
 | E1 dry-season water stress | ✅ shipped |
-| E2 | pending |
+| E2 onboarding copy pass | ✅ shipped |
+
+**The clarity pass is complete.** Every screen now speaks the reader's language: friendly signal
+names, plain-language readings and "what it means", the region page as one top-to-bottom story,
+sector framing in the header / a sector home / grouped tabs / a nav switcher, named crops and
+facilities in the recommendations, and a wizard that tells you what you'll actually get. Next up
+is **T4 — forecast ingestion** (`docs/BUILD_PLAN.md`).
 
 **B4 as shipped.** A workspace switcher next to the logo, shown only when the user follows more
 than one sector. Picking one pins it (`user_dashboard_preferences.current_sector_id`);
@@ -222,7 +228,7 @@ as one story. Same data, resequenced and rewritten. A3 + A4 land here. Size **L*
 | id | item | size | what |
 |---|---|---|---|
 | E1 | Dry-season water-availability view | M | ✅ shipped — see below. |
-| E2 | Onboarding copy pass | S | Under each sector in the wizard, one line of "you'll get …". Reflects the finished vocabulary. |
+| E2 | Onboarding copy pass | S | ✅ shipped — `Sector::promise`, one plain "here's what you'll get" line per sector on the setup wizard and the Workspace page, in the finished vocabulary (amber weeks, named clinics/schools/crops, plain signal language). Step headings tightened to "What do you work on? / Fine-tune the risks / Which areas do you cover?". |
 
 **E1 as shipped.** `DRY_SEASON_WATER_STRESS` — "Dry-Season Water Stress Index", a config-only
 index in the Water & Sanitation sector (`AdditionalIndicesSeeder` + `SectorSeeder`, both already
