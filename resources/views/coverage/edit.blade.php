@@ -63,7 +63,7 @@
                                        class="mt-0.5 rounded" x-model="sectorIds">
                                 <span class="text-sm">
                                     <span class="font-semibold text-slate-900 dark:text-white block">{{ $sector->name }}</span>
-                                    <span class="text-slate-500 dark:text-slate-400">{{ $sector->description }}</span>
+                                    <span class="text-slate-500 dark:text-slate-400">{{ $sector->promise }}</span>
                                     @if ($sector->indices->isNotEmpty())
                                         <span class="mt-1 block text-xs text-slate-400">{{ $sector->indices->pluck('name')->map(fn ($n) => str_replace(' Index', '', $n))->join(' · ') }}</span>
                                     @endif

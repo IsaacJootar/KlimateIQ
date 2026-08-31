@@ -34,11 +34,16 @@
     >
         <p class="text-sm font-semibold text-primary">Set up your workspace</p>
         <h1 class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
-            <span x-show="step === 1">What do you monitor?</span>
-            <span x-show="step === 2" x-cloak>Which risks do you monitor?</span>
-            <span x-show="step === 3" x-cloak>Which areas do you monitor?</span>
+            <span x-show="step === 1">What do you work on?</span>
+            <span x-show="step === 2" x-cloak>Fine-tune the risks</span>
+            <span x-show="step === 3" x-cloak>Which areas do you cover?</span>
         </h1>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <span x-show="step === 1">Pick the sectors that match your role — each one turns on a set of weekly risk scores.</span>
+            <span x-show="step === 2" x-cloak>Everything your sectors cover is on. Untick anything you don't need.</span>
+            <span x-show="step === 3" x-cloak>Leave this on "All of Nigeria" if you're not sure — you can narrow it any time.</span>
+        </p>
+        <p class="mt-1 text-xs text-gray-400">
             Step <span x-text="step"></span> of 3 — you can change all of this later from the Workspace page.
         </p>
 
@@ -50,12 +55,14 @@
                 @foreach ($sectors as $sector)
                     <label class="flex gap-3 rounded-xl border border-gray-200 dark:border-gray-700 p-4 cursor-pointer transition hover:border-primary/60 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
                         <input type="checkbox" name="sector_ids[]" value="{{ $sector->sector_id }}"
-                               class="mt-0.5 rounded" x-model="sectorIds">
+                               class="mt-1 rounded" x-model="sectorIds">
                         <span>
                             <span class="block font-semibold text-gray-900 dark:text-white">{{ $sector->name }}</span>
-                            <span class="block text-sm text-gray-500 dark:text-gray-400">{{ $sector->description }}</span>
+                            <span class="mt-0.5 block text-sm text-gray-500 dark:text-gray-400">
+                                {{ $sector->promise }}
+                            </span>
                             @if ($sector->indices->isNotEmpty())
-                                <span class="mt-1 block text-xs text-gray-400">
+                                <span class="mt-1.5 block text-xs text-gray-400">
                                     {{ $sector->indices->pluck('name')->map(fn ($n) => str_replace(' Index', '', $n))->join(' · ') }}
                                 </span>
                             @endif
@@ -66,7 +73,7 @@
                 <div class="flex items-center justify-between pt-4">
                     <button type="button" class="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                             @click="$refs.skip.submit()">
-                        Skip setup — I'll do this later
+                        Skip for now
                     </button>
                     <button type="button" class="btn-primary"
                             :disabled="sectorIds.length === 0"
@@ -95,7 +102,7 @@
                 @endforeach
 
                 <p class="text-xs text-gray-400" x-show="indexIds.length === 0">
-                    Nothing selected — your dashboard will show every index. That's fine too.
+                    Nothing ticked — your dashboard will show every risk in your sectors. That's fine too.
                 </p>
 
                 <div class="flex items-center justify-between pt-4">
@@ -108,7 +115,7 @@
             <div x-show="step === 3" x-cloak class="space-y-3">
                 <label class="flex items-center gap-2 text-sm">
                     <input type="radio" name="region_scope" value="all" x-model="regionScope">
-                    All of Nigeria <span class="text-gray-400">— every active region</span>
+                    All of Nigeria <span class="text-gray-400">— every active LGA</span>
                 </label>
                 @if ($regionStateLabel)
                     <label class="flex items-center gap-2 text-sm">

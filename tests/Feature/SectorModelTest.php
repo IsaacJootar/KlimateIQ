@@ -86,4 +86,28 @@ class SectorModelTest extends TestCase
 
         $this->assertNull($user->fresh()->onboarded_at);
     }
+
+    public function test_short_name_trims_the_ampersand_clause(): void
+    {
+        $this->assertSame(
+            'Public Health',
+            Sector::query()->where('code', 'PUBLIC_HEALTH')->firstOrFail()->short_name,
+        );
+    }
+
+    public function test_promise_is_the_reader_facing_line_with_a_fallback(): void
+    {
+        // Clarity Pass E2 — every seeded sector has a "what you'll get" line.
+        Sector::query()->orderBy('sort_order')->get()->each(function (Sector $sector) {
+            $this->assertNotSame('', trim((string) $sector->promise));
+        });
+
+        $health = Sector::query()->where('code', 'PUBLIC_HEALTH')->firstOrFail();
+        $this->assertStringContainsString('amber', $health->promise);
+        $this->assertNotSame($health->description, $health->promise);
+
+        // A sector with no entry in the map falls back to its description.
+        $orphan = Sector::query()->create(['code' => 'SYNTHETIC', 'name' => 'Synthetic', 'description' => 'fallback text', 'sort_order' => 99]);
+        $this->assertSame('fallback text', $orphan->promise);
+    }
 }
