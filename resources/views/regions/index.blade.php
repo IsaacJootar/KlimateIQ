@@ -28,15 +28,7 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
-            <div class="flex flex-wrap gap-2">
-                @foreach ($indices as $idx)
-                    <a href="{{ route('regions.index', ['index' => $idx->code]) }}"
-                       @if ($idx->description) title="{{ $idx->description }}" @endif
-                       class="pill-tab {{ $idx->index_id === $index->index_id ? 'pill-tab-active' : '' }}">
-                        {{ $idx->name }}
-                    </a>
-                @endforeach
-            </div>
+            <x-index-tabs :groups="$indexGroups" :active="$index" route-name="regions.index" />
 
             @if ($index->description)
                 <p class="-mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-3xl">{{ $index->description }}</p>

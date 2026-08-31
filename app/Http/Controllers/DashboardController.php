@@ -30,7 +30,7 @@ class DashboardController extends Controller
             )
             ->get();
 
-        ['available' => $availableIndices, 'active' => $activeIndex] = IndexCoverage::resolve($user, request('index'));
+        ['available' => $availableIndices, 'active' => $activeIndex, 'groups' => $indexGroups] = IndexCoverage::resolve($user, request('index'));
 
         $latestScores = RegionScore::query()
             ->where('index_id', $activeIndex->index_id)
@@ -114,6 +114,7 @@ class DashboardController extends Controller
             'activeThresholdsCount' => $activeThresholdsCount,
             'defaultIndex' => $activeIndex,
             'availableIndices' => $availableIndices,
+            'indexGroups' => $indexGroups,
             'topRiskRegions' => $topRiskRegions,
             'recentAlerts' => $recentAlerts,
             'activityFeed' => $activityFeed,

@@ -36,15 +36,7 @@
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
 
             {{-- Index picker + what this index measures --}}
-            <div class="flex flex-wrap gap-2">
-                @foreach ($indices as $idx)
-                    <a href="{{ route('regions.show', ['region' => $region->region_id, 'index' => $idx->code]) }}"
-                       @if ($idx->description) title="{{ $idx->description }}" @endif
-                       class="pill-tab {{ $idx->index_id === $index->index_id ? 'pill-tab-active' : '' }}">
-                        {{ $idx->name }}
-                    </a>
-                @endforeach
-            </div>
+            <x-index-tabs :groups="$indexGroups" :active="$index" route-name="regions.show" :route-params="['region' => $region->region_id]" />
             @if ($index->description)
                 <div class="-mt-1 flex gap-2.5 rounded-xl bg-gano-50 dark:bg-gano-950/50 border border-gano-100 dark:border-gano-900 px-3.5 py-2.5">
                     <svg class="mt-0.5 h-4 w-4 shrink-0 text-gano-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

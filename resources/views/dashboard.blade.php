@@ -42,17 +42,7 @@
                 </div>
             @endif
 
-            @if ($availableIndices->count() > 1)
-                <div class="flex flex-wrap gap-2">
-                    @foreach ($availableIndices as $idx)
-                        <a href="{{ route('dashboard', ['index' => $idx->code]) }}"
-                           @if ($idx->description) title="{{ $idx->description }}" @endif
-                           class="pill-tab {{ $idx->index_id === $defaultIndex->index_id ? 'pill-tab-active' : '' }}">
-                            {{ $idx->name }}
-                        </a>
-                    @endforeach
-                </div>
-            @endif
+            <x-index-tabs :groups="$indexGroups" :active="$defaultIndex" route-name="dashboard" hide-when-single />
 
             @if ($defaultIndex->description)
                 <p class="-mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-3xl">{{ $defaultIndex->description }}</p>

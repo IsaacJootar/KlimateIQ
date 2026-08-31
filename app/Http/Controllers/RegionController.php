@@ -25,7 +25,7 @@ class RegionController extends Controller
 {
     public function index(): View
     {
-        ['available' => $indices, 'active' => $index] = IndexCoverage::resolve(Auth::user(), request('index'));
+        ['available' => $indices, 'active' => $index, 'groups' => $indexGroups] = IndexCoverage::resolve(Auth::user(), request('index'));
 
         $latestByRegion = RegionScore::query()
             ->where('index_id', $index->index_id)
@@ -99,6 +99,7 @@ class RegionController extends Controller
         return view('regions.index', [
             'regions' => $regions,
             'indices' => $indices,
+            'indexGroups' => $indexGroups,
             'index' => $index,
             'followedSectors' => $followedSectors,
             // Drives the "Your Regions" vs "Active Regions" label below — the count alone
@@ -111,7 +112,7 @@ class RegionController extends Controller
 
     public function show(Region $region): View
     {
-        ['available' => $indices, 'active' => $index] = IndexCoverage::resolve(Auth::user(), request('index'));
+        ['available' => $indices, 'active' => $index, 'groups' => $indexGroups] = IndexCoverage::resolve(Auth::user(), request('index'));
 
         $scores = RegionScore::query()
             ->where('region_id', $region->region_id)
@@ -153,6 +154,7 @@ class RegionController extends Controller
             'drivers' => $drivers,
             'region' => $region,
             'indices' => $indices,
+            'indexGroups' => $indexGroups,
             'index' => $index,
             'scores' => $scores,
             'latest' => $latest,

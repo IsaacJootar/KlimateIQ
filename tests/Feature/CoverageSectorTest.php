@@ -196,4 +196,64 @@ class CoverageSectorTest extends TestCase
 
         $this->assertSame(0, $user->regionSubscriptions()->count());
     }
+
+    // Clarity Pass B2 — the tab strip groups indices under their sector.
+
+    public function test_resolve_groups_available_indices_under_their_sector(): void
+    {
+        $user = User::factory()->create();
+        $this->saveWorkspace($user, ['sector_ids' => $this->sectorIds(['PUBLIC_HEALTH', 'AGRICULTURE'])]);
+
+        $groups = IndexCoverage::resolve($user->fresh(), null)['groups'];
+
+        // One row per followed sector, in sort order, each carrying that sector's indices.
+        $this->assertSame(['PUBLIC_HEALTH', 'AGRICULTURE'], $groups->pluck('sector.code')->all());
+        $this->assertContains('MALARIA_RISK', $groups->firstWhere('sector.code', 'PUBLIC_HEALTH')['indices']->pluck('code')->all());
+        $this->assertContains('DROUGHT_RISK', $groups->firstWhere('sector.code', 'AGRICULTURE')['indices']->pluck('code')->all());
+
+        // Every available index lands in exactly one group.
+        $grouped = $groups->flatMap(fn ($g) => $g['indices']->pluck('code'));
+        $this->assertSame($grouped->count(), $grouped->unique()->count());
+    }
+
+    public function test_an_index_in_two_followed_sectors_appears_once_under_the_first(): void
+    {
+        $user = User::factory()->create();
+        // Flood sits in both Emergency Response (sort 3) and Water & Sanitation (sort 4).
+        $this->saveWorkspace($user, ['sector_ids' => $this->sectorIds(['WATER_SANITATION', 'EMERGENCY_RESPONSE'])]);
+
+        $groups = IndexCoverage::resolve($user->fresh(), null)['groups'];
+        $floodRows = $groups->filter(fn ($g) => $g['indices']->pluck('code')->contains('FLOOD_RISK'));
+
+        $this->assertCount(1, $floodRows);
+        $this->assertSame('EMERGENCY_RESPONSE', $floodRows->first()['sector']->code);
+    }
+
+    public function test_the_dashboard_tab_strip_groups_and_reorders_by_sector(): void
+    {
+        $user = User::factory()->create();
+        $this->saveWorkspace($user, ['sector_ids' => $this->sectorIds(['PUBLIC_HEALTH', 'AGRICULTURE', 'EMERGENCY_RESPONSE'])]);
+
+        // The sector short names head their rows, in configured order; and grouped order puts every
+        // Public Health index ahead of Agriculture — the opposite of the flat alphabetical order,
+        // where "Agriculture Stress Index" sorts before "Malaria Risk Index".
+        $this->actingAs($user)->get(route('dashboard'))
+            ->assertOk()
+            ->assertSeeInOrder([
+                'Public Health', 'Malaria Risk Index',
+                'Agriculture', 'Agriculture Stress Index',
+                'Emergency Response', 'Flood Risk Index',
+            ]);
+    }
+
+    public function test_a_single_followed_sector_gets_a_flat_strip(): void
+    {
+        $user = User::factory()->create();
+        $this->saveWorkspace($user, ['sector_ids' => $this->sectorIds(['PUBLIC_HEALTH'])]);
+
+        $groups = IndexCoverage::resolve($user->fresh(), null)['groups'];
+        $this->assertCount(1, $groups);
+
+        $this->actingAs($user)->get(route('dashboard'))->assertOk()->assertSee('Malaria Risk Index');
+    }
 }

@@ -25,7 +25,18 @@ Status: **approved 2026-08-30, all 12 items in scope, then T4.**
 | D2 crop calendar | ✅ shipped (+ the agriculture half of D3) |
 | D1 facilities | ✅ shipped (+ the health/air half of D3) |
 | D3 recommendation enrichment | ✅ shipped (all four sectors) |
-| B2, B4, E1, E2 | pending |
+| B2 grouped index tabs | ✅ shipped |
+| B4, E1, E2 | pending |
+
+**B2 as shipped.** `App\Support\IndexCoverage::resolve()` now also returns `groups` — the
+available indices arranged under sector headings. A user who follows sectors sees those in their
+configured order; a user who follows none sees every sector. Each index lands under the first
+sector (by that order) it belongs to, so it shows once — Flood Risk appears under Emergency
+Response, not also under Water. The three tab strips (dashboard, regions list, region page) now
+render through one `<x-index-tabs>` component: a labelled row per sector when there's more than
+one group, a plain strip otherwise (the label would just echo the page header). `Sector::shortName`
+trims "Public Health & Epidemiology" → "Public Health" for the heading. The Dashboard passes
+`hide-when-single` so a lone index shows no strip at all (the metric cards already name it).
 
 **D1 as shipped.** `facilities` table + `App\Models\Facility`; `App\Services\Facilities\FacilityProvider`
 interface with `Grid3StaticProvider` (reads the table) as the only implementation, bound from

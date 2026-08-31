@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Str;
 
 /**
  * A grouping of indices that maps to a real-world responsibility — "Public Health",
@@ -29,6 +31,15 @@ class Sector extends Model
     protected $casts = [
         'is_default' => 'boolean',
     ];
+
+    /**
+     * A compact label for tight UI like the tab-strip headings — "Public Health &
+     * Epidemiology" becomes "Public Health". Everything before the first " & " / " and ".
+     */
+    protected function shortName(): Attribute
+    {
+        return Attribute::get(fn () => (string) Str::of($this->name)->before(' & ')->before(' and '));
+    }
 
     public function indices(): BelongsToMany
     {

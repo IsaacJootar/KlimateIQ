@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\ScoringIndex;
+use App\Models\Sector;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +21,7 @@ use Illuminate\Support\Facades\DB;
 class IndexCoverage
 {
     /**
-     * @return array{available: Collection<int, ScoringIndex>, active: ScoringIndex}
+     * @return array{available: Collection<int, ScoringIndex>, active: ScoringIndex, groups: Collection<int, array{sector: ?Sector, indices: Collection<int, ScoringIndex>}>}
      */
     public static function resolve(User $user, ?string $requestedCode): array
     {
@@ -36,7 +37,76 @@ class IndexCoverage
             ?? $available->sortBy('name')->first()
             ?? ScoringIndex::query()->orderBy('name')->first();
 
-        return ['available' => $available, 'active' => $active];
+        return [
+            'available' => $available,
+            'active' => $active,
+            'groups' => self::groupBySector($user, $available),
+        ];
+    }
+
+    /**
+     * The available indices arranged under sector headings, for the tab strip (Clarity Pass B2).
+     * A user who follows sectors sees those, in their configured order; a user who follows none
+     * sees every sector. Each index lands under the first sector (by that order) it belongs to,
+     * so it appears exactly once. One group or fewer means the caller can render a flat strip —
+     * the sector label would just repeat what the page header already says.
+     *
+     * @param  Collection<int, ScoringIndex>  $available
+     * @return Collection<int, array{sector: ?Sector, indices: Collection<int, ScoringIndex>}>
+     */
+    private static function groupBySector(User $user, Collection $available): Collection
+    {
+        if ($available->count() <= 1) {
+            return collect([['sector' => null, 'indices' => $available->values()]]);
+        }
+
+        $followed = $user->sectorSubscriptions()->pluck('sector_id');
+
+        $sectors = Sector::query()
+            ->when($followed->isNotEmpty(), fn ($q) => $q->whereIn('sector_id', $followed))
+            ->orderBy('sort_order')
+            ->get();
+
+        // index_id => rows of {sector_id, sort_order} restricted to the sectors in play.
+        $membership = DB::table('index_sector')
+            ->whereIn('sector_id', $sectors->pluck('sector_id'))
+            ->get()
+            ->groupBy('index_id');
+
+        $buckets = [];      // sector_id => list of [index, pivot sort_order]
+        $orphans = collect();
+
+        foreach ($available as $index) {
+            $rows = $membership->get($index->index_id);
+            $home = $rows === null
+                ? null
+                : $sectors->first(fn (Sector $s) => $rows->contains('sector_id', $s->sector_id));
+
+            if ($home === null) {
+                $orphans->push($index);
+
+                continue;
+            }
+
+            $buckets[$home->sector_id][] = [
+                'index' => $index,
+                'order' => $rows->firstWhere('sector_id', $home->sector_id)->sort_order ?? 0,
+            ];
+        }
+
+        $groups = $sectors
+            ->filter(fn (Sector $s) => isset($buckets[$s->sector_id]))
+            ->map(fn (Sector $s) => [
+                'sector' => $s,
+                'indices' => collect($buckets[$s->sector_id])->sortBy('order')->pluck('index')->values(),
+            ])
+            ->values();
+
+        if ($orphans->isNotEmpty()) {
+            $groups->push(['sector' => null, 'indices' => $orphans->values()]);
+        }
+
+        return $groups;
     }
 
     /**
