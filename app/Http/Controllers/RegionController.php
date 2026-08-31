@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CropCalendar;
 use App\Models\IndexActionRecommendation;
 use App\Models\Region;
 use App\Models\RegionScore;
 use App\Models\RegionSignal;
+use App\Models\ScoringIndex;
 use App\Models\SignalType;
 use App\Services\Ai\RegionScoreSummaryService;
 use App\Support\IndexCoverage;
@@ -161,7 +163,21 @@ class RegionController extends Controller
             'trend' => $trend,
             'thisWeek' => $this->thisWeekReadings($region, $latest),
             'projection' => $this->projection($latest?->score !== null ? (float) $latest->score : null, $prior?->score !== null ? (float) $prior->score : null),
+            // Concrete crops in a water-sensitive stage here right now — only for the agriculture
+            // indices, and only when the score is amber/red (there's nothing to act on below that).
+            'cropLine' => $this->cropLineFor($index, $region, $latest?->score !== null ? (float) $latest->score : null),
         ]);
+    }
+
+    private function cropLineFor(ScoringIndex $index, Region $region, ?float $score): ?string
+    {
+        if ($score === null || $score < 34) {
+            return null;
+        }
+
+        $isAgriculture = $index->sectors()->where('code', 'AGRICULTURE')->exists();
+
+        return $isAgriculture ? CropCalendar::phraseFor($region->state) : null;
     }
 
     /**

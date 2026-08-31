@@ -306,6 +306,11 @@
                         <span class="step-badge">6</span>
                         <h3 class="font-semibold text-gray-800 dark:text-gray-200">What to do</h3>
                     </div>
+                    @if ($cropLine)
+                        <p class="mb-2 text-sm font-semibold text-slate-900 dark:text-white">
+                            Crops most exposed here right now: {{ $cropLine }}.
+                        </p>
+                    @endif
                     <p class="text-sm leading-relaxed text-gray-800 dark:text-gray-200">{{ $recommendedAction }}</p>
                     @if ($diagnosis['dominantSignal'])
                         <p class="mt-2 text-xs text-slate-400">Driven mainly by {{ $diagnosis['dominantSignal'] }} (step 3 above).</p>

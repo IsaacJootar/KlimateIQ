@@ -22,7 +22,15 @@ Status: **approved 2026-08-30, all 12 items in scope, then T4.**
 | A4 rewritten "what it means" | ✅ shipped (with C) |
 | C region-page rebuild | ✅ shipped (+ a premium restyle pass) |
 | B3 sector home | ✅ shipped |
-| D2, D1, D3, B2, B4, E1, E2 | pending |
+| D2 crop calendar | ✅ shipped (+ the agriculture half of D3) |
+| D1, D3 (health/emergency/water), B2, B4, E1, E2 | pending |
+
+**D2 as shipped.** `crop_calendar` table (`scope` = `zone` now, open to `state`), `App\Support\AgroZone`
+(state → agro-ecological zone), `App\Models\CropCalendar` with `exposedNow()` / `phraseFor()`,
+`CropCalendarSeeder` (~6 zones × ~5 crops, from FAO / FEWS NET Nigeria crop calendars, added to
+`deploy.sh` and `ReferenceDataSeeder`). Visible now: on an **amber/red agriculture-index region
+page**, step 6 "What to do" opens with *"Crops most exposed here right now: millet and maize near
+grain-fill."* The rest of D3 (facilities for health/emergency/water) is still to come.
 
 The region page also got a colour pass: the score is a band-tinted gradient hero, the driver
 bars are filled in the band colour, teal step badges, a tinted panel for the index description.

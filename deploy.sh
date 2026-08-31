@@ -25,9 +25,10 @@ composer install --no-dev --optimize-autoloader --no-interaction --no-progress
 echo "==> Migrations"
 php artisan migrate --force
 
-echo "==> Idempotent data seed (new indices + sectors — safe to re-run, does not touch tuned calibration/weights)"
+echo "==> Idempotent data seed (new indices + sectors + crop calendar — safe to re-run, does not touch tuned calibration/weights)"
 php artisan db:seed --class=AdditionalIndicesSeeder --force
 php artisan db:seed --class=SectorSeeder --force
+php artisan db:seed --class=CropCalendarSeeder --force
 
 echo "==> Frontend build"
 npm ci --no-audit --no-fund
