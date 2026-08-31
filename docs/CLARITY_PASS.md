@@ -21,7 +21,8 @@ Status: **approved 2026-08-30, all 12 items in scope, then T4.**
 | A3 plain-language readings | ✅ shipped (with C) — see note |
 | A4 rewritten "what it means" | ✅ shipped (with C) |
 | C region-page rebuild | ✅ shipped (+ a premium restyle pass) |
-| B3, D2, D1, D3, B2, B4, E1, E2 | pending |
+| B3 sector home | ✅ shipped |
+| D2, D1, D3, B2, B4, E1, E2 | pending |
 
 The region page also got a colour pass: the score is a band-tinted gradient hero, the driver
 bars are filled in the band colour, teal step badges, a tinted panel for the index description.

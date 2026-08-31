@@ -18,6 +18,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegionController;
 use App\Http\Controllers\ReportRequestController;
 use App\Http\Controllers\SavedViewController;
+use App\Http\Controllers\SectorController;
 use App\Http\Controllers\ThresholdConfigController;
 use App\Http\Controllers\UserPreferenceController;
 use Illuminate\Support\Facades\Route;
@@ -43,6 +44,8 @@ Route::middleware(['auth', 'onboarded'])->group(function () {
     Route::get('/alerts', [AlertController::class, 'index'])->name('alerts.index');
     Route::patch('/alerts/{alert}/acknowledge', [AlertController::class, 'acknowledge'])->name('alerts.acknowledge');
     Route::patch('/alerts/{alert}/resolve', [AlertController::class, 'resolve'])->name('alerts.resolve');
+
+    Route::get('/sectors/{sector:code}', [SectorController::class, 'show'])->name('sectors.show');
 
     Route::get('/regions', [RegionController::class, 'index'])->name('regions.index');
     Route::get('/regions/{region}', [RegionController::class, 'show'])->name('regions.show');
