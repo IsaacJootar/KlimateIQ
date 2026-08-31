@@ -45,6 +45,7 @@ class AdditionalIndicesSeeder extends Seeder
         $this->rangelandStress();
         $this->wildfireRisk();
         $this->dustStormRisk();
+        $this->drySeasonWaterStress();
         $this->deepenRespiratoryRisk();
     }
 
@@ -289,6 +290,50 @@ class AdditionalIndicesSeeder extends Seeder
             'green' => 'No dust-storm concern. Continue routine air-quality monitoring.',
             'amber' => 'Dust levels rising in this LGA: issue an air-quality advisory for outdoor workers, schools and people with respiratory conditions, and warn drivers of possible reduced visibility.',
             'red' => 'Severe dust storm likely: issue a public health warning (masks, stay indoors), advise against non-essential road travel, alert airports and health facilities, and brief the state ministry of health on the expected respiratory-case rise.',
+        ]);
+    }
+
+    /**
+     * Clarity Pass E1 — the dry-season water-availability view. The physical water balance for
+     * human water supply, distinct from Drought Risk (rainfall + vegetation, framed for crops):
+     * how much surface water an LGA normally has, against how much rain and soil moisture it has
+     * now and how hard the atmosphere is pulling water back out. All four signals are already
+     * ingested for other indices — no new ingestion, config only. Attached to the Water &
+     * Sanitation sector in SectorSeeder.
+     *
+     * STANDING_WATER and RAINFALL default to "higher is worse" (flood / disease framing); this
+     * index inverts both — less water available is worse.
+     */
+    private function drySeasonWaterStress(): void
+    {
+        $index = ScoringIndex::query()->updateOrCreate(
+            ['code' => 'DRY_SEASON_WATER_STRESS'],
+            [
+                'name' => 'Dry-Season Water Stress Index',
+                'description' => 'Surface water, rainfall, soil moisture and evaporation demand as a dry-season water-availability score — for water boards and WASH planners deciding where boreholes, trucking and rationing will be needed first.',
+            ]
+        );
+
+        $this->seedWeights($index, [
+            'RAINFALL' => ['weight' => 0.35, 'higher_is_worse' => false],        // less recent rain, more stress
+            'STANDING_WATER' => ['weight' => 0.25, 'higher_is_worse' => false],  // less surface water, more stress
+            'SOIL_MOISTURE' => ['weight' => 0.2, 'higher_is_worse' => false],    // drier ground, less recharge
+            'EVAPOTRANSPIRATION' => 0.2,                                          // higher demand pulling water away (signal default)
+        ]);
+
+        // Same climatologically-plausible ranges the water and agriculture indices already use
+        // for these signals. Not calibrated against measured borehole yields or reservoir levels.
+        $this->seedBounds($index, [
+            'RAINFALL' => [0, 200],
+            'STANDING_WATER' => [0, 100],
+            'SOIL_MOISTURE' => [0.05, 0.40],
+            'EVAPOTRANSPIRATION' => [0, 50],
+        ]);
+
+        $this->seedActions($index, [
+            'green' => 'Water availability is adequate. Continue routine borehole and reservoir monitoring.',
+            'amber' => 'Dry-season water stress building in this LGA: check borehole functionality and reservoir levels, plan water-trucking routes, and begin water-conservation messaging.',
+            'red' => 'Severe dry-season water stress: prioritise this LGA for water trucking and emergency borehole repair, activate rationing where needed, and brief the state water board and WASH cluster on the settlements most at risk.',
         ]);
     }
 

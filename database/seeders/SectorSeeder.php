@@ -49,8 +49,8 @@ class SectorSeeder extends Seeder
             [
                 'code' => 'WATER_SANITATION',
                 'name' => 'Water, Sanitation & Flooding',
-                'description' => 'Flood risk and post-flood waterborne-disease risk for WASH and flood-response planning.',
-                'indices' => ['FLOOD_RISK', 'WATERBORNE_DISEASE_RISK'],
+                'description' => 'Flood risk, post-flood waterborne-disease risk and dry-season water availability for WASH and water-supply planning.',
+                'indices' => ['FLOOD_RISK', 'WATERBORNE_DISEASE_RISK', 'DRY_SEASON_WATER_STRESS'],
             ],
             [
                 'code' => 'AIR_ENVIRONMENT',
