@@ -26,7 +26,19 @@ Status: **approved 2026-08-30, all 12 items in scope, then T4.**
 | D1 facilities | ✅ shipped (+ the health/air half of D3) |
 | D3 recommendation enrichment | ✅ shipped (all four sectors) |
 | B2 grouped index tabs | ✅ shipped |
-| B4, E1, E2 | pending |
+| B4 sector switcher in the nav | ✅ shipped |
+| E1, E2 | pending |
+
+**B4 as shipped.** A workspace switcher next to the logo, shown only when the user follows more
+than one sector. Picking one pins it (`user_dashboard_preferences.current_sector_id`);
+`IndexCoverage::activeSectorIds()` then scopes the dashboard, regions pages and their tab strips
+to just that sector's indices — a 6-sector user picks "Agriculture" and sees 4 indices, not 12.
+"All sectors" clears the pin. The pin is honoured only while it's still a followed sector and the
+user follows more than one (so a stale pin can't silently hide everything); `WriteCoverage`
+clears it when the sector is dropped. `POST /preferences/sector` rejects a sector the user
+doesn't follow. No change to alerts, coverage, or scoring — it's a view filter over what
+`IndexCoverage` already resolves. Also slimmed the dashboard/regions headers in passing (short
+sector names, middot separators, dropped the "colour-coded / switch the index below" line).
 
 **B2 as shipped.** `App\Support\IndexCoverage::resolve()` now also returns `groups` — the
 available indices arranged under sector headings. A user who follows sectors sees those in their
