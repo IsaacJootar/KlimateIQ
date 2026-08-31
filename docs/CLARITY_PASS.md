@@ -20,8 +20,13 @@ Status: **approved 2026-08-30, all 12 items in scope, then T4.**
 | B1 sector in the header | ✅ shipped |
 | A3 plain-language readings | ✅ shipped (with C) — see note |
 | A4 rewritten "what it means" | ✅ shipped (with C) |
-| C region-page rebuild | ✅ shipped |
+| C region-page rebuild | ✅ shipped (+ a premium restyle pass) |
 | B3, D2, D1, D3, B2, B4, E1, E2 | pending |
+
+The region page also got a colour pass: the score is a band-tinted gradient hero, the driver
+bars are filled in the band colour, teal step badges, a tinted panel for the index description.
+New CSS lives in `resources/css/app.css` (`.step-badge`, `.score-hero`, `.driver-track` /
+`.driver-fill`, `.step-accent`).
 
 **A3 scope note.** Shipped: `App\Support\SignalReading` (plain phrasing + a climatology-grounded
 qualitative word per signal) and a "vs. recent weeks" clause computed from the region's own
