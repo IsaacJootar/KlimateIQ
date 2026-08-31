@@ -73,6 +73,17 @@ class ScoreDiagnosisTest extends TestCase
         $this->assertSame('HUMIDITY', $result['drivers'][0]['code']);
     }
 
+    public function test_falls_back_to_the_older_contribution_key_when_present(): void
+    {
+        // Breakdowns stored before contribution_to_final_score was added only carry `contribution`.
+        $result = ScoreDiagnosis::forBreakdown([
+            ['signal_type_code' => 'RAINFALL', 'contribution' => 40.0, 'weight' => 0.5],
+        ], 40.0);
+
+        $this->assertSame('RAINFALL', $result['dominantSignal']);
+        $this->assertNotNull($result['conclusion']);
+    }
+
     public function test_no_data_rows_are_ignored_when_picking_the_driver(): void
     {
         $result = ScoreDiagnosis::forBreakdown([

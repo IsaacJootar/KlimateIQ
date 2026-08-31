@@ -186,7 +186,7 @@
                                         </td>
                                         <td class="px-3 py-2 whitespace-nowrap">{{ $signal['normalized_score'] ?? '—' }}</td>
                                         <td class="px-3 py-2 whitespace-nowrap">{{ $signal['weight'] }}</td>
-                                        <td class="px-3 py-2 font-semibold whitespace-nowrap">{{ $signal['contribution_to_final_score'] ?? '—' }}</td>
+                                        <td class="px-3 py-2 font-semibold whitespace-nowrap">{{ $signal['contribution_to_final_score'] ?? $signal['contribution'] ?? '—' }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>

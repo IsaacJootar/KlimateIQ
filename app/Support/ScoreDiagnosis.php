@@ -37,10 +37,14 @@ class ScoreDiagnosis
             'drivers' => [],
         ];
 
+        // Older stored breakdowns only carry `contribution` (pre-weight-renormalisation); newer
+        // ones add `contribution_to_final_score` (each signal's true share of the score).
+        $contrib = fn (array $row) => (float) ($row['contribution_to_final_score'] ?? $row['contribution'] ?? 0);
+
         $available = collect($breakdown)
             ->reject(fn (array $row) => ($row['status'] ?? null) === 'no_data')
-            ->filter(fn (array $row) => ($row['contribution_to_final_score'] ?? 0) > 0)
-            ->sortByDesc(fn (array $row) => $row['contribution_to_final_score'] ?? 0)
+            ->filter(fn (array $row) => $contrib($row) > 0)
+            ->sortByDesc($contrib)
             ->values();
 
         if ($score === null || $available->isEmpty()) {
@@ -52,8 +56,8 @@ class ScoreDiagnosis
         $drivers = $available->map(fn (array $row) => [
             'code' => $row['signal_type_code'],
             'label' => $label($row),
-            'points' => round((float) $row['contribution_to_final_score'], 1),
-            'share' => (int) round(($row['contribution_to_final_score'] / max($score, 0.01)) * 100),
+            'points' => round($contrib($row), 1),
+            'share' => (int) round(($contrib($row) / max($score, 0.01)) * 100),
         ])->take(4)->all();
 
         $band = RiskBand::forScore($score);

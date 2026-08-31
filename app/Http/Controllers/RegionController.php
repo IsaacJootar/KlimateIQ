@@ -164,7 +164,7 @@ class RegionController extends Controller
 
         $present = collect($latest->breakdown ?? [])
             ->reject(fn (array $row) => ($row['status'] ?? null) === 'no_data')
-            ->sortByDesc(fn (array $row) => $row['contribution_to_final_score'] ?? 0)
+            ->sortByDesc(fn (array $row) => $row['contribution_to_final_score'] ?? $row['contribution'] ?? 0)
             ->take(4)
             ->values();
 
