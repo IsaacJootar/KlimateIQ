@@ -96,8 +96,10 @@ class SignalReading
         }
 
         $unit = isset(self::SCALE[$code]) && self::SCALE[$code]['unit'] !== '' ? ' '.self::SCALE[$code]['unit'] : '';
+        // A round-ish "typical" figure — this is a rough comparison, not a precise one.
+        $recentText = abs($recent) >= 10 ? (string) round($recent) : rtrim(rtrim(number_format($recent, 2), '0'), '.');
 
-        return ($change > 0 ? 'up from ~' : 'down from ~').self::num($recent).$unit.' in recent weeks';
+        return ($change > 0 ? 'up from ~' : 'down from ~').$recentText.$unit.' in recent weeks';
     }
 
     /**

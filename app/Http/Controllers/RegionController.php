@@ -132,7 +132,22 @@ class RegionController extends Controller
             $trend['direction'],
         );
 
+        // Each driver, plus its plain-language reading — so step 3 shows both the share and
+        // "what was actually measured" without the reader jumping back to step 1.
+        $rawByCode = collect($latest?->breakdown ?? [])
+            ->reject(fn (array $row) => ($row['status'] ?? null) === 'no_data')
+            ->keyBy('signal_type_code');
+        $drivers = collect($diagnosis['drivers'])->map(function (array $driver) use ($rawByCode) {
+            $row = $rawByCode->get($driver['code']);
+            $driver['reading'] = $row !== null
+                ? SignalReading::describe($driver['code'], (float) $row['raw_value'])['sentence']
+                : null;
+
+            return $driver;
+        })->all();
+
         return view('regions.show', [
+            'drivers' => $drivers,
             'region' => $region,
             'indices' => $indices,
             'index' => $index,

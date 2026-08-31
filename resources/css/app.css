@@ -307,3 +307,87 @@
 @media (prefers-reduced-motion: reduce) {
     .radar-ping-ring { animation: none; opacity: 0.25; }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Region page — the score told as a six-step story (regions/show.blade.php).
+   The step number, the hero score card and the driver bars all carry colour so
+   the page reads as a considered product, not a stack of white boxes.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Numbered step marker on each section heading. */
+.step-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.55rem;
+    height: 1.55rem;
+    flex-shrink: 0;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    line-height: 1;
+    color: #ffffff;
+    background: linear-gradient(135deg, #14B8A6 0%, #0F766E 100%);
+    box-shadow: 0 2px 6px rgba(13, 148, 136, 0.35);
+    font-variant-numeric: tabular-nums;
+}
+
+/* The score itself, as the page's hero — the same gradient language as the
+   dashboard stat cards, tinted by the risk band. */
+.score-hero {
+    border-radius: 14px;
+    padding: 1.4rem 1.5rem;
+    color: #ffffff;
+    position: relative;
+    overflow: hidden;
+}
+.score-hero::after {
+    content: '';
+    position: absolute;
+    top: -45px; right: -45px;
+    width: 150px; height: 150px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.14) 0%, transparent 70%);
+    pointer-events: none;
+}
+.score-hero .step-badge {
+    background: rgba(255, 255, 255, 0.20);
+    box-shadow: none;
+}
+.score-hero-green { background: linear-gradient(135deg, #059669 0%, #065F46 100%); box-shadow: 0 6px 22px rgba(5, 150, 105, 0.32); }
+.score-hero-amber { background: linear-gradient(135deg, #D97706 0%, #92400E 100%); box-shadow: 0 6px 22px rgba(217, 119, 6, 0.32); }
+.score-hero-red   { background: linear-gradient(135deg, #DC2626 0%, #7F1D1D 100%); box-shadow: 0 6px 22px rgba(220, 38, 38, 0.32); }
+.score-hero-none  { background: linear-gradient(135deg, #64748B 0%, #334155 100%); box-shadow: 0 6px 22px rgba(51, 65, 85, 0.25); }
+.score-hero-number { font-size: 3.25rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.score-hero-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+}
+
+/* Contribution bars in "What's driving this" — filled in the band colour, so the
+   drivers visibly read as slices of the same risk. */
+.driver-track {
+    height: 0.5rem;
+    border-radius: 999px;
+    background: #E8EEF1;
+    overflow: hidden;
+}
+.dark .driver-track { background: #334155; }
+.driver-fill { height: 100%; border-radius: 999px; }
+.driver-fill-green { background: linear-gradient(90deg, #34D399, #059669); }
+.driver-fill-amber { background: linear-gradient(90deg, #FBBF24, #D97706); }
+.driver-fill-red   { background: linear-gradient(90deg, #F87171, #DC2626); }
+.driver-fill-none  { background: linear-gradient(90deg, #94A3B8, #64748B); }
+
+/* Left-edge band tint for the score and action steps. */
+.step-accent-green { border-left: 4px solid #059669; }
+.step-accent-amber { border-left: 4px solid #D97706; }
+.step-accent-red   { border-left: 4px solid #DC2626; }
+.step-accent-none  { border-left: 4px solid #94A3B8; }

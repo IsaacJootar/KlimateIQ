@@ -5,7 +5,10 @@
     $score = $latest?->score !== null ? (float) $latest->score : null;
     $riskBand = RiskBand::forScore($score);
     $bandPlain = ['green' => 'Low risk', 'amber' => 'Moderate risk', 'red' => 'High risk', 'none' => 'No reading yet'][$riskBand];
-    $bandBorder = ['amber' => 'border-amber-500', 'red' => 'border-red-500', 'green' => 'border-emerald-500'][$riskBand] ?? 'border-slate-300';
+    $heroClass = 'score-hero-'.$riskBand;
+    $fillClass = 'driver-fill-'.$riskBand;
+    $accentClass = 'step-accent-'.$riskBand;
+    $num = fn ($v) => rtrim(rtrim(number_format((float) $v, 1), '0'), '.');
 
     // Inline SVG trend line — no charting dependency for a handful of weekly points.
     $chartWidth = 640; $chartHeight = 120; $pad = 10;
@@ -43,22 +46,27 @@
                 @endforeach
             </div>
             @if ($index->description)
-                <p class="-mt-2 text-sm text-slate-500 dark:text-slate-400">{{ $index->description }}</p>
+                <div class="-mt-1 flex gap-2.5 rounded-xl bg-gano-50 dark:bg-gano-950/50 border border-gano-100 dark:border-gano-900 px-3.5 py-2.5">
+                    <svg class="mt-0.5 h-4 w-4 shrink-0 text-gano-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>
+                    </svg>
+                    <p class="text-sm text-gano-900 dark:text-gano-100">{{ $index->description }}</p>
+                </div>
             @endif
 
             @if ($score === null)
-                <section class="section-card p-5">
+                <section class="section-card p-5 step-accent-none">
                     <h3 class="font-semibold text-gray-800 dark:text-gray-200 mb-2">No score yet for {{ $region->name }}</h3>
                     <p class="text-sm text-slate-500 dark:text-slate-400">
                         {{ str_replace(' Index', '', $index->name) }} needs its signals ingested and scored first.
                     </p>
                     @if (! empty($breakdown))
-                        <p class="mt-4 mb-2 text-xs font-semibold uppercase text-slate-500">Waiting on</p>
+                        <p class="mt-4 mb-2 text-xs font-semibold uppercase tracking-wide text-gano-700 dark:text-gano-300">Waiting on</p>
                         <ul class="space-y-1.5 text-sm">
                             @foreach ($breakdown as $signal)
                                 @php $signalLabel = $signalNames[$signal['signal_type_code']] ?? $signal['signal_type_name'] ?? $signal['signal_type_code']; @endphp
                                 <li class="flex gap-2">
-                                    <span class="mt-2 h-1 w-1 shrink-0 rounded-full bg-slate-400"></span>
+                                    <span class="mt-2 h-1 w-1 shrink-0 rounded-full bg-gano-400"></span>
                                     <span>
                                         {{ $signalLabel }} —
                                         @if (($signal['status'] ?? null) === 'no_data')
@@ -78,19 +86,17 @@
                 </section>
             @else
 
-            @php $n = 0; @endphp
-
             {{-- 1 — This week --}}
             <section class="section-card p-5">
-                <div class="flex items-baseline gap-2.5 mb-3">
-                    <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">{{ ++$n }}</span>
+                <div class="flex items-baseline gap-3 mb-3">
+                    <span class="step-badge">1</span>
                     <h3 class="font-semibold text-gray-800 dark:text-gray-200">This week in {{ $region->name }}</h3>
                 </div>
                 @if ($thisWeek->isNotEmpty())
                     <ul class="space-y-1.5 text-sm text-gray-700 dark:text-gray-300">
                         @foreach ($thisWeek as $reading)
-                            <li class="flex gap-2">
-                                <span class="mt-2 h-1 w-1 shrink-0 rounded-full bg-slate-400"></span>
+                            <li class="flex gap-2.5">
+                                <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-gano-400"></span>
                                 <span>{{ $reading['sentence'] }}</span>
                             </li>
                         @endforeach
@@ -103,21 +109,21 @@
                 </p>
             </section>
 
-            {{-- 2 — The score --}}
-            <section class="section-card p-5 border-l-4 {{ $bandBorder }}">
-                <div class="flex items-baseline gap-2.5 mb-3">
-                    <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">{{ ++$n }}</span>
-                    <h3 class="font-semibold text-gray-800 dark:text-gray-200">The score</h3>
+            {{-- 2 — The score (hero) --}}
+            <section class="score-hero {{ $heroClass }}">
+                <div class="flex items-center gap-3 mb-3">
+                    <span class="step-badge">2</span>
+                    <h3 class="font-semibold text-white/95">The score</h3>
                 </div>
-                <div class="flex flex-wrap items-center gap-x-5 gap-y-2">
-                    <span class="text-5xl font-bold leading-none text-slate-900 dark:text-white">{{ rtrim(rtrim(number_format($score, 1), '0'), '.') }}</span>
-                    <span class="risk-badge risk-badge-{{ $riskBand }} text-sm font-bold uppercase tracking-wide">{{ $bandPlain }}</span>
-                    <span class="text-sm text-slate-500 dark:text-slate-400">
+                <div class="flex flex-wrap items-end gap-x-5 gap-y-2">
+                    <span class="score-hero-number">{{ $num($score) }}</span>
+                    <span class="score-hero-pill mb-1.5">{{ $bandPlain }}</span>
+                    <span class="mb-1.5 text-sm text-white/85">
                         @if ($trend['direction'] === 'up') &uarr; @elseif ($trend['direction'] === 'down') &darr; @endif
                         {{ $trend['label'] }}
                     </span>
                 </div>
-                <p class="mt-3 text-xs text-slate-400">
+                <p class="mt-3 text-xs text-white/70">
                     0&ndash;100 scale. Green below 34, amber 34&ndash;66, red 67 and above.
                     @if ($region->population !== null) &middot; Population {{ number_format($region->population) }}. @endif
                     &middot; Calculated {{ $latest->calculated_at?->diffForHumans() }}.
@@ -126,25 +132,28 @@
 
             {{-- 3 — What's driving it --}}
             <section class="section-card p-5">
-                <div class="flex items-baseline gap-2.5 mb-3">
-                    <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">{{ ++$n }}</span>
+                <div class="flex items-baseline gap-3 mb-4">
+                    <span class="step-badge">3</span>
                     <h3 class="font-semibold text-gray-800 dark:text-gray-200">
                         {{ $riskBand === 'green' ? "What's keeping it low" : "What's pushing it up" }}
                     </h3>
                 </div>
 
-                @if (! empty($diagnosis['drivers']))
-                    <ul class="space-y-3">
-                        @foreach ($diagnosis['drivers'] as $driver)
+                @if (! empty($drivers))
+                    <ul class="space-y-4">
+                        @foreach ($drivers as $driver)
                             <li>
                                 <div class="flex flex-wrap items-baseline justify-between gap-x-3">
                                     <span class="text-sm font-semibold text-slate-900 dark:text-white">{{ $driver['label'] }}</span>
-                                    <span class="text-xs text-slate-500 dark:text-slate-400">
-                                        {{ rtrim(rtrim(number_format($driver['points'], 1), '0'), '.') }} of {{ rtrim(rtrim(number_format($score, 1), '0'), '.') }} points &middot; {{ $driver['share'] }}%
+                                    <span class="text-xs font-medium text-slate-500 dark:text-slate-400 tabular-nums">
+                                        {{ $num($driver['points']) }} of {{ $num($score) }} pts &middot; {{ $driver['share'] }}%
                                     </span>
                                 </div>
-                                <div class="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
-                                    <div class="h-full rounded-full bg-primary/70" style="width: {{ min(100, $driver['share']) }}%"></div>
+                                @if ($driver['reading'])
+                                    <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{{ $driver['reading'] }}</p>
+                                @endif
+                                <div class="driver-track mt-1.5">
+                                    <div class="driver-fill {{ $fillClass }}" style="width: {{ max(3, min(100, $driver['share'])) }}%"></div>
                                 </div>
                             </li>
                         @endforeach
@@ -153,14 +162,15 @@
                     <p class="text-sm text-slate-500">No single signal stands out — the score is spread evenly.</p>
                 @endif
 
-                <details class="mt-4 group">
-                    <summary class="cursor-pointer text-sm text-primary hover:underline list-none">
+                <details class="mt-5 group">
+                    <summary class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-slate-100 dark:bg-slate-700/60 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 list-none">
+                        <svg class="h-3.5 w-3.5 transition-transform group-open:rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                         See the full signal breakdown
                     </summary>
                     <div class="mt-3 overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
                             <thead>
-                                <tr class="text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
+                                <tr class="text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 bg-slate-50 dark:bg-slate-800/60">
                                     <th class="px-3 py-2 whitespace-nowrap">Signal</th>
                                     <th class="px-3 py-2 whitespace-nowrap">Reading</th>
                                     <th class="px-3 py-2 whitespace-nowrap">Signal score</th>
@@ -184,35 +194,31 @@
                                                 {{ $signal['raw_value'] }} {{ $signal['unit'] ?? '' }}
                                             @endif
                                         </td>
-                                        <td class="px-3 py-2 whitespace-nowrap">{{ $signal['normalized_score'] ?? '—' }}</td>
-                                        <td class="px-3 py-2 whitespace-nowrap">{{ $signal['weight'] }}</td>
-                                        <td class="px-3 py-2 font-semibold whitespace-nowrap">{{ $signal['contribution_to_final_score'] ?? $signal['contribution'] ?? '—' }}</td>
+                                        <td class="px-3 py-2 whitespace-nowrap tabular-nums">{{ $signal['normalized_score'] ?? '—' }}</td>
+                                        <td class="px-3 py-2 whitespace-nowrap tabular-nums">{{ $signal['weight'] }}</td>
+                                        <td class="px-3 py-2 font-semibold whitespace-nowrap tabular-nums">{{ $signal['contribution_to_final_score'] ?? $signal['contribution'] ?? '—' }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
                             <tfoot>
                                 <tr class="border-t-2 border-gray-300 dark:border-gray-600">
                                     <td colspan="4" class="px-3 py-2 text-right font-semibold">Total</td>
-                                    <td class="px-3 py-2 font-bold whitespace-nowrap">{{ rtrim(rtrim(number_format($score, 1), '0'), '.') }}</td>
+                                    <td class="px-3 py-2 font-bold whitespace-nowrap tabular-nums">{{ $num($score) }}</td>
                                 </tr>
                             </tfoot>
                         </table>
                     </div>
-                    <p class="mt-2 text-xs text-slate-400">
-                        Each signal is scored 0&ndash;100 against its calibrated range, multiplied by its weight, and the
-                        weighted results are combined. Add every row in the Points column and you get the score.
-                    </p>
                 </details>
             </section>
 
             {{-- 4 — What it means --}}
             <section class="section-card p-5">
-                <div class="flex items-baseline gap-2.5 mb-3">
-                    <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">{{ ++$n }}</span>
+                <div class="flex items-baseline gap-3 mb-3">
+                    <span class="step-badge">4</span>
                     <h3 class="font-semibold text-gray-800 dark:text-gray-200">What it means</h3>
                 </div>
                 @if ($diagnosis['conclusion'])
-                    <p class="text-sm text-gray-800 dark:text-gray-200">
+                    <p class="text-sm leading-relaxed text-gray-800 dark:text-gray-200">
                         <span class="font-semibold">{{ $diagnosis['headline'] }}</span>
                         {{ $diagnosis['conclusion'] }}
                     </p>
@@ -222,14 +228,14 @@
 
                 <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
                     @if ($latest->ai_summary)
-                        <p class="text-xs font-semibold uppercase text-slate-500 mb-1">AI summary</p>
-                        <p class="text-sm text-gray-700 dark:text-gray-300">{{ $latest->ai_summary }}</p>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-gano-700 dark:text-gano-300 mb-1">AI summary</p>
+                        <p class="text-sm leading-relaxed text-gray-700 dark:text-gray-300">{{ $latest->ai_summary }}</p>
                         <div class="mt-2 flex items-center gap-3">
                             <span class="text-xs text-slate-400">{{ $latest->ai_summary_model }} &middot; {{ $latest->ai_summary_generated_at?->diffForHumans() }}</span>
                             <form method="POST" action="{{ route('regions.summary', ['region' => $region->region_id, 'index' => $index->code]) }}"
                                   x-data="{ loading: false }" @submit="loading = true">
                                 @csrf
-                                <button type="submit" class="text-xs text-primary hover:underline" x-bind:disabled="loading || {{ $aiAvailable ? 'false' : 'true' }}">
+                                <button type="submit" class="text-xs font-semibold text-gano-700 dark:text-gano-400 hover:underline" x-bind:disabled="loading || {{ $aiAvailable ? 'false' : 'true' }}">
                                     <span x-show="! loading">Regenerate</span>
                                     <span x-show="loading" x-cloak>regenerating…</span>
                                 </button>
@@ -250,25 +256,33 @@
                                 </span>
                             </button>
                         </form>
-                        <p class="mt-1.5 text-xs text-slate-400">A longer plain-English write-up. It only restates the readings above.</p>
                     @endif
                 </div>
             </section>
 
             {{-- 5 — Where it's heading --}}
             <section class="section-card p-5">
-                <div class="flex items-baseline gap-2.5 mb-3">
-                    <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">{{ ++$n }}</span>
+                <div class="flex items-baseline gap-3 mb-3">
+                    <span class="step-badge">5</span>
                     <h3 class="font-semibold text-gray-800 dark:text-gray-200">Where it's heading</h3>
                 </div>
-                <p class="text-sm text-gray-800 dark:text-gray-200">
+                <p class="text-sm leading-relaxed text-gray-800 dark:text-gray-200">
                     {{ $trend['label'] }}.
                     @if ($projection) {{ $projection }} @endif
                 </p>
                 @if ($polyline !== '')
                     <div class="mt-3 overflow-x-auto">
                         <svg viewBox="0 0 {{ $chartWidth }} {{ $chartHeight }}" class="w-full" style="max-width: {{ $chartWidth }}px;">
-                            <polyline points="{{ $polyline }}" fill="none" stroke="#0D9488" stroke-width="2.5" />
+                            <defs>
+                                <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="#0D9488" stop-opacity="0.18" />
+                                    <stop offset="100%" stop-color="#0D9488" stop-opacity="0" />
+                                </linearGradient>
+                            </defs>
+                            @if ($coords->count() > 1)
+                                <polygon points="{{ $polyline }} {{ round($coords->last()['x'], 1) }},{{ $chartHeight }} {{ round($coords->first()['x'], 1) }},{{ $chartHeight }}" fill="url(#trendFill)" />
+                            @endif
+                            <polyline points="{{ $polyline }}" fill="none" stroke="#0D9488" stroke-width="2.5" stroke-linejoin="round" />
                             @foreach ($coords as $c)
                                 @if ($c['y'] !== null)
                                     <circle cx="{{ $c['x'] }}" cy="{{ $c['y'] }}" r="3" fill="#0D9488" />
@@ -287,12 +301,12 @@
 
             {{-- 6 — What to do --}}
             @if ($recommendedAction)
-                <section class="section-card p-5 border-l-4 {{ $bandBorder }}">
-                    <div class="flex items-baseline gap-2.5 mb-3">
-                        <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold">{{ ++$n }}</span>
+                <section class="section-card p-5 {{ $accentClass }}">
+                    <div class="flex items-baseline gap-3 mb-3">
+                        <span class="step-badge">6</span>
                         <h3 class="font-semibold text-gray-800 dark:text-gray-200">What to do</h3>
                     </div>
-                    <p class="text-sm text-gray-800 dark:text-gray-200">{{ $recommendedAction }}</p>
+                    <p class="text-sm leading-relaxed text-gray-800 dark:text-gray-200">{{ $recommendedAction }}</p>
                     @if ($diagnosis['dominantSignal'])
                         <p class="mt-2 text-xs text-slate-400">Driven mainly by {{ $diagnosis['dominantSignal'] }} (step 3 above).</p>
                     @endif
