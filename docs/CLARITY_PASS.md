@@ -27,7 +27,8 @@ Status: **approved 2026-08-30, all 12 items in scope, then T4.**
 | D3 recommendation enrichment | ✅ shipped (all four sectors) |
 | B2 grouped index tabs | ✅ shipped |
 | B4 sector switcher in the nav | ✅ shipped |
-| E1, E2 | pending |
+| E1 dry-season water stress | ✅ shipped |
+| E2 | pending |
 
 **B4 as shipped.** A workspace switcher next to the logo, shown only when the user follows more
 than one sector. Picking one pins it (`user_dashboard_preferences.current_sector_id`);
@@ -220,8 +221,20 @@ as one story. Same data, resequenced and rewritten. A3 + A4 land here. Size **L*
 
 | id | item | size | what |
 |---|---|---|---|
-| E1 | Dry-season water-availability view | M | JRC surface water + rainfall, both already ingested — no forecasting. Ships as a config-only index in the Water & Sanitation sector via `AdditionalIndicesSeeder`. |
+| E1 | Dry-season water-availability view | M | ✅ shipped — see below. |
 | E2 | Onboarding copy pass | S | Under each sector in the wizard, one line of "you'll get …". Reflects the finished vocabulary. |
+
+**E1 as shipped.** `DRY_SEASON_WATER_STRESS` — "Dry-Season Water Stress Index", a config-only
+index in the Water & Sanitation sector (`AdditionalIndicesSeeder` + `SectorSeeder`, both already
+in `deploy.sh`; `scores:calculate` picks it up on the daily 04:00 run). Weights RAINFALL 0.35,
+STANDING_WATER (JRC surface-water occurrence) 0.25, SOIL_MOISTURE 0.20, EVAPOTRANSPIRATION 0.20 —
+all already ingested for other indices, no new ingestion, no forecasting. The twist is direction:
+RAINFALL and STANDING_WATER default to "higher is worse" (flood framing) and are **inverted**
+here — less water available is worse. Distinct from Drought Risk (rainfall + vegetation, framed
+for crops): this is the physical water balance for human water supply, and it names boreholes,
+trucking and rationing in its actions. Uncalibrated placeholder bounds, same caveat as every
+index. First prod run: northern LGAs top out (Maiduguri 83, Kano 80), which is face-valid for
+end-of-dry-season water stress.
 
 ## Build sequence
 
