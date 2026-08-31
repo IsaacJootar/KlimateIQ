@@ -15,7 +15,6 @@ use App\Services\Scoring\RegionScoringService;
 use App\Support\IndexCoverage;
 use App\Support\IngestionWindow;
 use Database\Seeders\AdditionalIndicesSeeder;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -27,13 +26,6 @@ use Tests\TestCase;
 class AgricultureStressIndexTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     private function index(): ScoringIndex
     {

@@ -3,20 +3,12 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ThemeToggleTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     public function test_a_user_can_switch_to_dark_mode(): void
     {

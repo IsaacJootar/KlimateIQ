@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\ScoringIndex;
 use App\Models\User;
 use App\Models\UserIndexSubscription;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -18,13 +17,6 @@ use Tests\TestCase;
 class DashboardDefaultIndexTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     private function subscribeToIndices(User $user, array $codes): void
     {

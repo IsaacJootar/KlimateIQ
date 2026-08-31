@@ -5,20 +5,12 @@ namespace Tests\Feature\Admin;
 use App\Models\IndexActionRecommendation;
 use App\Models\ScoringIndex;
 use App\Models\User;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ActionRecommendationTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     private function admin(): User
     {

@@ -6,7 +6,6 @@ use App\Models\Region;
 use App\Models\ScoringIndex;
 use App\Models\User;
 use App\Models\UserIndexSubscription;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -19,13 +18,6 @@ use Tests\TestCase;
 class RegionShowIndexScopingTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     public function test_index_tabs_on_the_region_page_are_scoped_to_the_users_coverage(): void
     {

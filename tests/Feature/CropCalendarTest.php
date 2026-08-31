@@ -9,7 +9,6 @@ use App\Models\ScoringIndex;
 use App\Models\User;
 use App\Support\AgroZone;
 use Database\Seeders\CropCalendarSeeder;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -22,13 +21,6 @@ use Tests\TestCase;
 class CropCalendarTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     public function test_the_seeder_covers_every_agro_ecological_zone(): void
     {
@@ -58,7 +50,7 @@ class CropCalendarTest extends TestCase
             ['Millet', 'Maize'],
             $crops->pluck('crop')->all(),
         );
-        $this->assertSame('grain-fill', $crops->firstWhere('crop', 'Millet')['stage']);
+        $this->assertSame('filling grain', $crops->firstWhere('crop', 'Millet')['stage']);
     }
 
     public function test_exposed_now_is_empty_for_a_state_with_no_zone(): void
@@ -80,13 +72,14 @@ class CropCalendarTest extends TestCase
 
     public function test_phrase_for_groups_crops_by_stage(): void
     {
-        // Northern Guinea Savanna in September — sorghum & rice flowering, maize grain-fill, yam bulking.
+        // Northern Guinea Savanna in September — several crops across a few stages.
         $phrase = CropCalendar::phraseFor('Kaduna', Carbon::parse('2026-09-15'));
 
         $this->assertNotNull($phrase);
-        $this->assertStringContainsString('near grain-fill', $phrase);
-        $this->assertStringContainsString(';', $phrase);          // more than one stage
-        $this->assertStringNotContainsString('Maize', $phrase);   // lower-cased
+        $this->assertStringContainsString('(filling grain)', $phrase);
+        $this->assertStringContainsString('(flowering)', $phrase);   // more than one stage
+        $this->assertStringNotContainsString('Maize', $phrase);      // lower-cased
+        $this->assertStringNotContainsString('near', $phrase);
     }
 
     public function test_the_seeder_is_idempotent(): void
@@ -120,8 +113,9 @@ class CropCalendarTest extends TestCase
 
         $this->actingAs($user)->get(route('regions.show', ['region' => $region, 'index' => 'AGRICULTURE_STRESS']))
             ->assertOk()
-            ->assertSee('Crops most exposed here right now', false)
-            ->assertSee('near', false);
+            ->assertSee('typically include', false)
+            ->assertSee('(filling grain)', false)
+            ->assertSee('not a full field survey', false);
     }
 
     public function test_a_low_score_and_a_non_agriculture_index_show_no_crop_line(): void
@@ -143,7 +137,7 @@ class CropCalendarTest extends TestCase
 
         $this->actingAs($user)->get(route('regions.show', ['region' => $region, 'index' => 'DROUGHT_RISK']))
             ->assertOk()
-            ->assertDontSee('Crops most exposed');
+            ->assertDontSee('typically include');
 
         // High non-agriculture score — crops aren't relevant.
         $flood = ScoringIndex::query()->where('code', 'FLOOD_RISK')->firstOrFail();
@@ -157,6 +151,6 @@ class CropCalendarTest extends TestCase
 
         $this->actingAs($user)->get(route('regions.show', ['region' => $region, 'index' => 'FLOOD_RISK']))
             ->assertOk()
-            ->assertDontSee('Crops most exposed');
+            ->assertDontSee('typically include');
     }
 }

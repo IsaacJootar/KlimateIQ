@@ -6,7 +6,6 @@ use App\Models\Region;
 use App\Models\RegionSignal;
 use App\Services\Ingestion\ActiveFireIngestionService;
 use App\Support\IngestionCadence;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
@@ -26,8 +25,6 @@ class ActiveFireIngestionTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
         config(['services.firms.map_key' => 'test-map-key']);
     }
 

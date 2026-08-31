@@ -13,7 +13,6 @@ use App\Services\Scoring\RegionScoringService;
 use App\Support\IngestionCadence;
 use App\Support\IngestionWindow;
 use Database\Seeders\AdditionalIndicesSeeder;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
@@ -27,13 +26,6 @@ use Tests\TestCase;
 class RespiratoryRiskDepthTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     private function index(): ScoringIndex
     {

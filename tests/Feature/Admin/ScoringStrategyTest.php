@@ -5,20 +5,12 @@ namespace Tests\Feature\Admin;
 use App\Models\Region;
 use App\Models\User;
 use App\Models\UserRegionSubscription;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ScoringStrategyTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     private function admin(): User
     {

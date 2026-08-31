@@ -5,19 +5,12 @@ namespace Tests\Feature;
 use App\Models\Agency;
 use App\Models\SavedView;
 use App\Models\User;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class AgencySharingTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     public function test_a_saved_view_shared_with_an_agency_is_visible_to_other_members(): void
     {

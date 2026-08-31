@@ -7,7 +7,6 @@ use App\Models\RegionScore;
 use App\Models\ScoringIndex;
 use App\Services\Ai\AiChatClient;
 use App\Services\Ai\RegionScoreSummaryService;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -15,13 +14,6 @@ use Tests\TestCase;
 class RegionScoreSummaryServiceTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     public function test_the_prompt_includes_risk_band_and_true_contribution_figures(): void
     {

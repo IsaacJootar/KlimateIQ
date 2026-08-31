@@ -61,8 +61,9 @@ class CropCalendar extends Model
     }
 
     /**
-     * A one-line, reader-ready phrase — "millet and maize near grain-fill; yam near tuber
-     * bulking" — or null when nothing is in a sensitive window.
+     * A one-line, reader-ready phrase — "millet and maize (filling grain), yam (swelling
+     * tubers)" — or null when nothing is in a sensitive window. Each crop carries its growth
+     * stage in parentheses so it can't be mistaken for another crop name.
      */
     public static function phraseFor(?string $state, ?Carbon $when = null): ?string
     {
@@ -79,9 +80,9 @@ class CropCalendar extends Model
                     ? implode(', ', array_slice($names, 0, -1)).' and '.end($names)
                     : $names[0];
 
-                return "{$joined} near {$stage}";
+                return "{$joined} ({$stage})";
             })
             ->values()
-            ->implode('; ');
+            ->implode(', ');
     }
 }

@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\Region;
 use App\Models\RegionSignal;
 use App\Services\Ingestion\PopulationExposureIngestionService;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -13,13 +12,6 @@ use Tests\TestCase;
 class PopulationExposureIngestionTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     public function test_it_creates_a_signal_from_the_regions_own_population_column(): void
     {

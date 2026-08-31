@@ -6,20 +6,12 @@ use App\Models\RegionScoringConfig;
 use App\Models\ScoringCalibrationParameter;
 use App\Models\ScoringIndex;
 use App\Models\User;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ScoringConfigTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     private function admin(): User
     {

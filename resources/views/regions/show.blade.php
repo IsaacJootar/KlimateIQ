@@ -307,8 +307,12 @@
                         <h3 class="font-semibold text-gray-800 dark:text-gray-200">What to do</h3>
                     </div>
                     @if ($cropLine)
-                        <p class="mb-2 text-sm font-semibold text-slate-900 dark:text-white">
-                            Crops most exposed here right now: {{ $cropLine }}.
+                        <p class="text-sm font-semibold text-slate-900 dark:text-white">
+                            Rain-fed crops most exposed here now typically include {{ $cropLine }}.
+                        </p>
+                        <p class="mb-2 text-xs text-slate-500 dark:text-slate-400">
+                            Examples for this zone and month, not a full field survey. The bracket is the crop's growth
+                            phase — a dry spell now costs the most yield.
                         </p>
                     @endif
                     <p class="text-sm leading-relaxed text-gray-800 dark:text-gray-200">{{ $recommendedAction }}</p>

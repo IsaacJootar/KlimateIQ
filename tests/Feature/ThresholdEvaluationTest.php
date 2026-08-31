@@ -2,17 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Models\Alert;
+use App\Models\PlatformSetting;
 use App\Models\Region;
 use App\Models\RegionSignal;
 use App\Models\ScoringIndex;
 use App\Models\SignalType;
-use App\Models\PlatformSetting;
 use App\Models\ThresholdConfig;
 use App\Models\User;
 use App\Notifications\ThresholdBreachedNotification;
 use App\Services\Alerts\ThresholdEvaluationService;
 use App\Services\Scoring\RegionScoringService;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Notification;
@@ -21,12 +21,6 @@ use Tests\TestCase;
 class ThresholdEvaluationTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     public function test_fixed_threshold_breach_creates_an_alert_and_notifies_the_owner(): void
     {
@@ -163,7 +157,7 @@ class ThresholdEvaluationTest extends TestCase
         $evaluator->evaluateForIndex($index->index_id, $region->region_id, '2026-07-26', 50.0);
         $evaluator->evaluateForIndex($index->index_id, $region->region_id, '2026-08-02', 60.0);
 
-        $this->assertSame(1, \App\Models\Alert::query()->where('threshold_config_id', $threshold->threshold_config_id)->count());
+        $this->assertSame(1, Alert::query()->where('threshold_config_id', $threshold->threshold_config_id)->count());
     }
 
     public function test_signal_level_threshold_is_independent_of_index_thresholds(): void

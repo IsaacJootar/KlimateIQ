@@ -15,7 +15,6 @@ use App\Support\IndexCoverage;
 use App\Support\IngestionCadence;
 use App\Support\IngestionWindow;
 use Database\Seeders\AdditionalIndicesSeeder;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -28,13 +27,6 @@ use Tests\TestCase;
 class FireAndDustIndexTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     private function index(string $code): ScoringIndex
     {

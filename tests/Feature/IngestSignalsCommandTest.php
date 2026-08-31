@@ -9,7 +9,6 @@ use App\Models\UserRegionSubscription;
 use App\Services\Ingestion\ElevationIngestionService;
 use App\Services\Ingestion\RainfallIngestionService;
 use App\Services\Ingestion\StandingWaterIngestionService;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
@@ -17,13 +16,6 @@ use Tests\TestCase;
 class IngestSignalsCommandTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     private function activate(): Region
     {

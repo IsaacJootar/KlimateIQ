@@ -19,13 +19,6 @@ class SectorModelTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
-    }
-
     public function test_seeder_creates_the_expected_sectors_in_order(): void
     {
         $this->assertSame(

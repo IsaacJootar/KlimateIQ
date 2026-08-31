@@ -6,7 +6,6 @@ use App\Models\Region;
 use App\Models\RegionSignal;
 use App\Services\Ingestion\RainfallIngestionService;
 use App\Services\Ingestion\TemperatureIngestionService;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
@@ -15,13 +14,6 @@ use Tests\TestCase;
 class OpenMeteoFallbackTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     private function regionWithCoordinates(): Region
     {

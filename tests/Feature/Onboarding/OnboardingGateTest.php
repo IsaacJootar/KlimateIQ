@@ -3,7 +3,6 @@
 namespace Tests\Feature\Onboarding;
 
 use App\Models\User;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -14,13 +13,6 @@ use Tests\TestCase;
 class OnboardingGateTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     public function test_a_not_yet_onboarded_user_is_redirected_from_the_dashboard(): void
     {

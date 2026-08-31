@@ -3,24 +3,18 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\Agency;
+use App\Models\Region;
 use App\Models\ReportRequest;
 use App\Models\SavedView;
+use App\Models\ScoringIndex;
 use App\Models\ThresholdConfig;
 use App\Models\User;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class AgencyManagementTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     private function admin(): User
     {
@@ -56,8 +50,8 @@ class AgencyManagementTest extends TestCase
         $duplicate = Agency::factory()->create(['name' => 'Duplicate']);
 
         $user = User::factory()->create(['agency_id' => $duplicate->agency_id]);
-        $region = \App\Models\Region::first();
-        $index = \App\Models\ScoringIndex::first();
+        $region = Region::first();
+        $index = ScoringIndex::first();
 
         $savedView = SavedView::create([
             'user_id' => $user->id,

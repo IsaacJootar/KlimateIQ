@@ -8,7 +8,6 @@ use App\Models\RegionSignal;
 use App\Models\ScoringIndex;
 use App\Services\Ingestion\AirQualityPm10IngestionService;
 use App\Services\Ingestion\AirQualityPm25IngestionService;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
@@ -17,13 +16,6 @@ use Tests\TestCase;
 class AirQualityIngestionTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     private function regionWithCoordinates(): Region
     {

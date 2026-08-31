@@ -10,7 +10,6 @@ use App\Models\SignalType;
 use App\Models\User;
 use App\Models\UserRegionSubscription;
 use App\Support\IngestionWindow;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -26,13 +25,6 @@ use Tests\TestCase;
 class CalculateScoresCommandTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     private function activate(): Region
     {

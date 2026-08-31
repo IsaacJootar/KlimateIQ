@@ -29,8 +29,14 @@ Status: **approved 2026-08-30, all 12 items in scope, then T4.**
 (state → agro-ecological zone), `App\Models\CropCalendar` with `exposedNow()` / `phraseFor()`,
 `CropCalendarSeeder` (~6 zones × ~5 crops, from FAO / FEWS NET Nigeria crop calendars, added to
 `deploy.sh` and `ReferenceDataSeeder`). Visible now: on an **amber/red agriculture-index region
-page**, step 6 "What to do" opens with *"Crops most exposed here right now: millet and maize near
-grain-fill."* The rest of D3 (facilities for health/emergency/water) is still to come.
+page**, step 6 "What to do" opens with *"Rain-fed crops most exposed here now typically include
+millet (filling grain)."* plus a muted *"Examples for this zone and month, not a full field
+survey."* The rest of D3 (facilities for health/emergency/water) is still to come.
+
+**Naming principle (applies to D1/D3 too).** Every named list — crops, facilities, sites — is
+framed as **examples, never the authoritative final list**: "typically include…", "for
+example…", "sites on record include…", "3 shown; see all in this LGA". Plus source + date for
+facilities. The platform points, it doesn't certify.
 
 The region page also got a colour pass: the score is a band-tinted gradient hero, the driver
 bars are filled in the band colour, teal step badges, a tinted panel for the index description.

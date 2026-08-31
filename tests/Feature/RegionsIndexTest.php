@@ -7,20 +7,12 @@ use App\Models\ScoringIndex;
 use App\Models\User;
 use App\Models\UserIndexSubscription;
 use App\Models\UserRegionSubscription;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class RegionsIndexTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     /** Makes a region "active" the same way a real user would — by watching it. */
     private function activate(Region $region): void

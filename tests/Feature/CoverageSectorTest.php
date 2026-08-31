@@ -8,7 +8,6 @@ use App\Models\ScoringIndex;
 use App\Models\Sector;
 use App\Models\User;
 use App\Support\IndexCoverage;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
@@ -21,13 +20,6 @@ use Tests\TestCase;
 class CoverageSectorTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     private function sectorIds(array $codes): array
     {

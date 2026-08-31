@@ -6,7 +6,6 @@ use App\Models\Region;
 use App\Models\RegionScore;
 use App\Models\ScoringIndex;
 use App\Models\User;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -20,13 +19,6 @@ use Tests\TestCase;
 class ScoreDiagnosisDisplayTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     public function test_the_page_walks_the_score_from_readings_to_action(): void
     {

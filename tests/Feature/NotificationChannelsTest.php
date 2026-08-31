@@ -8,9 +8,9 @@ use App\Models\Region;
 use App\Models\ScoringIndex;
 use App\Models\ThresholdConfig;
 use App\Models\User;
+use App\Notifications\Channels\SmsChannel;
 use App\Notifications\ThresholdBreachedNotification;
 use App\Services\Sms\SmsClient;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
@@ -18,12 +18,6 @@ use Tests\TestCase;
 class NotificationChannelsTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     private function makeAlert(User $user): Alert
     {
@@ -86,7 +80,7 @@ class NotificationChannelsTest extends TestCase
         $channels = $notification->via($user);
 
         $this->assertContains('database', $channels);
-        $this->assertContains(\App\Notifications\Channels\SmsChannel::class, $channels);
+        $this->assertContains(SmsChannel::class, $channels);
     }
 
     public function test_sms_channel_is_skipped_without_a_phone_number_even_if_preferred(): void
@@ -131,7 +125,7 @@ class NotificationChannelsTest extends TestCase
         $user = User::factory()->create(['phone_number' => '+2348012345678']);
         $notification = new ThresholdBreachedNotification($this->makeAlert($user));
 
-        app(\App\Notifications\Channels\SmsChannel::class)->send($user, $notification);
+        app(SmsChannel::class)->send($user, $notification);
     }
 
     protected function tearDown(): void

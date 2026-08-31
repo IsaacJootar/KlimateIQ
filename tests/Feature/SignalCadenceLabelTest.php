@@ -7,7 +7,6 @@ use App\Models\RegionScore;
 use App\Models\ScoringIndex;
 use App\Models\User;
 use App\Support\IngestionCadence;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -15,13 +14,6 @@ use Tests\TestCase;
 class SignalCadenceLabelTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     public function test_cadence_helper_classifies_correctly(): void
     {

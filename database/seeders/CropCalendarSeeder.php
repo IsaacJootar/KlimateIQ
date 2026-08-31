@@ -9,58 +9,58 @@ use Illuminate\Database\Seeder;
 /**
  * Clarity Pass D2 — the water-sensitive growth window for Nigeria's principal rain-fed crops,
  * by agro-ecological zone. From public crop calendars (FAO / FEWS NET Nigeria); the months are
- * the reproductive / yield-forming phase (flowering, grain-fill, tuber bulking) when a rainfall
- * shortfall does the most damage.
+ * the reproductive / yield-forming phase when a rainfall shortfall does the most damage. The
+ * `stage` string is written plainly ("filling grain", "swelling tubers") — it goes straight
+ * into a sentence on the region page.
  *
- * Idempotent (updateOrCreate on scope + scope_key + crop). Kept out of the deploy-time seeders'
- * critical path only in the sense that it needs the crop_calendar table — the migration creates
- * it first.
+ * Idempotent (updateOrCreate on scope + scope_key + crop). It needs the crop_calendar table,
+ * which the migration creates first.
  */
 class CropCalendarSeeder extends Seeder
 {
     public function run(): void
     {
-        // zone => [crop, water-sensitive stage, [months that stage falls in]]
+        // zone => [crop, plain-language sensitive stage, [months that stage falls in]]
         $calendar = [
             AgroZone::SAHEL => [
-                ['Millet', 'grain-fill', [8, 9]],
+                ['Millet', 'filling grain', [8, 9]],
                 ['Sorghum', 'flowering', [9, 10]],
-                ['Cowpea', 'pod-fill', [9]],
+                ['Cowpea', 'filling pods', [9]],
             ],
             AgroZone::SUDAN_SAVANNA => [
-                ['Millet', 'grain-fill', [8, 9]],
-                ['Sorghum', 'grain-fill', [9, 10]],
-                ['Maize', 'grain-fill', [8, 9]],
-                ['Cowpea', 'pod-fill', [9, 10]],
-                ['Groundnut', 'pod-fill', [9]],
+                ['Millet', 'filling grain', [8, 9]],
+                ['Sorghum', 'filling grain', [9, 10]],
+                ['Maize', 'filling grain', [8, 9]],
+                ['Cowpea', 'filling pods', [9, 10]],
+                ['Groundnut', 'filling pods', [9]],
             ],
             AgroZone::NORTHERN_GUINEA => [
-                ['Maize', 'grain-fill', [8, 9]],
-                ['Sorghum', 'grain-fill', [9, 10]],
+                ['Maize', 'filling grain', [8, 9]],
+                ['Sorghum', 'filling grain', [9, 10]],
                 ['Rice', 'flowering', [9, 10]],
-                ['Soybean', 'pod-fill', [9, 10]],
-                ['Yam', 'tuber bulking', [8, 9, 10]],
+                ['Soybean', 'filling pods', [9, 10]],
+                ['Yam', 'swelling tubers', [8, 9, 10]],
             ],
             AgroZone::SOUTHERN_GUINEA => [
-                ['Maize', 'grain-fill', [6, 7]],
-                ['Yam', 'tuber bulking', [8, 9, 10]],
+                ['Maize', 'filling grain', [6, 7]],
+                ['Yam', 'swelling tubers', [8, 9, 10]],
                 ['Rice', 'flowering', [9, 10]],
-                ['Sorghum', 'grain-fill', [9, 10]],
-                ['Sesame', 'pod-fill', [10, 11]],
+                ['Sorghum', 'filling grain', [9, 10]],
+                ['Sesame', 'filling pods', [10, 11]],
             ],
             AgroZone::DERIVED_SAVANNA => [
-                ['Maize', 'grain-fill', [6, 7, 10]],
-                ['Cassava', 'root bulking', [7, 8, 9, 10]],
-                ['Yam', 'tuber bulking', [8, 9, 10]],
-                ['Cowpea', 'pod-fill', [7, 10]],
+                ['Maize', 'filling grain', [6, 7, 10]],
+                ['Cassava', 'bulking roots', [7, 8, 9, 10]],
+                ['Yam', 'swelling tubers', [8, 9, 10]],
+                ['Cowpea', 'filling pods', [7, 10]],
                 ['Rice', 'flowering', [9, 10]],
             ],
             AgroZone::HUMID_FOREST => [
-                ['Maize', 'grain-fill', [6, 7, 10, 11]],
-                ['Cassava', 'root bulking', [7, 8, 9, 10]],
-                ['Yam', 'tuber bulking', [8, 9, 10, 11]],
+                ['Maize', 'filling grain', [6, 7, 10, 11]],
+                ['Cassava', 'bulking roots', [7, 8, 9, 10]],
+                ['Yam', 'swelling tubers', [8, 9, 10, 11]],
                 ['Rice', 'flowering', [9, 10]],
-                ['Plantain', 'dry-season water stress', [12, 1, 2]],
+                ['Plantain', 'under dry-season water stress', [12, 1, 2]],
             ],
         ];
 

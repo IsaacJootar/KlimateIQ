@@ -4,10 +4,12 @@ namespace Tests\Feature\Admin;
 
 use App\Jobs\IngestRegionSignalJob;
 use App\Models\Region;
+use App\Models\RegionSignal;
+use App\Models\SignalType;
 use App\Models\User;
 use App\Models\UserRegionSubscription;
 use App\Services\Ingestion\RainfallIngestionService;
-use Database\Seeders\ReferenceDataSeeder;
+use App\Services\Ingestion\VegetationIngestionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
@@ -17,13 +19,6 @@ use Tests\TestCase;
 class PipelineHealthTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     private function admin(): User
     {
@@ -205,7 +200,7 @@ class PipelineHealthTest extends TestCase
         $this->insertFailedJob(
             $region->region_id,
             'RuntimeException: AppEEARS task submission failed with status 403.',
-            \App\Services\Ingestion\VegetationIngestionService::class,
+            VegetationIngestionService::class,
         );
 
         $response = $this->actingAs($admin)->get(route('admin.pipeline.index'));
@@ -230,9 +225,9 @@ class PipelineHealthTest extends TestCase
     {
         $admin = $this->admin();
         $region = $this->activateARegion();
-        $signalType = \App\Models\SignalType::where('code', 'ELEVATION')->firstOrFail();
+        $signalType = SignalType::where('code', 'ELEVATION')->firstOrFail();
 
-        \App\Models\RegionSignal::create([
+        RegionSignal::create([
             'region_id' => $region->region_id,
             'signal_type_id' => $signalType->signal_type_id,
             'period_start' => now()->subDays(30),
@@ -253,7 +248,7 @@ class PipelineHealthTest extends TestCase
     {
         $admin = $this->admin();
         $region = $this->activateARegion();
-        $signalType = \App\Models\SignalType::where('code', 'ELEVATION')->firstOrFail();
+        $signalType = SignalType::where('code', 'ELEVATION')->firstOrFail();
 
         // Elevation's known limit is 1,000/day (Open Topo Data) — the smallest of any tracked
         // source, so it's the cheapest one to genuinely cross the 70% warning threshold with.
@@ -266,7 +261,7 @@ class PipelineHealthTest extends TestCase
             'source' => 'test',
             'ingested_at' => now()->subHours(1)->toDateTimeString(),
         ])->all();
-        \App\Models\RegionSignal::insert($rows);
+        RegionSignal::insert($rows);
 
         $response = $this->actingAs($admin)->get(route('admin.pipeline.index'));
 

@@ -3,7 +3,6 @@
 namespace Tests\Feature\Api;
 
 use App\Models\User;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Laravel\Sanctum\Sanctum;
@@ -16,8 +15,6 @@ class RateLimitTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
 
         // The rate limiter's array-cache store isn't reset by RefreshDatabase (that only
         // touches the database) — without this, an earlier test's exhausted quota for a

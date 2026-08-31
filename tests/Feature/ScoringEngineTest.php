@@ -7,7 +7,6 @@ use App\Models\RegionSignal;
 use App\Models\ScoringIndex;
 use App\Models\SignalType;
 use App\Services\Scoring\RegionScoringService;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -15,12 +14,6 @@ use Tests\TestCase;
 class ScoringEngineTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     private function periodStart(): Carbon
     {

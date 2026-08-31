@@ -7,7 +7,6 @@ use App\Models\RegionSignal;
 use App\Services\Ingestion\EvapotranspirationIngestionService;
 use App\Services\Ingestion\SoilMoistureIngestionService;
 use App\Support\IngestionCadence;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
@@ -19,13 +18,6 @@ use Tests\TestCase;
 class AgricultureSignalsIngestionTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     private function regionWithCoordinates(): Region
     {

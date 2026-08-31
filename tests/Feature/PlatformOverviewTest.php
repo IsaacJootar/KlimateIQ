@@ -3,24 +3,18 @@
 namespace Tests\Feature;
 
 use App\Models\Agency;
+use App\Models\Alert;
 use App\Models\Region;
+use App\Models\ScoringIndex;
 use App\Models\ThresholdConfig;
 use App\Models\User;
 use App\Models\UserRegionSubscription;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class PlatformOverviewTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     public function test_a_user_at_a_non_oversight_agency_cannot_view_the_overview(): void
     {
@@ -61,7 +55,7 @@ class PlatformOverviewTest extends TestCase
         $otherAgency = Agency::factory()->create(['name' => 'Alerting Agency']);
         $otherUser = User::factory()->create(['agency_id' => $otherAgency->agency_id]);
         $region = Region::query()->first();
-        $index = \App\Models\ScoringIndex::query()->first();
+        $index = ScoringIndex::query()->first();
 
         $threshold = ThresholdConfig::create([
             'user_id' => $otherUser->id,
@@ -74,7 +68,7 @@ class PlatformOverviewTest extends TestCase
             'active' => true,
         ]);
 
-        \App\Models\Alert::create([
+        Alert::create([
             'threshold_config_id' => $threshold->threshold_config_id,
             'region_id' => $region->region_id,
             'index_id' => $index->index_id,
