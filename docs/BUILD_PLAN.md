@@ -49,7 +49,7 @@ forward-looking (forecast / ensemble) data, decadal climate projections, and the
 | T1 | Sector grouping in the UI | nothing — ship first |
 | T2 | Config-only indices — **Waterborne Disease shipped**; Meningitis pending | T3 signals for Meningitis |
 | T3 | New free signals + their indices — **agriculture bundle, fire/dust, FIRMS confirmation, Respiratory depth all shipped** | nothing |
-| T4 | Forecast ingestion — store and score *future* periods | T3 (`RIVER_DISCHARGE`) |
+| T4 | Forecast ingestion — store and score *future* periods — **shipped** | T3 (`RIVER_DISCHARGE`) |
 | T5 | Probabilistic scoring — ensemble members → a likelihood | T4 |
 | T6 | Climate outlook module — CMIP6 decadal projections | nothing (independent path) |
 | T7 | Coastal resilience — storm surge / coastal flooding | coastal DEM + tide data |
@@ -75,7 +75,7 @@ Keep the primary + fallback pattern `RainfallIngestionService` already uses, and
 | `OZONE` / `NO2` | Open-Meteo Air Quality (CAMS) | `DAILY` | Respiratory Risk depth | **Live** — `AirQuality{Ozone,No2}IngestionService` |
 | `SO2` / `CO` | Open-Meteo Air Quality (CAMS) | `DAILY` | Respiratory Risk depth (further) | Ready — same API call |
 | `UV_INDEX` | Open-Meteo (daily max + clear-sky max) | `DAILY` | occupational / skin-eye advisories | Ready |
-| `RIVER_DISCHARGE` | Open-Meteo Flood API (GloFAS) | `DAILY` + forecast | riverine flood forecasting | Ready (needs T4) |
+| `RIVER_DISCHARGE` | Open-Meteo Flood API (GloFAS) | `DAILY` + forecast | riverine flood forecasting | **Live** — RiverDischargeIngestionService + RiverDischargeForecastService |
 | `ACTIVE_FIRE` | NASA FIRMS area API (VIIRS NOAA-20) | `DAILY` | bush-fire confirmation / backtest | **Live** — `ActiveFireIngestionService` (needs `FIRMS_MAP_KEY`; no-op without) |
 | `SEA_STATE` | Open-Meteo Marine (wave height, SST) | `DAILY` | coastal (partial) | Needs data (+ elevation/tide) |
 
@@ -97,7 +97,7 @@ calibration against outcome data. Bounds go in `scoring_calibration_parameters`;
 | `RANGELAND_STRESS` | `VEGETATION` 0.6 (inv NDVI) · `RAINFALL` 0.4 (deficit) | Agriculture | **Live** — `AdditionalIndicesSeeder`. Also an emergency-planning input (pastoralist movement / herder-conflict early warning). |
 | `WILDFIRE_RISK` | `HUMIDITY` 0.3 (inv) · `VEGETATION` 0.3 (dryness) · `WIND_SPEED` 0.2 · `TEMPERATURE` 0.2 · `ACTIVE_FIRE` 0.0 | Emergency Response | **Live** — `AdditionalIndicesSeeder`. FIRMS fire detections ride along at weight 0 (breakdown only). |
 | `DUST_STORM_RISK` | `DUST` 0.6 · `WIND_SPEED` 0.3 · `HUMIDITY` 0.1 (inv) | Emergency Response + Air & Environment | **Live** — `AdditionalIndicesSeeder`. Harmattan season; pairs with Respiratory Risk. |
-| `RIVERINE_FLOOD_FORECAST` | `RIVER_DISCHARGE` forecast percentile vs. local return period | Water | not a weighted blend — a threshold on forecast discharge; needs T4 |
+| `RIVERINE_FLOOD_FORECAST` | `RIVER_DISCHARGE` forecast percentile vs. local return period | Water | **Live** — is_forecast index, peak forecast day vs per-LGA discharge bounds (T4) |
 
 ## 5. Tier specs
 
@@ -153,24 +153,37 @@ OZONE 0.15 · NO2 0.1 · DUST 0.15 — and only touches the PM weights when they
 original default, so an admin-tuned value survives. `SO2` / `CO` are the same API call if wanted
 later.
 
-### T4 — Forecast ingestion · Ready · size L
+### T4 — Forecast ingestion · Shipped · size L
 
-The single biggest unlock. Today the pipeline scores a *completed* 7-day period. Forecast ingestion
-lets it score a *future* one — turning Flood Risk into "this river is forecast to exceed its banks
-in 4 days" and enabling storm, heatwave and seasonal early warnings.
+Turned the pipeline from scoring a *completed* 7-day period to also scoring a *future* one.
+Shipped in four milestones, forecast and observed data in **fully separate tables** end to end
+(the guard against a forecast leaking into a backtest or anomaly baseline):
 
-- Add `forecast_issued_at` + `horizon_days` (or an `is_forecast` flag) to `region_signals`, or a
-  parallel `region_forecast_signals` table sharing the contract.
-- `SignalIngestionService` gains an optional forecast method (or a sibling interface).
-- `RegionScoringService` learns to compute a score for a forward period keyed by issue date.
-- `EvaluateIndexThresholds` gains a "forecast breach" path so alerts can fire on a predicted
-  crossing, **clearly labelled as a forecast** in the notification.
+- **M1 — forecast signal lane.** `region_forecast_signals` (mirrors `region_signals` + issue date /
+  target date / lead time), `App\Services\Ingestion\ForecastIngestionService`, `OpenMeteoFloodClient`
+  (GloFAS), `RiverDischargeForecastService` (14-day forward series, latest issuance wins, stale
+  days pruned) + `RiverDischargeIngestionService` (observed weekly mean → history).
+  `signals:ingest-forecast` command, scheduled 03:00. `RIVER_DISCHARGE` signal type.
+- **M2 — forecast scoring lane.** `region_forecast_scores` (composite key, DB upsert),
+  `ForecastScoringStrategy` (each forecast day normalised the same way the observed engine does —
+  shared `NormalisesSignals` trait; score = the PEAK day + its lead time),
+  `RegionForecastScoringService`, `RegionForecastScoreCalculated` event. `indices.is_forecast`
+  flag: `scores:calculate` skips these, `scores:forecast` (scheduled 04:15) owns them.
+- **M3 — `RIVERINE_FLOOD_FORECAST` index** (one `RIVER_DISCHARGE` weight, Water & Emergency
+  sectors, via `AdditionalIndicesSeeder`/`SectorSeeder`). `App\Support\LatestScore` — one reader
+  that resolves a region+index headline from the right lane. The region page branches to a
+  forecast story (trajectory, peak + lead time, the real GloFAS daily curve replacing the linear
+  projection, forecast-framed actions). `calibrate:river-discharge` (weekly) derives per-LGA
+  `RIVER_DISCHARGE_MIN/MAX` from observed history so big rivers don't all peg at 100.
+- **M4 — forecast-breach alerts.** `EvaluateForecastThresholds` → `ThresholdEvaluationService::
+  evaluateForForecast`: a threshold on a forecast index fires on the peak, one open alert per
+  config that follows the forecast and auto-resolves when it recedes or its target date passes.
+  `ThresholdBreachedNotification` gets a forecast voice ("FORECAST: … projected to reach 62 in
+  about 8 days … not a current reading"). `threshold_configs.watch_forecast`,
+  `alerts.is_forecast` / `forecast_target_date` / `forecast_lead_days`.
 
-Keep forecast and observed data in clearly separate lanes end-to-end. The failure mode is a
-forecast value silently treated as an observation in a backtest or an anomaly baseline — the same
-discipline as the fallback-source labelling.
-
-Data: Open-Meteo Forecast API + Flood API (GloFAS discharge forecast) — free.
+Data: Open-Meteo Flood API (GloFAS discharge forecast) — free. The Open-Meteo Forecast API (for
+forward-scoring the *observed* indices too) is a config add on this lane later, not built.
 
 ### T5 — Probabilistic scoring · Ready · size L
 
@@ -244,9 +257,9 @@ return numbers.
 3. ~~**T3 agriculture bundle**~~ — done. Agriculture Stress, Irrigation Need, Rangeland Stress all
    live; proved "new signal source + new indices" end to end.
 4. ~~**T3 fire + dust**~~ — done. Wildfire Risk + Dust Storm Risk live, FIRMS active-fire confirmation wired in.
-5. **T4 forecast ingestion** — the architectural investment. Ship river-flood forecasting on top of
-   it as the first payoff.
-6. **T5 probabilistic scoring** — once forecasts flow.
+5. ~~**T4 forecast ingestion**~~ — done. Forecast signal + scoring lanes in separate tables,
+   Riverine Flood Forecast index on top, forecast-breach alerts. GloFAS via Open-Meteo Flood API.
+6. **T5 probabilistic scoring** — once forecasts flow. **(T4 is now in place.)**
 7. **T6 climate outlook** — in parallel; independent code path.
 8. **T8 trained model + validation** — as soon as outcome data is in hand.
 9. **T9 country #2** — after at least one index is validated in Nigeria.
