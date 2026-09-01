@@ -20,6 +20,10 @@ Schedule::command('signals:ingest --source='.implode(',', IngestionCadence::DAIL
 // WEEKLY: Vegetation's underlying satellite product is itself a 16-day composite — weekly
 // already meets its natural update rate, polling more often would mostly return unchanged data.
 Schedule::command('signals:ingest --source='.implode(',', IngestionCadence::WEEKLY))->weeklyOn(1, '02:30');
+// FORECAST: a fresh GloFAS discharge forecast every day (BUILD_PLAN.md T4). Runs after the
+// observed daily pull and before scoring, in its own lane — region_forecast_signals, never
+// region_signals — so a forecast can never leak into an observed-data query.
+Schedule::command('signals:ingest-forecast')->dailyAt('03:00');
 // Elevation and Population aren't scheduled at all — see IngestionCadence::ONCE. They're pulled
 // once when a region is first activated and re-pulled only manually if the reference data itself
 // changes (a recurring pull for near-static data would just burn quota against rate-limited

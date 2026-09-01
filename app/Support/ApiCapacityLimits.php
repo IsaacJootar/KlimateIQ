@@ -87,6 +87,11 @@ class ApiCapacityLimits
                 'dailyLimit' => null,
                 'recommendation' => 'FIRMS meters by transaction count (~5,000 per 10-minute window on a free map key), not a daily cap — 1 call/region/day is nowhere near it. If ingestion starts erroring with a rate message, spread the fire pull onto its own schedule slot. NRT data only goes back ~2 months and serves 5 days per request, so this is a confirmation series, not a backfill source.',
             ],
+            'RIVER_DISCHARGE' => [
+                'provider' => 'Open-Meteo Flood API (GloFAS)',
+                'dailyLimit' => 10000,
+                'recommendation' => 'Two calls/region/day at most — one observed (past week), one forecast (14-day horizon) — sharing Open-Meteo\'s 10,000/day free-tier quota with the archive and air-quality pulls. GloFAS only models mapped river reaches, so a large share of LGAs return no data; that is coverage, not a rate problem. Self-hosting Open-Meteo (AGPLv3) lifts the ceiling if ever needed.',
+            ],
             'STANDING_WATER' => [
                 'provider' => 'JRC Global Surface Water',
                 'dailyLimit' => null,

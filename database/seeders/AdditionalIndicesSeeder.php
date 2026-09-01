@@ -71,6 +71,9 @@ class AdditionalIndicesSeeder extends Seeder
             // Respiratory Risk depth — gaseous pollutants alongside the PM series.
             ['code' => 'OZONE', 'name' => 'Ground-Level Ozone', 'unit' => 'µg/m³', 'source' => 'Open-Meteo Air Quality API (CAMS)', 'higher_is_worse' => true],
             ['code' => 'NO2', 'name' => 'Nitrogen Dioxide', 'unit' => 'µg/m³', 'source' => 'Open-Meteo Air Quality API (CAMS)', 'higher_is_worse' => true],
+            // Forecast lane (BUILD_PLAN.md T4) — the Riverine Flood Forecast index measures the
+            // GloFAS forecast against this signal's own observed history per LGA.
+            ['code' => 'RIVER_DISCHARGE', 'name' => 'River Discharge', 'unit' => 'm³/s', 'source' => 'Open-Meteo Flood API (GloFAS)', 'higher_is_worse' => true],
         ];
 
         foreach ($types as $type) {

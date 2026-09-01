@@ -11,6 +11,8 @@ use App\Services\Ingestion\EvapotranspirationIngestionService;
 use App\Services\Ingestion\HumidityIngestionService;
 use App\Services\Ingestion\PopulationExposureIngestionService;
 use App\Services\Ingestion\RainfallIngestionService;
+use App\Services\Ingestion\RiverDischargeForecastService;
+use App\Services\Ingestion\RiverDischargeIngestionService;
 use App\Services\Ingestion\SoilMoistureIngestionService;
 use App\Services\Ingestion\StandingWaterIngestionService;
 use App\Services\Ingestion\TemperatureIngestionService;
@@ -47,6 +49,22 @@ return [
         WindIngestionService::class,
         DustIngestionService::class,
         ActiveFireIngestionService::class,
+        RiverDischargeIngestionService::class,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Forecast ingestion sources
+    |--------------------------------------------------------------------------
+    |
+    | Every class here must implement App\Services\Ingestion\ForecastIngestionService.
+    | signals:ingest-forecast and its scheduler iterate this list. Kept separate from
+    | 'sources' above because forecast and observed data live in separate tables and
+    | separate pipelines end to end — see BUILD_PLAN.md T4.
+    |
+    */
+    'forecast_sources' => [
+        RiverDischargeForecastService::class,
     ],
 
 ];
