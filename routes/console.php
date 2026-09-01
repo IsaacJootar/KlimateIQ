@@ -35,3 +35,6 @@ Schedule::command('signals:ingest-forecast')->dailyAt('03:00');
 // without this also running daily, fresher raw signals would just sit unused until the old
 // weekly recalculation caught up to them.
 Schedule::command('scores:calculate')->dailyAt('04:00');
+// Forecast indices score in their own lane, from region_forecast_signals, right after the
+// observed pass — see BUILD_PLAN.md T4.
+Schedule::command('scores:forecast')->dailyAt('04:15');

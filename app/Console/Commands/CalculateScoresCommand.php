@@ -44,9 +44,11 @@ class CalculateScoresCommand extends Command
             ? Region::query()->where('region_id', $this->option('region'))->get()
             : Region::query()->get();
 
+        // Forecast indices (BUILD_PLAN.md T4) are owned by scores:forecast — they have no
+        // observed period to score. An explicit --index still lets one be forced through.
         $indices = $this->option('index')
             ? ScoringIndex::query()->where('code', $this->option('index'))->get()
-            : ScoringIndex::query()->get();
+            : ScoringIndex::query()->observed()->get();
 
         $calculated = 0;
 

@@ -24,7 +24,24 @@ class ScoringIndex extends Model
         'code',
         'name',
         'description',
+        'is_forecast',
     ];
+
+    protected $casts = [
+        'is_forecast' => 'boolean',
+    ];
+
+    /** Indices scored from a completed period — everything scores:calculate owns. */
+    public function scopeObserved($query)
+    {
+        return $query->where('is_forecast', false);
+    }
+
+    /** Forward-looking indices — scores:forecast owns these, read from region_forecast_scores. */
+    public function scopeForecast($query)
+    {
+        return $query->where('is_forecast', true);
+    }
 
     public function scoringConfigs(): HasMany
     {
