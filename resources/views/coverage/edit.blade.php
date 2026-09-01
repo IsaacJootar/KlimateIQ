@@ -4,9 +4,6 @@
     $sectorIndexMap = $sectors->mapWithKeys(fn ($s) => [
         (string) $s->sector_id => $s->indices->pluck('index_id')->map('strval')->values(),
     ]);
-    $indexNames = $indices->mapWithKeys(fn ($i) => [
-        (string) $i->index_id => str_replace(' Index', '', $i->name),
-    ]);
 @endphp
 
 <x-app-layout title="Workspace">
@@ -21,37 +18,31 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-            <form method="POST" action="{{ route('coverage.update') }}"
-                  x-data="{
-                      sectorIds: {{ Js::from(array_map('strval', $subscribedSectorIds)) }},
-                      keptIndexIds: [],
-                      refineOpen: {{ $refinedIndexIds ? 'true' : 'false' }},
-                      regionScope: '{{ $subscribedRegionIds ? 'specific' : 'all' }}',
-                      regionSearch: '',
-                      sectorIndexMap: {{ Js::from($sectorIndexMap) }},
-                      indexNames: {{ Js::from($indexNames) }},
-                      init() {
-                          const stored = {{ Js::from(array_map('strval', $refinedIndexIds)) }};
-                          this.keptIndexIds = stored.length ? stored : this.inScopeIndexIds();
-                          this.$watch('sectorIds', () => { this.keptIndexIds = this.inScopeIndexIds(); });
-                      },
-                      inScopeIndexIds() {
-                          const s = new Set();
-                          this.sectorIds.forEach(id => (this.sectorIndexMap[id] || []).forEach(ix => s.add(ix)));
-                          return [...s];
-                      },
-                      indexInScope(id) {
-                          return this.inScopeIndexIds().includes(String(id));
-                      },
-                      includedNames() {
-                          return this.inScopeIndexIds().map(id => this.indexNames[id]).filter(Boolean).sort();
-                      },
-                      matchesSearch(haystack) {
-                          return this.regionSearch === '' || haystack.includes(this.regionSearch.toLowerCase());
-                      },
-                  }"
-                  class="section-card p-6">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8"
+             x-data="{
+                 sectorIds: {{ Js::from(array_map('strval', $subscribedSectorIds)) }},
+                 keptIndexIds: [],
+                 regionScope: '{{ $subscribedRegionIds ? 'specific' : 'all' }}',
+                 regionSearch: '',
+                 sectorIndexMap: {{ Js::from($sectorIndexMap) }},
+                 init() {
+                     const stored = {{ Js::from(array_map('strval', $refinedIndexIds)) }};
+                     this.keptIndexIds = stored.length ? stored : this.inScopeIndexIds();
+                     this.$watch('sectorIds', () => { this.keptIndexIds = this.inScopeIndexIds(); });
+                 },
+                 inScopeIndexIds() {
+                     const s = new Set();
+                     this.sectorIds.forEach(id => (this.sectorIndexMap[id] || []).forEach(ix => s.add(ix)));
+                     return [...s];
+                 },
+                 sectorPicked(id) {
+                     return this.sectorIds.includes(String(id));
+                 },
+                 matchesSearch(haystack) {
+                     return this.regionSearch === '' || haystack.includes(this.regionSearch.toLowerCase());
+                 },
+             }">
+            <form method="POST" action="{{ route('coverage.update') }}" class="section-card p-6">
                 @csrf
                 @method('PUT')
 
@@ -73,28 +64,27 @@
                     </div>
                 </x-form-section>
 
-                <x-form-section title="Risk indices">
-                    <p class="text-sm text-slate-600 dark:text-slate-300" x-show="sectorIds.length">
-                        Your dashboard covers:
-                        <span class="font-medium text-slate-900 dark:text-white" x-text="includedNames().join(', ')"></span>.
-                        New indices added to these sectors show up automatically.
-                    </p>
+                <x-form-section title="Which risks show on your dashboard"
+                    description="Everything your sectors cover is on. Untick any you don't want to see — you can only narrow within your sectors here.">
+
                     <p class="text-sm text-slate-500 dark:text-slate-400" x-show="! sectorIds.length" x-cloak>
-                        No sectors picked — you’ll see every risk index until you choose one above.
+                        Pick a sector above and its risk indices appear here.
                     </p>
 
-                    <button type="button" x-show="sectorIds.length" x-cloak
-                            class="mt-1 text-sm font-medium text-primary hover:underline"
-                            @click="refineOpen = ! refineOpen"
-                            x-text="refineOpen ? 'Done hiding' : 'Hide some of these'"></button>
-
-                    <div x-show="refineOpen && sectorIds.length" x-cloak class="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-1 pt-1">
-                        @foreach ($indices as $idx)
-                            <label class="flex items-center gap-2 text-sm" x-show="indexInScope({{ $idx->index_id }})" x-cloak>
-                                <input type="checkbox" name="index_ids[]" value="{{ $idx->index_id }}" class="rounded"
-                                       x-model="keptIndexIds" :disabled="! indexInScope({{ $idx->index_id }})">
-                                {{ str_replace(' Index', '', $idx->name) }}
-                            </label>
+                    <div class="space-y-4" x-show="sectorIds.length" x-cloak>
+                        @foreach ($sectors as $sector)
+                            <div x-show="sectorPicked({{ $sector->sector_id }})" x-cloak>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">{{ $sector->short_name }}</p>
+                                <div class="mt-1.5 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
+                                    @foreach ($sector->indices as $idx)
+                                        <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                                            <input type="checkbox" name="index_ids[]" value="{{ $idx->index_id }}" class="rounded"
+                                                   x-model="keptIndexIds">
+                                            {{ str_replace(' Index', '', $idx->name) }}
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </div>
                         @endforeach
                     </div>
                 </x-form-section>
@@ -128,6 +118,7 @@
 
                 <x-loading-button class="btn-primary w-full sm:w-auto" loading-text="Saving…">Save workspace</x-loading-button>
             </form>
+        </div>
         </div>
     </div>
 </x-app-layout>
