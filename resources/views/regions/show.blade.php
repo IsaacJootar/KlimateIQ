@@ -46,7 +46,9 @@
                 </div>
             @endif
 
-            @if ($score === null)
+            @if ($isForecast)
+                @include('regions.partials.forecast')
+            @elseif ($score === null)
                 <section class="section-card p-5 step-accent-none">
                     <h3 class="font-semibold text-gray-800 dark:text-gray-200 mb-2">No score yet for {{ $region->name }}</h3>
                     <p class="text-sm text-slate-500 dark:text-slate-400">

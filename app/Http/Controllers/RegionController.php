@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\CropCalendar;
 use App\Models\IndexActionRecommendation;
 use App\Models\Region;
+use App\Models\RegionForecastScore;
 use App\Models\RegionScore;
 use App\Models\RegionSignal;
 use App\Models\ScoringIndex;
@@ -27,16 +28,20 @@ class RegionController extends Controller
     {
         ['available' => $indices, 'active' => $index, 'groups' => $indexGroups] = IndexCoverage::resolve(Auth::user(), request('index'));
 
-        $latestByRegion = RegionScore::query()
-            ->where('index_id', $index->index_id)
-            ->orderByDesc('period_start')
-            ->get()
-            ->unique('region_id')
-            ->keyBy('region_id');
+        // A forecast index has one current forecast per region (region_forecast_scores), no
+        // history or "two weeks ago" — the trend/sparkline columns just fall to neutral.
+        $latestByRegion = $index->is_forecast
+            ? RegionForecastScore::query()->where('index_id', $index->index_id)->get()->keyBy('region_id')
+            : RegionScore::query()
+                ->where('index_id', $index->index_id)
+                ->orderByDesc('period_start')
+                ->get()
+                ->unique('region_id')
+                ->keyBy('region_id');
 
         // Most recent score at or before 2 weeks ago, per region — the "where were we" side
         // of the trend sentence. Same shape query as $latestByRegion, just an older cutoff.
-        $priorByRegion = RegionScore::query()
+        $priorByRegion = $index->is_forecast ? collect() : RegionScore::query()
             ->where('index_id', $index->index_id)
             ->where('period_start', '<=', now()->subDays(14))
             ->orderByDesc('period_start')
@@ -56,7 +61,7 @@ class RegionController extends Controller
 
         // Full ascending history per region, for the sparkline — separate from $latestByRegion/
         // $priorByRegion above, which only ever need single points, not a series.
-        $historyByRegion = RegionScore::query()
+        $historyByRegion = $index->is_forecast ? collect() : RegionScore::query()
             ->where('index_id', $index->index_id)
             ->orderBy('period_start')
             ->get()
@@ -114,6 +119,10 @@ class RegionController extends Controller
     {
         ['available' => $indices, 'active' => $index, 'groups' => $indexGroups] = IndexCoverage::resolve(Auth::user(), request('index'));
 
+        if ($index->is_forecast) {
+            return $this->showForecast($region, $index, $indices, $indexGroups);
+        }
+
         $scores = RegionScore::query()
             ->where('region_id', $region->region_id)
             ->where('index_id', $index->index_id)
@@ -151,6 +160,7 @@ class RegionController extends Controller
         })->all();
 
         return view('regions.show', [
+            'isForecast' => false,
             'drivers' => $drivers,
             'region' => $region,
             'indices' => $indices,
@@ -172,6 +182,46 @@ class RegionController extends Controller
             // A few named schools / health facilities in this LGA — for the public-health and
             // air-quality indices, same amber/red gate. Examples on record, not a full list.
             'facilities' => $this->facilitiesFor($index, $region, $latest?->score !== null ? (float) $latest->score : null),
+        ]);
+    }
+
+    /**
+     * The region page for a forecast index (BUILD_PLAN.md T4). A different shape from the
+     * observed page — the score is a forecast peak with a lead time, "where it's heading" is
+     * the real GloFAS daily curve rather than a linear extrapolation of past scores.
+     */
+    private function showForecast(Region $region, ScoringIndex $index, Collection $indices, Collection $indexGroups): View
+    {
+        $forecast = RegionForecastScore::query()
+            ->where('index_id', $index->index_id)
+            ->where('region_id', $region->region_id)
+            ->first();
+
+        $peak = $forecast?->score !== null ? (float) $forecast->score : null;
+        $daily = collect($forecast?->breakdown['daily'] ?? [])->map(fn (array $d) => [
+            'date' => $d['date'],
+            'lead_days' => $d['lead_days'],
+            'score' => (float) $d['score'],
+            'band' => RiskBand::forScore((float) $d['score']),
+            'discharge' => $d['signals']['RIVER_DISCHARGE']['raw_value'] ?? null,
+        ]);
+
+        return view('regions.show', [
+            'isForecast' => true,
+            'region' => $region,
+            'indices' => $indices,
+            'indexGroups' => $indexGroups,
+            'index' => $index,
+            'forecast' => $forecast,
+            'forecastDaily' => $daily,
+            'peakScore' => $peak,
+            'recommendedAction' => IndexActionRecommendation::textFor($index->index_id, $peak),
+            'facilities' => $this->facilitiesFor($index, $region, $peak),
+            // Shared shells (tab strip, description, the top @php block) still read these.
+            'scores' => collect(),
+            'latest' => null,
+            'breakdown' => [],
+            'signalNames' => SignalType::codeToName(),
         ]);
     }
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Alert;
 use App\Models\Region;
+use App\Models\RegionForecastScore;
 use App\Models\RegionScore;
 use App\Models\RegionSignal;
 use App\Models\ThresholdConfig;
@@ -32,12 +33,20 @@ class DashboardController extends Controller
 
         ['available' => $availableIndices, 'active' => $activeIndex, 'groups' => $indexGroups] = IndexCoverage::resolve($user, request('index'));
 
-        $latestScores = RegionScore::query()
-            ->where('index_id', $activeIndex->index_id)
-            ->whereIn('region_id', $regions->pluck('region_id'))
-            ->orderByDesc('period_start')
-            ->get()
-            ->unique('region_id');
+        // A forecast index (BUILD_PLAN.md T4) has one current forecast per region in its own
+        // table — the peak, not a completed-period score. Everything downstream keys off the
+        // `score` attribute, which both models carry.
+        $latestScores = $activeIndex->is_forecast
+            ? RegionForecastScore::query()
+                ->where('index_id', $activeIndex->index_id)
+                ->whereIn('region_id', $regions->pluck('region_id'))
+                ->get()
+            : RegionScore::query()
+                ->where('index_id', $activeIndex->index_id)
+                ->whereIn('region_id', $regions->pluck('region_id'))
+                ->orderByDesc('period_start')
+                ->get()
+                ->unique('region_id');
 
         $highRiskCount = $latestScores->where('score', '>=', 67)->count();
 
@@ -47,7 +56,7 @@ class DashboardController extends Controller
             ->whereNotNull('score')
             ->sortByDesc('score')
             ->take(5)
-            ->map(fn (RegionScore $score) => [
+            ->map(fn ($score) => [
                 'region' => $regions->firstWhere('region_id', $score->region_id),
                 'score' => $score->score,
                 'band' => RiskBand::forScore($score->score),

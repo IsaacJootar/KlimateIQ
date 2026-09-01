@@ -46,6 +46,7 @@ class AdditionalIndicesSeeder extends Seeder
         $this->wildfireRisk();
         $this->dustStormRisk();
         $this->drySeasonWaterStress();
+        $this->riverineFloodForecast();
         $this->deepenRespiratoryRisk();
     }
 
@@ -337,6 +338,47 @@ class AdditionalIndicesSeeder extends Seeder
             'green' => 'Water availability is adequate. Continue routine borehole and reservoir monitoring.',
             'amber' => 'Dry-season water stress building in this LGA: check borehole functionality and reservoir levels, plan water-trucking routes, and begin water-conservation messaging.',
             'red' => 'Severe dry-season water stress: prioritise this LGA for water trucking and emergency borehole repair, activate rationing where needed, and brief the state water board and WASH cluster on the settlements most at risk.',
+        ]);
+    }
+
+    /**
+     * Clarity Pass / BUILD_PLAN.md T4 — the first forecast index. GloFAS river-discharge
+     * forecast (RIVER_DISCHARGE, forecast lane) against each LGA's normal-flow range: a 3-to-14
+     * day heads-up on river flooding. `is_forecast` marks it so scores:calculate skips it and
+     * scores:forecast owns it (reading region_forecast_signals, writing region_forecast_scores).
+     * The score is the PEAK forecast day within the window, with the lead time to it.
+     *
+     * Not a weighted blend — one signal at weight 1.0, so the score is simply the peak day's
+     * discharge normalised against the calibration bounds. Bounds are an uncalibrated system
+     * placeholder; per-region bounds derived from each LGA's observed discharge history are the
+     * obvious fast-follow (there is no discharge history yet on a fresh install). Attached to
+     * Water & Sanitation and Emergency Response in SectorSeeder.
+     */
+    private function riverineFloodForecast(): void
+    {
+        $index = ScoringIndex::query()->updateOrCreate(
+            ['code' => 'RIVERINE_FLOOD_FORECAST'],
+            [
+                'name' => 'Riverine Flood Forecast',
+                'description' => 'GloFAS river-discharge forecast against each LGA\'s normal flow — a 3-to-14-day heads-up on river flooding, for emergency and water agencies pre-positioning ahead of displacement.',
+                'is_forecast' => true,
+            ]
+        );
+
+        $this->seedWeights($index, [
+            'RIVER_DISCHARGE' => 1.0, // higher forecast flow = higher risk (signal default)
+        ]);
+
+        // Uncalibrated system placeholder — a big Nigerian river in flood runs into the low
+        // thousands of m³/s. Per-region bounds from observed history are the fast-follow.
+        $this->seedBounds($index, [
+            'RIVER_DISCHARGE' => [0, 4000],
+        ]);
+
+        $this->seedActions($index, [
+            'green' => 'No river-flood signal. Continue routine monitoring of the river gauge and forecast.',
+            'amber' => 'A river-flood warning is forecast for this LGA in the coming days: brief the LGA emergency committee, check evacuation routes and shelter readiness, and warn riverside and low-lying settlements.',
+            'red' => 'Severe river flooding is forecast for this LGA: activate the flood-response plan now while there is lead time — pre-position boats, relief materials and shelter, move people and livestock off the floodplain, and brief the state emergency agency and downstream LGAs.',
         ]);
     }
 

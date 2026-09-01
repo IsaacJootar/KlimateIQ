@@ -44,13 +44,13 @@ class SectorSeeder extends Seeder
                 'code' => 'EMERGENCY_RESPONSE',
                 'name' => 'Emergency Response & Infrastructure',
                 'description' => 'Forward signal on which areas are closest to flooding, dangerous heat, wildfire or dust storms.',
-                'indices' => ['FLOOD_RISK', 'HEAT_STRESS_RISK', 'WILDFIRE_RISK', 'DUST_STORM_RISK'],
+                'indices' => ['FLOOD_RISK', 'RIVERINE_FLOOD_FORECAST', 'HEAT_STRESS_RISK', 'WILDFIRE_RISK', 'DUST_STORM_RISK'],
             ],
             [
                 'code' => 'WATER_SANITATION',
                 'name' => 'Water, Sanitation & Flooding',
                 'description' => 'Flood risk, post-flood waterborne-disease risk and dry-season water availability for WASH and water-supply planning.',
-                'indices' => ['FLOOD_RISK', 'WATERBORNE_DISEASE_RISK', 'DRY_SEASON_WATER_STRESS'],
+                'indices' => ['FLOOD_RISK', 'WATERBORNE_DISEASE_RISK', 'DRY_SEASON_WATER_STRESS', 'RIVERINE_FLOOD_FORECAST'],
             ],
             [
                 'code' => 'AIR_ENVIRONMENT',
