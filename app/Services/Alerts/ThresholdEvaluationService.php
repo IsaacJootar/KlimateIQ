@@ -8,6 +8,7 @@ use App\Models\RegionSignal;
 use App\Models\ThresholdConfig;
 use App\Models\UserRegionSubscription;
 use App\Notifications\ThresholdBreachedNotification;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 /**
@@ -41,6 +42,67 @@ class ThresholdEvaluationService
                 ->map(fn ($v) => (float) $v);
 
             $this->evaluateConfig($config, $regionId, indexId: $indexId, signalTypeId: null, value: $score, history: $history);
+        }
+    }
+
+    /**
+     * BUILD_PLAN.md T4 M4 — a fresh forecast peak for a forecast index. Fires a threshold on
+     * the forecast peak, clearly flagged as a forecast, and keeps just one open forecast alert
+     * per config: the alert follows the forecast (updated silently as the peak / date move) and
+     * auto-resolves when the forecast recedes below the threshold or its target date passes.
+     * Anomaly-type thresholds don't apply — there is no forecast baseline.
+     */
+    public function evaluateForForecast(int $indexId, int $regionId, ?float $peakScore, ?string $peakDate, ?int $leadDays): void
+    {
+        $configs = $this->applicableConfigs('index_id', $indexId, $regionId)
+            ->load('index')
+            ->filter(fn (ThresholdConfig $c) => ! $c->isAnomalyType()
+                && ($c->watch_forecast || $c->index?->is_forecast));
+
+        foreach ($configs as $config) {
+            $openAlert = Alert::query()
+                ->where('threshold_config_id', $config->threshold_config_id)
+                ->where('is_forecast', true)
+                ->where('status', 'OPEN')
+                ->first();
+
+            $breached = $peakScore !== null
+                && $this->breachesFixedThreshold($peakScore, $config->comparison_operator, (float) $config->threshold_value);
+
+            $targetPassed = $peakDate !== null && Carbon::parse($peakDate)->isBefore(today());
+
+            if (! $breached || $targetPassed) {
+                $openAlert?->resolve();
+
+                continue;
+            }
+
+            if ($openAlert !== null) {
+                // The forecast still breaches — follow it, don't re-notify.
+                $openAlert->update([
+                    'score_at_trigger' => $peakScore,
+                    'forecast_target_date' => $peakDate,
+                    'forecast_lead_days' => $leadDays,
+                ]);
+
+                continue;
+            }
+
+            $alert = Alert::query()->create([
+                'threshold_config_id' => $config->threshold_config_id,
+                'region_id' => $regionId,
+                'index_id' => $indexId,
+                'signal_type_id' => null,
+                'score_at_trigger' => $peakScore,
+                'threshold_value' => $config->threshold_value,
+                'status' => 'OPEN',
+                'is_forecast' => true,
+                'forecast_target_date' => $peakDate,
+                'forecast_lead_days' => $leadDays,
+                'triggered_at' => now(),
+            ]);
+
+            $config->user->notify(new ThresholdBreachedNotification($alert));
         }
     }
 

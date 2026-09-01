@@ -25,12 +25,14 @@ class ThresholdConfig extends Model
         'threshold_value',
         'anomaly_stddev_multiplier',
         'active',
+        'watch_forecast',
     ];
 
     protected $casts = [
         'threshold_value' => 'decimal:4',
         'anomaly_stddev_multiplier' => 'decimal:2',
         'active' => 'boolean',
+        'watch_forecast' => 'boolean',
     ];
 
     public function user(): BelongsTo

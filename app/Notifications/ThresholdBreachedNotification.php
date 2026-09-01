@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Models\Alert;
 use App\Models\IndexActionRecommendation;
 use App\Models\PlatformSetting;
+use App\Models\User;
 use App\Notifications\Channels\SmsChannel;
 use App\Services\Sms\SmsClient;
 use Illuminate\Bus\Queueable;
@@ -16,6 +17,25 @@ class ThresholdBreachedNotification extends Notification
     use Queueable;
 
     public function __construct(public readonly Alert $alert) {}
+
+    /** The forecast peak as a whole number — "62", not "62.2000". */
+    private function forecastPeak(): int
+    {
+        return (int) round((float) $this->alert->score_at_trigger);
+    }
+
+    /** "in about 5 days (around Sep 9)" — the lead-time clause for a forecast alert. */
+    private function forecastWhen(): string
+    {
+        $lead = $this->alert->forecast_lead_days;
+        $date = $this->alert->forecast_target_date?->format('M j');
+
+        return match (true) {
+            $lead === 0 => 'today'.($date ? " ({$date})" : ''),
+            $lead === 1 => 'tomorrow'.($date ? " ({$date})" : ''),
+            default => "in about {$lead} days".($date ? " (around {$date})" : ''),
+        };
+    }
 
     /**
      * Null when the alert targets a raw signal rather than a named index — the
@@ -31,7 +51,7 @@ class ThresholdBreachedNotification extends Notification
     }
 
     /**
-     * @param  \App\Models\User  $notifiable
+     * @param  User  $notifiable
      */
     public function via(object $notifiable): array
     {
@@ -65,6 +85,23 @@ class ThresholdBreachedNotification extends Notification
         $target = $this->alert->index?->name ?? $this->alert->signalType?->name ?? 'a signal';
         $region = $this->alert->region->name;
 
+        if ($this->alert->is_forecast) {
+            $mail = (new MailMessage)
+                ->subject("FORECAST — {$target} for {$region} projected to breach")
+                ->greeting('Hi '.$notifiable->name.',')
+                ->line('This is a forecast, not a current reading.')
+                ->line("{$target} for {$region} is projected to reach {$this->forecastPeak()} ".$this->forecastWhen().
+                    ($this->alert->threshold_value !== null ? " — past the {$this->alert->threshold_value} threshold you set." : '.'));
+
+            if ($action = $this->recommendedAction()) {
+                $mail->line("Recommended action: {$action}");
+            }
+
+            return $mail
+                ->action('View alert', route('alerts.index'))
+                ->line('The lead time is your window to prepare.');
+        }
+
         $mail = (new MailMessage)
             ->subject("Threshold breached — {$target} in {$region}")
             ->greeting('Hi '.$notifiable->name.',')
@@ -86,15 +123,18 @@ class ThresholdBreachedNotification extends Notification
         $this->alert->loadMissing(['region', 'index', 'signalType']);
 
         $target = $this->alert->index?->name ?? $this->alert->signalType?->name ?? 'a signal';
-        $body = "{$target} in {$this->alert->region->name} crossed a threshold you set.";
+
+        $body = $this->alert->is_forecast
+            ? "FORECAST: {$target} for {$this->alert->region->name} is projected to reach {$this->forecastPeak()} ".$this->forecastWhen().'. This is a forecast, not a current reading.'
+            : "{$target} in {$this->alert->region->name} crossed a threshold you set.";
 
         if ($action = $this->recommendedAction()) {
             $body .= " Recommended action: {$action}";
         }
 
         return [
-            'type' => 'threshold_breached',
-            'title' => "Threshold breached — {$target}",
+            'type' => $this->alert->is_forecast ? 'forecast_breach' : 'threshold_breached',
+            'title' => ($this->alert->is_forecast ? 'Forecast — ' : 'Threshold breached — ').$target,
             'body' => $body,
             'alert_id' => $this->alert->alert_id,
             'url' => route('alerts.index'),
@@ -107,8 +147,9 @@ class ThresholdBreachedNotification extends Notification
 
         $target = $this->alert->index?->name ?? $this->alert->signalType?->name ?? 'a signal';
 
-        $message = "KlimateIQ alert: {$target} in {$this->alert->region->name} crossed your threshold ".
-            "(value: {$this->alert->score_at_trigger}).";
+        $message = $this->alert->is_forecast
+            ? "KlimateIQ FORECAST: {$target} for {$this->alert->region->name} projected to reach {$this->forecastPeak()} ".$this->forecastWhen().' (forecast, not current).'
+            : "KlimateIQ alert: {$target} in {$this->alert->region->name} crossed your threshold (value: {$this->alert->score_at_trigger}).";
 
         if ($action = $this->recommendedAction()) {
             $message .= " Recommended: {$action}";

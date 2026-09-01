@@ -15,7 +15,7 @@
                 <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">Two decisions: what to watch, and when it should alert you.</p>
 
                 <form method="POST" action="{{ route('thresholds.store') }}"
-                      x-data="{ targetType: 'index', alertType: 'fixed_threshold' }">
+                      x-data="{ targetType: 'index', alertType: 'fixed_threshold', indexId: '', forecastIndexIds: {{ Illuminate\Support\Js::from($indices->where('is_forecast', true)->pluck('index_id')->map('strval')->values()) }} }">
                     @csrf
 
                     <x-form-section title="What do you want to watch?"
@@ -39,11 +39,16 @@
 
                         <div x-show="targetType === 'index'" x-cloak>
                             <x-input-label for="index_id">Index</x-input-label>
-                            <x-select-input id="index_id" name="index_id">
+                            <x-select-input id="index_id" name="index_id" x-model="indexId">
                                 @foreach ($indices as $idx)
                                     <option value="{{ $idx->index_id }}">{{ $idx->name }}</option>
                                 @endforeach
                             </x-select-input>
+                            <p x-show="forecastIndexIds.includes(indexId)" x-cloak
+                               class="mt-1.5 text-xs text-sky-700 dark:text-sky-300">
+                                This is a forecast index — the alert fires on the forecast <em>peak</em>, clearly labelled
+                                as a forecast, and clears itself when the forecast recedes or its date passes.
+                            </p>
                         </div>
 
                         <div x-show="targetType === 'signal'" x-cloak>
