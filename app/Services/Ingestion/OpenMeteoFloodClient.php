@@ -38,8 +38,13 @@ class OpenMeteoFloodClient
             return null;
         }
 
+        // A multi-decade daily series (calibrate:river-discharge pulls ~40 years) is a big
+        // response — well past the 30s the short forecast pull needs.
+        $timeout = $start->diffInYears($end) >= 5 ? 90 : 30;
+
         $response = Http::withOptions(['verify' => $this->caBundle()])
-            ->timeout(30)
+            ->timeout($timeout)
+            ->retry(2, 2000, throw: false)
             ->get(self::BASE_URL, [
                 'latitude' => (float) $region->latitude,
                 'longitude' => (float) $region->longitude,

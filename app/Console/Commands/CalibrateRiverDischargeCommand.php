@@ -106,6 +106,8 @@ class CalibrateRiverDischargeCommand extends Command
             $rl20s[] = $rl['20'];
             $lows[] = $low;
             $done++;
+
+            usleep(300_000); // be gentle with the free API between multi-decade pulls
         }
 
         // A data-derived system-wide fallback for reaches skipped for a thin record — the median
