@@ -78,6 +78,9 @@
             @if ($region->population !== null) &middot; Population {{ number_format($region->population) }}. @endif
             &middot; This is a forecast, not a current reading.
         </p>
+        @if ($calibrationNote)
+            <p class="mt-1.5 text-xs text-white/60 italic">{{ $calibrationNote }}</p>
+        @endif
     </section>
 
     {{-- 3 — The daily outlook --}}

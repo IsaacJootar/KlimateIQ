@@ -273,12 +273,23 @@ class ReferenceDataSeeder extends Seeder
             'AIR_QUALITY_PM10' => ['min' => 0, 'max' => 604],
         ];
 
+        // PM2.5 / PM10 use a cited public-health reference; everything else is an honest guess.
+        $cited = ['AIR_QUALITY_PM25', 'AIR_QUALITY_PM10'];
+
         foreach (ScoringIndex::all() as $index) {
             foreach ($bounds as $signalCode => $range) {
+                $isCited = in_array($signalCode, $cited, true);
+
                 foreach (['MIN' => $range['min'], 'MAX' => $range['max']] as $suffix => $value) {
                     ScoringCalibrationParameter::query()->updateOrCreate(
                         ['index_id' => $index->index_id, 'region_id' => null, 'parameter_key' => "{$signalCode}_{$suffix}"],
-                        ['parameter_value' => $value, 'source_reference' => 'Uncalibrated placeholder — tune once historical case data is available.']
+                        [
+                            'parameter_value' => $value,
+                            'source_reference' => $isCited
+                                ? 'US EPA Air Quality Index "Hazardous" ceiling (AQI 500).'
+                                : 'Uncalibrated placeholder — tune once historical case data is available.',
+                            'calibration_status' => $isCited ? 'reference' : 'placeholder',
+                        ]
                     );
                 }
             }

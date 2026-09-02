@@ -173,20 +173,28 @@ Shipped in four milestones, forecast and observed data in **fully separate table
   sectors, via `AdditionalIndicesSeeder`/`SectorSeeder`). `App\Support\LatestScore` — one reader
   that resolves a region+index headline from the right lane. The region page branches to a
   forecast story (trajectory, peak + lead time, the real GloFAS daily curve replacing the linear
-  projection, forecast-framed actions). `calibrate:river-discharge` (weekly) derives per-LGA
-  `RIVER_DISCHARGE_MIN/MAX` from observed history so big rivers don't all peg at 100.
+  projection, forecast-framed actions). `calibrate:river-discharge` derives per-LGA
+  `RIVER_DISCHARGE_MIN/MAX` so big rivers don't all peg at 100 — now from GloFAS return periods
+  (see follow-up below).
 - **M4 — forecast-breach alerts.** `EvaluateForecastThresholds` → `ThresholdEvaluationService::
   evaluateForForecast`: a threshold on a forecast index fires on the peak, one open alert per
   config that follows the forecast and auto-resolves when it recedes or its target date passes.
   `ThresholdBreachedNotification` gets a forecast voice ("FORECAST: … projected to reach 62 in
   about 8 days … not a current reading"). `threshold_configs.watch_forecast`,
   `alerts.is_forecast` / `forecast_target_date` / `forecast_lead_days`.
-- **Follow-up — discharge history backfill.** `signals:backfill-discharge` (`--weeks=52`,
-  `--region=`) pulls a year of weekly GloFAS reanalysis per active reach in one Flood-API call
-  each, bucketed into the same weekly-mean rows the live service writes, so
-  `calibrate:river-discharge` sees a full seasonal range immediately instead of no-opping for a
-  month. Never overwrites a real reading, never dispatches `RegionSignalIngested`. Manual (like
-  `signals:backfill-history`): run once, then `calibrate:river-discharge`, then `scores:forecast`.
+- **Follow-up — return-period calibration.** `calibrate:river-discharge` (monthly) now pulls
+  ~40 years of GloFAS reanalysis per reach and sets `MIN` = 10th-percentile daily flow, `MAX` =
+  the empirical 20-year return level (`App\Services\Hydrology\ReturnPeriodEstimator`, Weibull
+  plotting position on the annual-maximum series). The 2/5/20-year levels go in the `MAX` bound's
+  metadata; status `reference_derived`. Supersedes the `observed max × 1.4` heuristic — decision
+  [0005](decisions/0005-river-discharge-return-periods.md). `signals:backfill-discharge` still
+  exists for observed weekly history but calibration no longer depends on it.
+- **Follow-up — calibration honesty is now structured data.** Every weight and bound carries a
+  `calibration_status` (`App\Support\CalibrationStatus`: placeholder / admin_tuned / reference /
+  reference_derived / outcome_validated), shown per-row in the admin Scoring config UI and
+  reduced to a one-line caveat on the score itself (`App\Support\IndexCalibration`). A test
+  (`CalibrationHonestyTest`) fails if a new index claims rigour without a source. `docs/decisions/`
+  now holds the dated ADR log. Decision [0003](decisions/0003-calibration-bounds-are-placeholders.md).
 - **Follow-up — forward-scoring the observed indices.** `RainfallForecastService` +
   `TemperatureForecastService` (Open-Meteo Forecast API, `PersistsForecastSeries` trait shared
   with the discharge one) added to `config('ingestion.forecast_sources')`. `ForecastScoringStrategy`

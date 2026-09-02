@@ -38,6 +38,7 @@ Schedule::command('scores:calculate')->dailyAt('04:00');
 // Forecast indices score in their own lane, from region_forecast_signals, right after the
 // observed pass — see BUILD_PLAN.md T4.
 Schedule::command('scores:forecast')->dailyAt('04:15');
-// Riverine Flood Forecast needs per-LGA discharge bounds or every big-river reach pegs at 100.
-// Weekly is plenty — the observed baseline moves slowly, and it no-ops until there's history.
-Schedule::command('calibrate:river-discharge')->weeklyOn(1, '03:45');
+// Riverine Flood Forecast bounds come from ~40 years of GloFAS reanalysis return periods.
+// Monthly is plenty — a return period barely moves year to year, and the command skips reaches
+// it has already calibrated (one Flood-API call each on the runs that do work).
+Schedule::command('calibrate:river-discharge')->monthlyOn(1, '03:45');

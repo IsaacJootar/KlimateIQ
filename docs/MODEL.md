@@ -155,33 +155,39 @@ Every bound is stored in `scoring_calibration_parameters` and can be overridden 
 without a code change — a region with a genuinely different climate baseline doesn't need the
 same 0–200mm rainfall ceiling as every other region.
 
-### River discharge is calibrated per LGA, and the method is deliberately rough
+### River discharge is calibrated per LGA, from return periods
 
-The Riverine Flood Forecast index measures a forecast discharge against the LGA's *own* normal
-flow, because the Niger at Lokoja and a seasonal stream in the north-east differ by a factor of
-a thousand — a shared `RIVER_DISCHARGE_MIN/MAX` would peg every big-river reach at 100 and never
-discriminate.
+The Riverine Flood Forecast index measures a forecast discharge against the LGA's *own* flow
+distribution, because the Niger at Lokoja and a seasonal stream in the north-east differ by a
+factor of a thousand — a shared `RIVER_DISCHARGE_MIN/MAX` would peg every big-river reach at 100
+and never discriminate.
 
-`calibrate:river-discharge` (scheduled weekly) derives those bounds from each region's own
-observed `RIVER_DISCHARGE` history:
+`calibrate:river-discharge` (scheduled monthly) pulls **~40 years of GloFAS reanalysis** (Open-Meteo
+Flood API, back to the mid-1980s) per reach and computes empirical flood **return levels**
+(`App\Services\Hydrology\ReturnPeriodEstimator`):
 
-```
-MAX = observed_max × 1.4      # headroom so a genuine flood clears the red line
-MIN = observed_min × 0.8      # a little below the observed floor so a dry spell reads green
-```
+- the highest flow of each year → the annual-maximum series (~40 values)
+- the 2-, 5- and 20-year levels via the Weibull plotting position
+- `MIN` = the reach's 10th-percentile daily flow (a dry-season low reads green)
+- `MAX` = the 20-year return level (a rare flood lands at the top of red)
+- the 2 / 5 / 20-year levels are kept in the `MAX` bound's `parameter_metadata`, status
+  `reference_derived`
 
-`signals:backfill-discharge --weeks=52` front-loads a year of weekly GloFAS reanalysis so this
-has a full seasonal record to work from, rather than no-opping for the first month of live
-ingestion.
+So a forecast at the 2-year flood level lands around amber, the 20-year level near 100 — the
+score *means* something. This **supersedes the earlier `observed max × 1.4` heuristic**
+(decision [0005](decisions/0005-river-discharge-return-periods.md)).
 
-**What this is not:** a hydrological return period. A real "1-in-10-year flood level" for a
-reach comes from a calibrated river model (channel geometry, gauge records, a rating curve) —
-that is a hydrology exercise, out of scope here. The `× 1.4` heuristic just means "clearly above
-anything this reach has done recently" — useful for ranking which LGAs to watch and roughly how
-close, not for issuing an official flood warning. A state hydrologist can hand-set a real bound
-per region and the weekly job will leave it alone (it only overwrites bounds whose
-`source_reference` is its own auto-note). Same honest framing as every other bound on the
-platform.
+**What this still is not:** a gauge-calibrated hydrological model (channel geometry, rating
+curves) — that is a national-flood-agency exercise. The return level is only as good as the
+record length: ~40 years supports a 2-to-20-year band, not a 100-year one. A state hydrologist
+can hand-set a real bound per region and the monthly job leaves it alone.
+
+## The decision log
+
+`docs/decisions/` records *why* the non-obvious engineering choices were made and *what would
+change them* — the transparent-formula choice, the band cutoffs, the calibration-honesty
+approach, the separate forecast lane, the return-period calibration. Read it before "cleaning
+up" anything in this file.
 
 ## Two scoring strategies, by design
 

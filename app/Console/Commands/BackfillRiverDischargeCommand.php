@@ -10,15 +10,15 @@ use App\Support\IngestionWindow;
 use Illuminate\Console\Command;
 
 /**
- * Front-loads a year of weekly RIVER_DISCHARGE history per LGA so calibrate:river-discharge has
- * a real distribution to work from (BUILD_PLAN.md T4). Without it, the weekly calibration run
- * no-ops until ~4 weeks of live ingestion have accrued, and even then it has only seen one
- * season's flow — a forecast index calibrated on dry-season discharge would never fire.
+ * Front-loads weekly RIVER_DISCHARGE history per LGA (BUILD_PLAN.md T4). Calibration no longer
+ * depends on this — `calibrate:river-discharge` pulls its own ~40-year reanalysis for return
+ * periods — but the observed weekly series still deepens the region_signals record that a
+ * future Flood Risk on discharge, and the anomaly baseline, would use.
  *
- * GloFAS reanalysis reaches back to 1984 through the Flood API's date-range mode, so one call
- * per region covers the whole window. Bucketed into the same 7-day periods and weekly-mean
- * semantics RiverDischargeIngestionService uses live. Never overwrites a real reading, and does
- * not dispatch RegionSignalIngested — this is historical context for calibration, not a live
+ * GloFAS reanalysis reaches back to the mid-1980s through the Flood API's date-range mode, so
+ * one call per region covers the whole window. Bucketed into the same 7-day periods and
+ * weekly-mean semantics RiverDischargeIngestionService uses live. Never overwrites a real
+ * reading, and does not dispatch RegionSignalIngested — this is historical context, not a live
  * reading that should retroactively trip an alert.
  */
 class BackfillRiverDischargeCommand extends Command

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\RegionScoringConfig;
 use App\Models\ScoringCalibrationParameter;
 use App\Models\ScoringIndex;
+use App\Support\CalibrationStatus;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -56,15 +57,24 @@ class ScoringConfigController extends Controller
             'calibration_max.*' => ['required', 'numeric', 'gt:0'],
         ]);
 
+        // A hand edit is a deliberate human choice — no longer a shipped placeholder. It doesn't
+        // downgrade a value that's already reference-derived or validated.
+        $tunedStatus = fn (?CalibrationStatus $current) => in_array(
+            $current, [CalibrationStatus::ReferenceDerived, CalibrationStatus::OutcomeValidated, CalibrationStatus::Reference], true
+        ) ? $current : CalibrationStatus::AdminTuned;
+
         foreach ($validated['weight'] as $signalTypeId => $weight) {
-            RegionScoringConfig::query()
+            $config = RegionScoringConfig::query()
                 ->where('index_id', $index->index_id)
                 ->where('signal_type_id', $signalTypeId)
                 ->whereNull('region_id')
-                ->update([
-                    'weight' => $weight,
-                    'enabled' => isset($validated['enabled'][$signalTypeId]),
-                ]);
+                ->first();
+
+            $config?->update([
+                'weight' => $weight,
+                'enabled' => isset($validated['enabled'][$signalTypeId]),
+                'calibration_status' => $tunedStatus($config->calibration_status),
+            ]);
         }
 
         foreach ($validated['calibration_min'] as $signalCode => $min) {
@@ -72,14 +82,14 @@ class ScoringConfigController extends Controller
 
             abort_if($max <= $min, 422, "{$signalCode}: max must be greater than min.");
 
-            ScoringCalibrationParameter::query()->updateOrCreate(
-                ['index_id' => $index->index_id, 'region_id' => null, 'parameter_key' => "{$signalCode}_MIN"],
-                ['parameter_value' => $min]
-            );
-            ScoringCalibrationParameter::query()->updateOrCreate(
-                ['index_id' => $index->index_id, 'region_id' => null, 'parameter_key' => "{$signalCode}_MAX"],
-                ['parameter_value' => $max]
-            );
+            foreach (['MIN' => $min, 'MAX' => $max] as $suffix => $value) {
+                $param = ScoringCalibrationParameter::query()->firstOrNew(
+                    ['index_id' => $index->index_id, 'region_id' => null, 'parameter_key' => "{$signalCode}_{$suffix}"]
+                );
+                $param->parameter_value = $value;
+                $param->calibration_status = $tunedStatus($param->calibration_status);
+                $param->save();
+            }
         }
 
         return back()->with('status', "{$index->name} scoring configuration saved. Takes effect on the next score calculation.");

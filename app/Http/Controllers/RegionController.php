@@ -12,6 +12,7 @@ use App\Models\ScoringIndex;
 use App\Models\SignalType;
 use App\Services\Ai\RegionScoreSummaryService;
 use App\Services\Facilities\FacilityProvider;
+use App\Support\IndexCalibration;
 use App\Support\IndexCoverage;
 use App\Support\RiskBand;
 use App\Support\ScoreDiagnosis;
@@ -173,6 +174,7 @@ class RegionController extends Controller
             'aiAvailable' => app(RegionScoreSummaryService::class)->isAvailable(),
             'recommendedAction' => IndexActionRecommendation::textFor($index->index_id, $latest?->score),
             'diagnosis' => $diagnosis,
+            'calibrationNote' => IndexCalibration::note($index),
             'trend' => $trend,
             'thisWeek' => $this->thisWeekReadings($region, $latest),
             'projection' => $this->projection($latest?->score !== null ? (float) $latest->score : null, $prior?->score !== null ? (float) $prior->score : null),
@@ -218,6 +220,7 @@ class RegionController extends Controller
             'index' => $index,
             'forecast' => $forecast,
             'forecastDaily' => $daily,
+            'calibrationNote' => IndexCalibration::note($index),
             'peakScore' => $peak,
             'recommendedAction' => IndexActionRecommendation::textFor($index->index_id, $peak),
             'facilities' => $this->facilitiesFor($index, $region, $peak),

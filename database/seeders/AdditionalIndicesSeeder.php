@@ -449,16 +449,29 @@ class AdditionalIndicesSeeder extends Seeder
         }
     }
 
+    // Bounds set from a cited public reference rather than a plain guess (see docs/MODEL.md).
+    private const CITED_BOUNDS = [
+        'OZONE' => 'WHO / US EPA "very unhealthy" ozone reference point.',
+        'NO2' => 'WHO / US EPA "very unhealthy" NO₂ reference point.',
+        'DUST' => 'WHO / US EPA "very unhealthy" particulate reference point.',
+    ];
+
     /**
      * @param  array<string, array{0: int|float, 1: int|float}>  $bounds
      */
     private function seedBounds(ScoringIndex $index, array $bounds): void
     {
         foreach ($bounds as $signalCode => [$min, $max]) {
+            $cited = self::CITED_BOUNDS[$signalCode] ?? null;
+
             foreach (['MIN' => $min, 'MAX' => $max] as $suffix => $value) {
                 ScoringCalibrationParameter::query()->firstOrCreate(
                     ['index_id' => $index->index_id, 'region_id' => null, 'parameter_key' => "{$signalCode}_{$suffix}"],
-                    ['parameter_value' => $value, 'source_reference' => 'Uncalibrated placeholder — tune once historical case data is available.']
+                    [
+                        'parameter_value' => $value,
+                        'source_reference' => $cited ?? 'Uncalibrated placeholder — tune once historical case data is available.',
+                        'calibration_status' => $cited ? 'reference' : 'placeholder',
+                    ]
                 );
             }
         }

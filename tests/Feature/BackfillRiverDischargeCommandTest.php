@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Events\RegionSignalIngested;
 use App\Models\Region;
 use App\Models\RegionSignal;
-use App\Models\ScoringCalibrationParameter;
 use App\Models\SignalType;
 use App\Models\User;
 use App\Models\UserRegionSubscription;
@@ -134,21 +133,5 @@ class BackfillRiverDischargeCommandTest extends TestCase
         $this->artisan('signals:backfill-discharge', ['--weeks' => 4, '--region' => $region->region_id])->assertSuccessful();
 
         $this->assertSame(0, RegionSignal::query()->where('signal_type_id', $this->dischargeId())->count());
-    }
-
-    public function test_the_backfill_feeds_calibration(): void
-    {
-        $region = $this->riverRegion();
-        $this->fakeFullSeries();
-
-        $this->artisan('signals:backfill-discharge', ['--weeks' => 8, '--region' => $region->region_id])->assertSuccessful();
-        $this->artisan('calibrate:river-discharge')->assertSuccessful();
-
-        $bound = ScoringCalibrationParameter::query()
-            ->where('region_id', $region->region_id)
-            ->where('parameter_key', 'RIVER_DISCHARGE_MAX')
-            ->value('parameter_value');
-
-        $this->assertNotNull($bound);
     }
 }

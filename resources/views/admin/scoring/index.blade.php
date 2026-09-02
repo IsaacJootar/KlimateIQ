@@ -37,7 +37,10 @@
                         @foreach ($configs as $config)
                             <div class="flex items-center gap-4 pb-4 border-b border-gray-100 dark:border-gray-700 last:border-0 last:pb-0">
                                 <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $config->signalType->name }}</p>
+                                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                        {{ $config->signalType->name }}
+                                        <x-calibration-chip :status="$config->calibration_status" class="ml-1.5 align-middle" />
+                                    </p>
                                     <p class="text-xs text-slate-400 dark:text-slate-500">
                                         {{ $config->signalType->code }} &middot; {{ $config->signalType->source }}
                                     </p>
@@ -64,10 +67,12 @@
                         seeded for every signal, including ones not used by {{ $index->name }} above — that's fine,
                         an unused signal's bounds simply aren't consulted for this index.
                     </p>
-                    <p class="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2 mb-6">
-                        Honesty check: only Vegetation's &minus;1 to 1 range is a real scientific standard (NDVI's
-                        own definition). The rest are climatologically plausible defaults for Nigeria, not numbers
-                        checked against real case data yet &mdash; see the ingestion guide for the full breakdown.
+                    <p class="text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 mb-6">
+                        Each bound carries a status: <strong>uncalibrated placeholder</strong> (a climatologically
+                        plausible guess), <strong>from a cited reference</strong> (PM / ozone / NO₂ / dust — WHO &amp;
+                        EPA points), <strong>derived from real data</strong> (river discharge — GloFAS reanalysis
+                        return periods), <strong>set by an admin</strong>, or <strong>validated against outcomes</strong>
+                        (none yet — that's the T8 workstream). See <code>docs/MODEL.md</code>.
                     </p>
 
                     <div class="space-y-4">
@@ -78,7 +83,13 @@
                             @endphp
                             <div class="flex items-center gap-4 pb-4 border-b border-gray-100 dark:border-gray-700 last:border-0 last:pb-0">
                                 <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $signalCode }}</p>
+                                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                        {{ $signalCode }}
+                                        <x-calibration-chip :status="($min ?? $max)?->calibration_status" class="ml-1.5 align-middle" />
+                                    </p>
+                                    @if (($min ?? $max)?->source_reference)
+                                        <p class="text-xs text-slate-400 dark:text-slate-500">{{ ($min ?? $max)->source_reference }}</p>
+                                    @endif
                                 </div>
                                 <div class="w-28">
                                     <x-input-label class="text-xs">Min</x-input-label>

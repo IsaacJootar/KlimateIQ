@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\CalibrationStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -17,6 +18,7 @@ class RegionScoringConfig extends Model
         'vulnerability_weight',
         'higher_is_worse',
         'enabled',
+        'calibration_status',
     ];
 
     protected $casts = [
@@ -24,6 +26,7 @@ class RegionScoringConfig extends Model
         'vulnerability_weight' => 'decimal:4',
         'higher_is_worse' => 'boolean',
         'enabled' => 'boolean',
+        'calibration_status' => CalibrationStatus::class,
     ];
 
     public function index(): BelongsTo
