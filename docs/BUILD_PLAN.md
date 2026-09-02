@@ -181,9 +181,16 @@ Shipped in four milestones, forecast and observed data in **fully separate table
   `ThresholdBreachedNotification` gets a forecast voice ("FORECAST: … projected to reach 62 in
   about 8 days … not a current reading"). `threshold_configs.watch_forecast`,
   `alerts.is_forecast` / `forecast_target_date` / `forecast_lead_days`.
+- **Follow-up — discharge history backfill.** `signals:backfill-discharge` (`--weeks=52`,
+  `--region=`) pulls a year of weekly GloFAS reanalysis per active reach in one Flood-API call
+  each, bucketed into the same weekly-mean rows the live service writes, so
+  `calibrate:river-discharge` sees a full seasonal range immediately instead of no-opping for a
+  month. Never overwrites a real reading, never dispatches `RegionSignalIngested`. Manual (like
+  `signals:backfill-history`): run once, then `calibrate:river-discharge`, then `scores:forecast`.
 
-Data: Open-Meteo Flood API (GloFAS discharge forecast) — free. The Open-Meteo Forecast API (for
-forward-scoring the *observed* indices too) is a config add on this lane later, not built.
+Data: Open-Meteo Flood API (GloFAS discharge forecast + reanalysis) — free. The Open-Meteo
+Forecast API (for forward-scoring the *observed* indices too) is a config add on this lane
+later, not built.
 
 ### T5 — Probabilistic scoring · Ready · size L
 
