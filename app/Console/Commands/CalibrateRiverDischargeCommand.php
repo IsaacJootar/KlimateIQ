@@ -7,14 +7,15 @@ use App\Models\ScoringCalibrationParameter;
 use App\Models\ScoringIndex;
 use App\Services\Hydrology\ReturnPeriodEstimator;
 use App\Services\Ingestion\OpenMeteoFloodClient;
+use App\Support\CalibrationStatus;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 
 /**
- * Sets per-LGA RIVER_DISCHARGE bounds for the Riverine Flood Forecast index from ~40 years of
- * GloFAS reanalysis (Open-Meteo Flood API, back to the mid-1980s), so the score means something
- * defensible: a forecast at the 2-year flood level lands around amber, the 20-year level around
- * the top of red.
+ * Sets per-LGA RIVER_DISCHARGE bounds for the Riverine Flood Forecast index from ~25 years of
+ * GloFAS reanalysis (Open-Meteo Flood API — Nigerian reaches begin ~1997), so the score means
+ * something defensible: a forecast at the 2-year flood level lands around amber, the 20-year
+ * level around the top of red.
  *
  *   MIN = the reach's 10th-percentile daily flow (a dry-season low reads green)
  *   MAX = the empirical 20-year return level (annual maxima, Weibull plotting position)
@@ -24,7 +25,9 @@ use Illuminate\Support\Carbon;
  * (channel geometry, gauge records, a rating curve) — that's a separate, larger exercise — but
  * it is a real return-period estimate, not the "observed max × 1.4" heuristic it replaces.
  *
- * Idempotent. One Flood-API call per reach; run monthly (return periods barely move). Never
+ * The history is pulled in ~8-year chunks (a multi-decade request over 30+ reaches is slow and
+ * flaky). Reaches that can't get enough record use a median-across-reaches system-wide fallback.
+ * Idempotent, runs monthly (return periods barely move), skips already-done reaches. Never
  * overwrites a bound an admin set or a real validation produced. `--refresh` recomputes anyway.
  */
 class CalibrateRiverDischargeCommand extends Command
@@ -75,18 +78,14 @@ class CalibrateRiverDischargeCommand extends Command
             }
 
             $series = $this->pullInChunks($flood, $region, $rangeStart, $rangeEnd);
-            if ($series === null) {
+            if ($series === null || count($estimator->annualMaxima($series)) < $minYears) {
                 $thin++;
+                $this->dropStalePerRegionBounds($index->index_id, $region->region_id);
 
                 continue;
             }
 
             $annualMaxima = $estimator->annualMaxima($series);
-            if (count($annualMaxima) < $minYears) {
-                $thin++;
-
-                continue;
-            }
 
             $rl = $estimator->returnLevels($annualMaxima, [2, 5, 20]);
             $low = $estimator->lowFlow($series);
@@ -154,6 +153,24 @@ class CalibrateRiverDischargeCommand extends Command
         }
 
         return $merged === [] ? null : $merged;
+    }
+
+    /**
+     * A reach we can't get enough reanalysis for is better off using the data-derived
+     * system-wide fallback than a stale per-region bound from the old "observed max × 1.4"
+     * calibration. Drop those; leave a hand-set or reanalysis-derived one alone.
+     */
+    private function dropStalePerRegionBounds(int $indexId, int $regionId): void
+    {
+        ScoringCalibrationParameter::query()
+            ->where('index_id', $indexId)->where('region_id', $regionId)
+            ->whereIn('parameter_key', ['RIVER_DISCHARGE_MIN', 'RIVER_DISCHARGE_MAX'])
+            ->get()
+            ->each(function (ScoringCalibrationParameter $param) {
+                if ($this->isOursToOverwrite($param) && $param->calibration_status !== CalibrationStatus::ReferenceDerived) {
+                    $param->delete();
+                }
+            });
     }
 
     private function alreadyReanalysisCalibrated(int $indexId, int $regionId): bool
