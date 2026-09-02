@@ -114,10 +114,11 @@ class ForecastSignalIngestionTest extends TestCase
             'period_start' => '2026-08-17', 'period_end' => '2026-08-23', 'value' => 10, 'source' => 'test', 'ingested_at' => now(),
         ]);
 
-        $this->artisan('signals:ingest-forecast', ['--sync' => true, '--region' => $region->region_id, '--horizon' => 1])
+        $this->artisan('signals:ingest-forecast', ['--sync' => true, '--region' => $region->region_id, '--horizon' => 1, '--source' => 'RIVER_DISCHARGE'])
             ->assertSuccessful();
 
-        $this->assertSame(2, RegionForecastSignal::query()->count());
+        $dischargeId = SignalType::query()->where('code', 'RIVER_DISCHARGE')->value('signal_type_id');
+        $this->assertSame(2, RegionForecastSignal::query()->where('signal_type_id', $dischargeId)->count());
     }
 
     public function test_the_forecast_source_is_registered_and_the_signal_type_is_seeded(): void

@@ -176,6 +176,10 @@ class RegionController extends Controller
             'trend' => $trend,
             'thisWeek' => $this->thisWeekReadings($region, $latest),
             'projection' => $this->projection($latest?->score !== null ? (float) $latest->score : null, $prior?->score !== null ? (float) $prior->score : null),
+            // A real forward forecast for this observed index, when its signals have one
+            // (Flood Risk on forecast rainfall, Heat Stress on forecast temperature) — replaces
+            // the naive linear projection in "Where it's heading". BUILD_PLAN.md T4.
+            'forecastTrajectory' => $this->forecastTrajectory($index, $region, $latest?->score !== null ? (float) $latest->score : null),
             // Concrete crops in a water-sensitive stage here right now — only for the agriculture
             // indices, and only when the score is amber/red (there's nothing to act on below that).
             'cropLine' => $this->cropLineFor($index, $region, $latest?->score !== null ? (float) $latest->score : null),
@@ -222,6 +226,7 @@ class RegionController extends Controller
             'latest' => null,
             'breakdown' => [],
             'signalNames' => SignalType::codeToName(),
+            'forecastTrajectory' => null,
         ]);
     }
 
@@ -361,6 +366,54 @@ class RegionController extends Controller
         $band = $delta > 0 ? ($edge === 67 ? 'high risk (red)' : 'moderate risk (amber)') : ($edge === 34 ? 'low risk (green)' : 'moderate risk (amber)');
 
         return "If it keeps moving at this rate it reaches {$band} within about two weeks.";
+    }
+
+    /**
+     * The forward forecast for an observed index whose signals include a forecastable one
+     * (region_forecast_scores, written by scores:forecast). Returns a plain sentence + the
+     * daily 0–100 score series for a mini-chart, or null when there's no forecast on file.
+     *
+     * @return array{line: string, daily: Collection<int, array{date: string, lead_days: int, score: float, band: string}>, peak_date: ?string, band: string}|null
+     */
+    private function forecastTrajectory(ScoringIndex $index, Region $region, ?float $currentScore): ?array
+    {
+        $forecast = RegionForecastScore::query()
+            ->where('index_id', $index->index_id)
+            ->where('region_id', $region->region_id)
+            ->first();
+
+        if ($forecast === null || $forecast->score === null) {
+            return null;
+        }
+
+        $peak = (int) round((float) $forecast->score);
+        $band = RiskBand::forScore((float) $forecast->score);
+        $lead = (int) $forecast->lead_days_to_peak;
+        $bandPlain = ['green' => 'low risk', 'amber' => 'moderate risk', 'red' => 'high risk', 'none' => 'no forecast'][$band];
+
+        $when = match (true) {
+            $lead <= 0 => 'later today',
+            $lead === 1 => 'tomorrow',
+            default => 'around '.$forecast->peak_date?->format('M j').', about '.$lead.' days out',
+        };
+
+        $line = $currentScore !== null && abs($peak - $currentScore) < 6
+            ? "Forecast to hold near its current level over the next {$forecast->horizon_days} days."
+            : "Forecast to reach {$peak} ({$bandPlain}) {$when}.";
+
+        $daily = collect($forecast->breakdown['daily'] ?? [])->map(fn (array $d) => [
+            'date' => $d['date'],
+            'lead_days' => $d['lead_days'],
+            'score' => (float) $d['score'],
+            'band' => RiskBand::forScore((float) $d['score']),
+        ])->values();
+
+        return [
+            'line' => $line,
+            'daily' => $daily,
+            'peak_date' => $forecast->peak_date?->toDateString(),
+            'band' => $band,
+        ];
     }
 
     public function generateSummary(Region $region, RegionScoreSummaryService $summarizer): RedirectResponse

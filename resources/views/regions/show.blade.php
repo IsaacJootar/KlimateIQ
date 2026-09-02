@@ -260,6 +260,45 @@
                     <span class="step-badge">5</span>
                     <h3 class="font-semibold text-gray-800 dark:text-gray-200">Where it's heading</h3>
                 </div>
+
+                @if ($forecastTrajectory)
+                    @php
+                        $fc = $forecastTrajectory['daily'];
+                        $fw = 640; $fh = 130; $fpad = 12;
+                        $fcoords = $fc->values()->map(function ($d, $i) use ($fc, $fw, $fh, $fpad) {
+                            $x = $fc->count() > 1 ? $fpad + ($i / ($fc->count() - 1)) * ($fw - 2 * $fpad) : $fw / 2;
+                            $y = $fh - $fpad - (($d['score'] / 100) * ($fh - 2 * $fpad));
+                            return ['x' => round($x, 1), 'y' => round($y, 1), 'd' => $d];
+                        });
+                        $fline = $fcoords->map(fn ($c) => "{$c['x']},{$c['y']}")->implode(' ');
+                        $amberY = $fh - $fpad - (34 / 100) * ($fh - 2 * $fpad);
+                        $redY = $fh - $fpad - (67 / 100) * ($fh - 2 * $fpad);
+                    @endphp
+                    <p class="text-sm leading-relaxed text-gray-800 dark:text-gray-200">
+                        {{ $trend['label'] }}. <span class="font-semibold">{{ $forecastTrajectory['line'] }}</span>
+                    </p>
+                    @if ($fc->count() > 1)
+                        <div class="mt-3 overflow-x-auto">
+                            <svg viewBox="0 0 {{ $fw }} {{ $fh }}" class="w-full" style="max-width: {{ $fw }}px;">
+                                <line x1="{{ $fpad }}" y1="{{ $redY }}" x2="{{ $fw - $fpad }}" y2="{{ $redY }}" stroke="#DC2626" stroke-width="1" stroke-dasharray="3 3" stroke-opacity="0.5" />
+                                <line x1="{{ $fpad }}" y1="{{ $amberY }}" x2="{{ $fw - $fpad }}" y2="{{ $amberY }}" stroke="#D97706" stroke-width="1" stroke-dasharray="3 3" stroke-opacity="0.5" />
+                                <polyline points="{{ $fline }}" fill="none" stroke="#0D9488" stroke-width="2.5" stroke-linejoin="round" />
+                                @foreach ($fcoords as $c)
+                                    <circle cx="{{ $c['x'] }}" cy="{{ $c['y'] }}"
+                                            r="{{ $c['d']['date'] === $forecastTrajectory['peak_date'] ? 4 : 2.5 }}"
+                                            fill="{{ $c['d']['date'] === $forecastTrajectory['peak_date'] ? '#0F766E' : '#0D9488' }}" />
+                                @endforeach
+                            </svg>
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>{{ \Illuminate\Support\Carbon::parse($fc->first()['date'])->format('M j') }}</span>
+                                <span>{{ \Illuminate\Support\Carbon::parse($fc->last()['date'])->format('M j') }}</span>
+                            </div>
+                        </div>
+                    @endif
+                    <p class="mt-2 text-xs text-slate-400">
+                        Forecast from the Open-Meteo model — dashed lines mark the amber (34) and red (67) bands. This is a forecast, not a current reading.
+                    </p>
+                @else
                 <p class="text-sm leading-relaxed text-gray-800 dark:text-gray-200">
                     {{ $trend['label'] }}.
                     @if ($projection) {{ $projection }} @endif
@@ -290,6 +329,7 @@
                     </div>
                 @else
                     <p class="mt-2 text-xs text-slate-400">Not enough history yet to chart a trend.</p>
+                @endif
                 @endif
             </section>
 

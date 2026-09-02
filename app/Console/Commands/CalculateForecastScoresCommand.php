@@ -8,8 +8,11 @@ use App\Services\Scoring\RegionForecastScoringService;
 use Illuminate\Console\Command;
 
 /**
- * The forecast counterpart of scores:calculate (BUILD_PLAN.md T4). Scores every forecast index
- * for every active region from the forecast signals currently on file, as of today.
+ * The forecast counterpart of scores:calculate (BUILD_PLAN.md T4). Scores every forecast index —
+ * the dedicated ones (Riverine Flood Forecast) and every observed index that weights a
+ * forecastable signal (Flood Risk, Heat Stress, …) — for every active region, from the forecast
+ * signals currently on file, as of today. Writes region_forecast_scores; never touches
+ * region_scores.
  */
 class CalculateForecastScoresCommand extends Command
 {
@@ -25,9 +28,13 @@ class CalculateForecastScoresCommand extends Command
             ? Region::query()->where('region_id', $this->option('region'))->get()
             : Region::query()->active()->get();
 
+        $forecastSignalCodes = collect(config('ingestion.forecast_sources', []))
+            ->map(fn ($class) => app($class)->signalTypeCode())
+            ->all();
+
         $indices = $this->option('index')
             ? ScoringIndex::query()->where('code', $this->option('index'))->get()
-            : ScoringIndex::query()->forecast()->get();
+            : ScoringIndex::query()->forwardScorable($forecastSignalCodes)->get();
 
         $scored = 0;
 

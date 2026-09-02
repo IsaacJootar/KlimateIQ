@@ -97,6 +97,8 @@ class ForecastLaneIsolationTest extends TestCase
         $html = $this->actingAs($user)->get(route('regions.show', ['region' => $region, 'index' => 'FLOOD_RISK']))->getContent();
         $main = substr($html, (int) strpos($html, '<main'), (int) strpos($html, '</main>') - (int) strpos($html, '<main'));
         $main = preg_replace('/value="[A-Za-z0-9]{40}"/', 'value="TOKEN"', $main);
+        // "Calculated N seconds ago" drifts between the two renders on a slow run — not a leak.
+        $main = preg_replace('/Calculated .*? ago/', 'Calculated SOME time ago', $main);
 
         return (string) preg_replace('/\s+/', ' ', $main);
     }

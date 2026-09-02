@@ -5,6 +5,7 @@ namespace App\Services\Scoring;
 use App\Models\Region;
 use App\Models\RegionForecastSignal;
 use App\Models\RegionScoringConfig;
+use App\Models\RegionSignal;
 use App\Models\ScoringIndex;
 use App\Services\Scoring\Concerns\NormalisesSignals;
 use Illuminate\Support\Carbon;
@@ -19,6 +20,14 @@ use Illuminate\Support\Carbon;
  * forecast discharge, mapped against the LGA's normal-flow range" — the "threshold on forecast
  * discharge" the build plan describes, without needing a separate code path for the 1-signal
  * case.
+ *
+ * For an observed index being forward-scored (Flood Risk on forecast rainfall, Heat Stress on
+ * forecast temperature) not every weighted signal has a forecast series — standing water is a
+ * near-static occurrence layer, elevation is fixed, vegetation is a 16-day composite. Those fall
+ * back to the region's latest observed reading held flat across the horizon, so the forecast
+ * score is the same formula and weights as the observed one with only the forecastable signal
+ * swapped — the two numbers stay directly comparable. The index still needs at least one signal
+ * with a real forecast series, or it isn't forward-scored at all.
  */
 class ForecastScoringStrategy
 {
@@ -58,6 +67,16 @@ class ForecastScoringStrategy
             return new ForecastScoreResult(null, null, null, 0, [], 'forecast-formula-v1');
         }
 
+        // Weighted signals with no forecast series of their own fall back to the region's latest
+        // observed reading, held flat across the horizon (see the class docblock).
+        $observedFallback = RegionSignal::query()
+            ->where('region_id', $region->region_id)
+            ->whereIn('signal_type_id', $configs->keys()->reject(fn ($id) => $series->has($id)))
+            ->orderByDesc('period_start')
+            ->get()
+            ->groupBy('signal_type_id')
+            ->map(fn ($rows) => (float) $rows->first()->value);
+
         $daily = [];
         foreach ($days as $date) {
             $weightedSum = 0.0;
@@ -65,7 +84,8 @@ class ForecastScoringStrategy
             $signals = [];
 
             foreach ($configs as $config) {
-                $value = $series->get($config->signal_type_id)?->get($date);
+                $value = $series->get($config->signal_type_id)?->get($date)
+                    ?? $observedFallback->get($config->signal_type_id);
                 if ($value === null) {
                     continue;
                 }

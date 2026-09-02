@@ -187,10 +187,20 @@ Shipped in four milestones, forecast and observed data in **fully separate table
   `calibrate:river-discharge` sees a full seasonal range immediately instead of no-opping for a
   month. Never overwrites a real reading, never dispatches `RegionSignalIngested`. Manual (like
   `signals:backfill-history`): run once, then `calibrate:river-discharge`, then `scores:forecast`.
+- **Follow-up — forward-scoring the observed indices.** `RainfallForecastService` +
+  `TemperatureForecastService` (Open-Meteo Forecast API, `PersistsForecastSeries` trait shared
+  with the discharge one) added to `config('ingestion.forecast_sources')`. `ForecastScoringStrategy`
+  gains an observed-signal fallback — a weighted signal with no forecast series of its own
+  (standing water, elevation, vegetation) is held flat at its latest observed value, so the
+  forward score is the same formula and weights as the observed one with only the forecastable
+  signal swapped. `ScoringIndex::scopeForwardScorable()` and `scores:forecast` now also score
+  every observed index that weights a forecastable signal (Flood Risk, Heat Stress, Malaria,
+  Drought, Composite). On the observed region page, "Where it's heading" (step 5) shows that real
+  forward forecast — peak, lead time, daily curve — instead of the naive linear projection when a
+  forecast row exists; the observed score and 6-step story are untouched.
 
-Data: Open-Meteo Flood API (GloFAS discharge forecast + reanalysis) — free. The Open-Meteo
-Forecast API (for forward-scoring the *observed* indices too) is a config add on this lane
-later, not built.
+Data: Open-Meteo Flood API (GloFAS discharge forecast + reanalysis) and Open-Meteo Forecast API
+(rainfall / temperature forward series) — both free.
 
 ### T5 — Probabilistic scoring · Ready · size L
 

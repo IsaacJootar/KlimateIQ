@@ -43,6 +43,27 @@ class ScoringIndex extends Model
         return $query->where('is_forecast', true);
     }
 
+    /**
+     * Every index scores:forecast should run: the dedicated forecast indices, plus any observed
+     * index that weights at least one signal with a forecast source (Flood Risk on forecast
+     * rainfall, Heat Stress on forecast temperature). BUILD_PLAN.md T4.
+     *
+     * @param  array<string>  $forecastSignalCodes  signal_types.code that have a ForecastIngestionService
+     */
+    public function scopeForwardScorable($query, array $forecastSignalCodes)
+    {
+        return $query->where(function ($q) use ($forecastSignalCodes) {
+            $q->where('is_forecast', true)
+                ->orWhereIn('index_id', function ($sub) use ($forecastSignalCodes) {
+                    $sub->select('rsc.index_id')
+                        ->from('region_scoring_configs as rsc')
+                        ->join('signal_types as st', 'st.signal_type_id', '=', 'rsc.signal_type_id')
+                        ->where('rsc.enabled', true)
+                        ->whereIn('st.code', $forecastSignalCodes);
+                });
+        });
+    }
+
     public function scoringConfigs(): HasMany
     {
         return $this->hasMany(RegionScoringConfig::class, 'index_id', 'index_id');

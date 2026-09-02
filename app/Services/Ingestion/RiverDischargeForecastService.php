@@ -3,11 +3,9 @@
 namespace App\Services\Ingestion;
 
 use App\Models\Region;
-use App\Models\RegionForecastSignal;
-use App\Models\SignalType;
+use App\Services\Ingestion\Concerns\PersistsForecastSeries;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 /**
  * River-discharge forecast (m³/s) via the Open-Meteo Flood API / GloFAS — the forecast lane
@@ -22,6 +20,8 @@ use Illuminate\Support\Facades\DB;
  */
 class RiverDischargeForecastService implements ForecastIngestionService
 {
+    use PersistsForecastSeries;
+
     public const SIGNAL_CODE = 'RIVER_DISCHARGE';
 
     public function __construct(private readonly OpenMeteoFloodClient $flood) {}
@@ -40,49 +40,6 @@ class RiverDischargeForecastService implements ForecastIngestionService
             return collect();
         }
 
-        $signalType = SignalType::query()->where('code', self::SIGNAL_CODE)->firstOrFail();
-        $now = now()->toDateTimeString();
-        $metadata = json_encode(['series' => $series], JSON_THROW_ON_ERROR);
-
-        $rows = [];
-        foreach ($series as $date => $value) {
-            $targetDate = Carbon::parse($date)->startOfDay();
-
-            // A flood API window can include days before the issue date — keep only the forward series.
-            if ($targetDate->lt($issuedAt)) {
-                continue;
-            }
-
-            $rows[] = [
-                'region_id' => $region->region_id,
-                'signal_type_id' => $signalType->signal_type_id,
-                'forecast_issued_at' => $issuedAt->toDateString(),
-                'target_date' => $targetDate->toDateString(),
-                'lead_days' => (int) $issuedAt->diffInDays($targetDate),
-                'value' => round($value, 4),
-                'raw_metadata' => $metadata,
-                'source' => 'Open-Meteo Flood API (GloFAS)',
-                'ingested_at' => $now,
-            ];
-        }
-
-        if ($rows === []) {
-            return collect();
-        }
-
-        DB::transaction(function () use ($region, $signalType, $rows) {
-            RegionForecastSignal::query()
-                ->where('region_id', $region->region_id)
-                ->where('signal_type_id', $signalType->signal_type_id)
-                ->delete();
-
-            RegionForecastSignal::query()->insert($rows);
-        });
-
-        return RegionForecastSignal::query()
-            ->where('region_id', $region->region_id)
-            ->where('signal_type_id', $signalType->signal_type_id)
-            ->orderBy('target_date')
-            ->get();
+        return $this->persistForecastSeries($region, self::SIGNAL_CODE, 'Open-Meteo Flood API (GloFAS)', $issuedAt, $series);
     }
 }

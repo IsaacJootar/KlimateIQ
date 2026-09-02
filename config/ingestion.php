@@ -10,11 +10,13 @@ use App\Services\Ingestion\ElevationIngestionService;
 use App\Services\Ingestion\EvapotranspirationIngestionService;
 use App\Services\Ingestion\HumidityIngestionService;
 use App\Services\Ingestion\PopulationExposureIngestionService;
+use App\Services\Ingestion\RainfallForecastService;
 use App\Services\Ingestion\RainfallIngestionService;
 use App\Services\Ingestion\RiverDischargeForecastService;
 use App\Services\Ingestion\RiverDischargeIngestionService;
 use App\Services\Ingestion\SoilMoistureIngestionService;
 use App\Services\Ingestion\StandingWaterIngestionService;
+use App\Services\Ingestion\TemperatureForecastService;
 use App\Services\Ingestion\TemperatureIngestionService;
 use App\Services\Ingestion\VegetationIngestionService;
 use App\Services\Ingestion\WindIngestionService;
@@ -65,6 +67,8 @@ return [
     */
     'forecast_sources' => [
         RiverDischargeForecastService::class,
+        RainfallForecastService::class,
+        TemperatureForecastService::class,
     ],
 
 ];

@@ -28,14 +28,14 @@ class ApiCapacityLimits
     {
         return [
             'RAINFALL' => [
-                'provider' => 'NASA POWER (primary), Open-Meteo (fallback)',
+                'provider' => 'NASA POWER (primary), Open-Meteo (fallback + forecast)',
                 'dailyLimit' => 10000,
-                'recommendation' => 'Fallback traffic only hits Open-Meteo\'s 10,000/day limit when NASA POWER is down — approaching it means NASA POWER itself has been failing a lot, not a scale problem. Self-hosting Open-Meteo (AGPLv3, open-source) removes the ceiling entirely once real usage justifies it — see docs/INGESTION_GUIDE.md.',
+                'recommendation' => 'Observed fallback traffic only hits Open-Meteo\'s 10,000/day limit when NASA POWER is down. The forecast lane (Open-Meteo Forecast API, 1 call/region/day, feeds the forward score of Flood/Malaria/Drought) shares that same quota — still a rounding error against 774 LGAs. Self-hosting Open-Meteo (AGPLv3) removes the ceiling once real usage justifies it — see docs/INGESTION_GUIDE.md.',
             ],
             'TEMPERATURE' => [
-                'provider' => 'NASA POWER (primary), Open-Meteo (fallback)',
+                'provider' => 'NASA POWER (primary), Open-Meteo (fallback + forecast)',
                 'dailyLimit' => 10000,
-                'recommendation' => 'Same fallback path as Rainfall — see that recommendation.',
+                'recommendation' => 'Same fallback path as Rainfall, plus a 1 call/region/day forecast pull (Open-Meteo Forecast API) that feeds the forward score of Heat Stress and Composite — see that recommendation.',
             ],
             'AIR_QUALITY_PM25' => [
                 'provider' => 'Open-Meteo Air Quality API',
