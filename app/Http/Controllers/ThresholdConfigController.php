@@ -21,9 +21,23 @@ class ThresholdConfigController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
+        // The region picker is scoped to the user's own coverage — thresholds only make sense on
+        // regions they watch. With no coverage set, fall back to every active region (the ones
+        // that actually have data to threshold on), not all 774 seeded LGAs.
+        $regionIds = Auth::user()->regionSubscriptions()->pluck('region_id');
+        $regions = Region::query()
+            ->when(
+                $regionIds->isNotEmpty(),
+                fn ($q) => $q->whereIn('region_id', $regionIds),
+                fn ($q) => $q->active(),
+            )
+            ->orderBy('name')
+            ->get();
+
         return view('thresholds.index', [
             'thresholds' => $thresholds,
-            'regions' => Region::query()->orderBy('name')->get(),
+            'regions' => $regions,
+            'hasRegionCoverage' => $regionIds->isNotEmpty(),
             'indices' => ScoringIndex::all(),
             'signalTypes' => SignalType::all(),
         ]);

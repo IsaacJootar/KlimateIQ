@@ -23,10 +23,19 @@
                         <div>
                             <x-input-label for="region_id">Region</x-input-label>
                             <x-select-input id="region_id" name="region_id" required>
-                                @foreach ($regions as $region)
+                                @forelse ($regions as $region)
                                     <option value="{{ $region->region_id }}">{{ $region->name }}, {{ $region->state }}</option>
-                                @endforeach
+                                @empty
+                                    <option value="" disabled>No regions available yet</option>
+                                @endforelse
                             </x-select-input>
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                @if ($hasRegionCoverage)
+                                    Your coverage regions. <a href="{{ route('coverage.edit') }}" class="link-nav">Change coverage</a> to add more.
+                                @else
+                                    Every active region. <a href="{{ route('coverage.edit') }}" class="link-nav">Set your coverage</a> to shorten this list.
+                                @endif
+                            </p>
                         </div>
 
                         <div>

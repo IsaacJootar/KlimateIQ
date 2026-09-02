@@ -259,6 +259,16 @@ class CoverageSectorTest extends TestCase
         $this->actingAs($user)->get(route('dashboard'))->assertOk()->assertSee('Malaria Risk Index');
     }
 
+    public function test_the_headline_cards_sit_above_the_index_switcher_on_the_dashboard(): void
+    {
+        $user = User::factory()->create();
+        $this->saveWorkspace($user, ['sector_ids' => $this->sectorIds(['PUBLIC_HEALTH', 'AGRICULTURE'])]);
+
+        $this->actingAs($user)->get(route('dashboard'))
+            ->assertOk()
+            ->assertSeeInOrder(['High Risk', 'Active Thresholds', 'Showing', 'Malaria Risk Index'], false);
+    }
+
     // Clarity Pass B4 — the nav sector switcher pins a "current" sector.
 
     private function pinSector(User $user, string $code): void

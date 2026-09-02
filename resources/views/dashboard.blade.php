@@ -42,12 +42,6 @@
                 </div>
             @endif
 
-            <x-index-tabs :groups="$indexGroups" :active="$defaultIndex" route-name="dashboard" hide-when-single />
-
-            @if ($defaultIndex->description)
-                <p class="-mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-3xl">{{ $defaultIndex->description }}</p>
-            @endif
-
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <a href="{{ route('regions.index') }}" class="metric-card metric-teal">
                     <div class="metric-card-label">{{ $hasCoverage ? 'Your Regions' : 'Active Regions' }}</div>
@@ -70,6 +64,18 @@
                     <div class="metric-card-sub">configured</div>
                 </a>
             </div>
+
+            {{-- The index switcher sits below the headline cards — pick a different risk to
+                 re-scope everything on the page. --}}
+            @if ($indexGroups->flatMap(fn ($g) => $g['indices'])->count() > 1)
+                <div>
+                    <p class="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Showing</p>
+                    <x-index-tabs :groups="$indexGroups" :active="$defaultIndex" route-name="dashboard" hide-when-single />
+                    @if ($defaultIndex->description)
+                        <p class="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-3xl">{{ $defaultIndex->description }}</p>
+                    @endif
+                </div>
+            @endif
 
             <div class="section-card overflow-hidden">
                 <div class="section-card-header">

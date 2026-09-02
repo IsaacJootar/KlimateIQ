@@ -7,6 +7,45 @@ reading through a fixed, auditable calculation. There is no black box: `Weighted
 (the class that computes every score today) is under 160 lines and has no training step, no
 opaque parameters, and no dependency on data we don't already show you.
 
+## How trustworthy are these numbers (read this first)
+
+Every score on the platform is **transparent and reproducible** — you can always see which
+signal drove it and recompute it by hand. That is not the same as **validated**. Two honest
+caveats that a future team must not lose:
+
+1. **The weights are engineering defaults, not fitted parameters.** "Rainfall 0.4, Standing
+   Water 0.4, Elevation 0.2" for Flood Risk is a sensible starting point chosen by a person, not
+   a coefficient derived from flood outcome data. The same is true for every index. They are
+   safe to tune from the admin UI; the seeders never overwrite a tuned value.
+
+2. **Almost every calibration bound is an uncalibrated placeholder.** The `min`/`max` a signal
+   is normalised against (below) is a climatologically-plausible range, not a threshold tied to
+   a measured health or damage outcome. The two exceptions are the PM2.5 / PM10 bounds, which
+   use a cited public-health reference (US EPA AQI "Hazardous"). Every bound row in
+   `scoring_calibration_parameters` that was auto-generated carries a `source_reference` saying
+   so.
+
+Closing both gaps is the **validation workstream** (`docs/BUILD_PLAN.md` T8): train / calibrate
+against historical outcome data (Malaria Atlas Project, DHS-MIS, flood records). The engineering
+seam for that is already built — see "Two scoring strategies" below — so it is a data exercise,
+not a rewrite. Until then, the product presents scores as a **prioritisation aid**, never as a
+probability or a guarantee, and says so in the UI.
+
+## The bands
+
+One cut, used everywhere a score becomes green / amber / red (`App\Support\RiskBand`):
+
+| Score | Band |
+|---|---|
+| `null` (no data) | none |
+| 0 – 33 | green |
+| 34 – 66 | amber |
+| 67 – 100 | red |
+
+These cutoffs are a **product choice**, not derived — even thirds of the 0–100 scale, chosen so
+"amber" and "red" line up with how an officer would triage. Region cards, the dashboard's
+high-risk count, forecast peaks and the per-band action text all read this one function.
+
 ## Why this design, deliberately
 
 Field officers and emergency responders need to be able to defend a decision — "the score is 82
@@ -64,6 +103,13 @@ score breakdown shown alongside every score in the product.
 
 ## Every index's real weights
 
+The **source of truth** is the seeders — `ReferenceDataSeeder::seedScoringConfigs()` for the
+original six, `AdditionalIndicesSeeder` for everything since — plus any per-region override in
+`region_scoring_configs`. This table is a snapshot for readers; if it disagrees with the
+seeders, the seeders are right.
+
+The original six:
+
 | Index | Signals and weights |
 |---|---|
 | Malaria Risk | Rainfall 0.5, Standing Water 0.5 |
@@ -71,7 +117,20 @@ score breakdown shown alongside every score in the product.
 | Composite Climate-Health Pressure | Rainfall 0.25, Standing Water 0.25, Temperature 0.2, Vegetation 0.15, Population Exposure 0.15 |
 | Heat Stress Risk | Temperature 0.7, Vegetation 0.3 (less vegetation = less shade/cooling = higher risk) |
 | Drought Risk | Rainfall 0.5 (less rain = higher risk), Vegetation 0.5 (lower NDVI = higher risk) |
-| Respiratory Risk | PM2.5 0.6, PM10 0.4 (PM2.5 weighted higher — the finer, more health-critical particulate per WHO guidance) |
+| Respiratory Risk | PM2.5 0.4, PM10 0.2, Ozone 0.15, NO₂ 0.1, Dust 0.15 (PM rebalanced down by `AdditionalIndicesSeeder::deepenRespiratoryRisk()` to make room for the gaseous pollutants) |
+
+Added since (all via `AdditionalIndicesSeeder`, all **uncalibrated** — same caveat as above):
+
+| Index | Signals and weights | Sector |
+|---|---|---|
+| Waterborne Disease Risk | Standing Water 0.5, Rainfall 0.5 | Public Health · Water |
+| Agriculture Stress | Soil Moisture 0.5 (drier = worse), Rainfall 0.3 (deficit), Evapotranspiration 0.2 | Agriculture |
+| Irrigation Need | Evapotranspiration 0.5, Soil Moisture 0.3 (inv), Rainfall 0.2 (inv) | Agriculture |
+| Rangeland Stress | Vegetation 0.6 (inv NDVI), Rainfall 0.4 (deficit) | Agriculture |
+| Wildfire Risk | Humidity 0.3 (inv), Vegetation 0.3 (dryness), Wind 0.2, Temperature 0.2, Active Fire **0.0** (shown in the breakdown, never scored — a confirmation series) | Emergency Response |
+| Dust Storm Risk | Dust 0.6, Wind 0.3, Humidity 0.1 (inv) | Emergency Response · Environment |
+| Dry-Season Water Stress | Rainfall 0.35 (inv), Standing Water 0.25 (inv — less surface water is worse here), Soil Moisture 0.2 (inv), Evapotranspiration 0.2 | Water |
+| Riverine Flood Forecast | River Discharge 1.0 — **forecast-only**, see "Forward-looking scoring" below | Water · Emergency Response |
 
 ## Every signal's calibration bounds, and where they came from
 
@@ -85,10 +144,44 @@ score breakdown shown alongside every score in the product.
 | Elevation | 0–500m | Plausible range for Nigerian terrain |
 | PM2.5 | 0–500.4 µg/m³ | US EPA Air Quality Index "Hazardous" ceiling — a cited public-health reference, not an arbitrary number |
 | PM10 | 0–604 µg/m³ | US EPA Air Quality Index "Hazardous" ceiling |
+| Soil Moisture | 0.05–0.40 m³/m³ | ERA5-Land 7–28 cm volumetric water content, dry → near-saturation for Nigeria |
+| Evapotranspiration (ET₀) | 0–50 mm | Weekly-total plausible range, FAO-56 reference ET |
+| Humidity | 0–100 % | Relative humidity, already a percentage |
+| Wind Speed | 0–40 km/h | Daily-max plausible range |
+| Dust / Ozone / NO₂ | 0–500 / 0–300 / 0–200 µg/m³ | WHO / EPA "very unhealthy" reference points, **not** epidemiologically calibrated |
+| River Discharge | **per-LGA** — see below | rivers span three orders of magnitude of flow; a single bound is meaningless |
 
 Every bound is stored in `scoring_calibration_parameters` and can be overridden per-region
 without a code change — a region with a genuinely different climate baseline doesn't need the
 same 0–200mm rainfall ceiling as every other region.
+
+### River discharge is calibrated per LGA, and the method is deliberately rough
+
+The Riverine Flood Forecast index measures a forecast discharge against the LGA's *own* normal
+flow, because the Niger at Lokoja and a seasonal stream in the north-east differ by a factor of
+a thousand — a shared `RIVER_DISCHARGE_MIN/MAX` would peg every big-river reach at 100 and never
+discriminate.
+
+`calibrate:river-discharge` (scheduled weekly) derives those bounds from each region's own
+observed `RIVER_DISCHARGE` history:
+
+```
+MAX = observed_max × 1.4      # headroom so a genuine flood clears the red line
+MIN = observed_min × 0.8      # a little below the observed floor so a dry spell reads green
+```
+
+`signals:backfill-discharge --weeks=52` front-loads a year of weekly GloFAS reanalysis so this
+has a full seasonal record to work from, rather than no-opping for the first month of live
+ingestion.
+
+**What this is not:** a hydrological return period. A real "1-in-10-year flood level" for a
+reach comes from a calibrated river model (channel geometry, gauge records, a rating curve) —
+that is a hydrology exercise, out of scope here. The `× 1.4` heuristic just means "clearly above
+anything this reach has done recently" — useful for ranking which LGAs to watch and roughly how
+close, not for issuing an official flood warning. A state hydrologist can hand-set a real bound
+per region and the weekly job will leave it alone (it only overwrites bounds whose
+`source_reference` is its own auto-note). Same honest framing as every other bound on the
+platform.
 
 ## Two scoring strategies, by design
 
@@ -101,6 +194,40 @@ selecting it never breaks anything or serves an untrained prediction. The seam �
 the fallback logic, the exact expected historical-data format — is deliberately built now, so the
 growth path to a validated model is engineered, not hypothetical, once real historical case data
 (Malaria Atlas Project, DHS-MIS) is available to train against.
+
+## Forward-looking (forecast) scoring
+
+Everything above scores a **completed** 7-day period. A parallel lane scores a **future** one
+(`docs/BUILD_PLAN.md` T4). It is deliberately kept in its own tables end to end —
+`region_forecast_signals`, `region_forecast_scores` — so a forecast value can never be picked up
+by an observed-data query (an anomaly baseline, a backtest, the dashboard's "this week").
+
+**How a forward score is computed** (`ForecastScoringStrategy`):
+
+1. For each day in the forecast horizon (up to 14 days out), normalise that day's forecast
+   signal exactly the way the observed engine normalises an observed reading — same
+   `min`/`max` bounds, same direction, same `NormalisesSignals` trait.
+2. A weighted signal that has **no forecast series of its own** (standing water is a
+   near-static occurrence layer, elevation is fixed, vegetation is a 16-day composite) falls
+   back to the region's **latest observed reading, held flat** across the horizon. So a
+   forward Flood Risk score is the same formula and weights as the observed one with only
+   rainfall swapped for its forecast — the two numbers stay directly comparable.
+3. Combine by weight into a 0–100 score per day.
+4. The index's forecast score is the **peak** of that daily series, plus the day it lands
+   (`lead_days_to_peak`). "Flood Risk is forecast to reach 72 in about 4 days", not a single
+   flat number.
+
+**Which indices get a forward score:** the dedicated forecast index (Riverine Flood Forecast),
+plus every observed index that weights a signal with a forecast source —
+`ScoringIndex::scopeForwardScorable()`, currently anything using Rainfall, Temperature or River
+Discharge (Flood, Heat Stress, Malaria, Drought, Composite, Dry-Season Water Stress, the
+agriculture bundle). `scores:forecast` (scheduled 04:15, after the observed `scores:calculate`)
+owns them.
+
+**Forecast data sources:** Open-Meteo Flood API (GloFAS river discharge) and Open-Meteo Forecast
+API (rainfall, temperature) — both free. Forecast issuance history (needed to backtest forecast
+skill) is **not** kept in v1 — only the latest forecast per region/signal. That is a T5
+addition.
 
 ## Data sources
 
