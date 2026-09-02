@@ -30,8 +30,8 @@ use Illuminate\Support\Carbon;
 class CalibrateRiverDischargeCommand extends Command
 {
     protected $signature = 'calibrate:river-discharge
-        {--start-year=1985 : First year of GloFAS reanalysis to pull}
-        {--min-years=15 : Skip a reach with fewer than this many complete years of record}
+        {--start-year=1998 : First year of GloFAS reanalysis to pull}
+        {--min-years=10 : Skip a reach with fewer than this many complete years of record}
         {--region= : Only this region_id}
         {--refresh : Recompute even for reaches already calibrated from reanalysis}';
 
@@ -74,7 +74,7 @@ class CalibrateRiverDischargeCommand extends Command
                 continue;
             }
 
-            $series = $flood->dailyDischarge($region, $rangeStart, $rangeEnd);
+            $series = $this->pullInChunks($flood, $region, $rangeStart, $rangeEnd);
             if ($series === null) {
                 $thin++;
 
@@ -126,6 +126,34 @@ class CalibrateRiverDischargeCommand extends Command
         $this->info("Calibrated {$done} reaches, skipped {$skipped} (already done), {$thin} with too little record.");
 
         return self::SUCCESS;
+    }
+
+    /**
+     * A multi-decade daily series in one request is slow and flaky over 30+ reaches; pull it in
+     * ~8-year windows and merge. Any window coming back null means the reach isn't modelled that
+     * far back — keep what we got and stop.
+     *
+     * @return array<string, float>|null
+     */
+    private function pullInChunks(OpenMeteoFloodClient $flood, Region $region, Carbon $rangeStart, Carbon $rangeEnd): ?array
+    {
+        $merged = [];
+        $windowStart = $rangeStart->copy();
+
+        while ($windowStart->lte($rangeEnd)) {
+            $windowEnd = min($windowStart->copy()->addYears(8)->subDay(), $rangeEnd);
+            $chunk = $flood->dailyDischarge($region, $windowStart, $windowEnd);
+
+            if ($chunk === null) {
+                break;
+            }
+
+            $merged += $chunk;
+            $windowStart = $windowEnd->copy()->addDay();
+            usleep(200_000);
+        }
+
+        return $merged === [] ? null : $merged;
     }
 
     private function alreadyReanalysisCalibrated(int $indexId, int $regionId): bool
