@@ -101,13 +101,15 @@ calibration against outcome data. Bounds go in `scoring_calibration_parameters`;
 
 ## 5. Tier specs
 
-### T1 — Sector grouping in the UI · Ready · size S
+### T1 — Sector grouping in the UI · Shipped · size S
 
-"Pick the sectors that matter to you" instead of a flat list of nine-plus indices. A `sectors`
-table (or config map) of sector → [index codes]. The Coverage page (`CoveragePreferenceController`)
-renders sector checkboxes that expand to `UserIndexSubscription` rows. `DashboardController` already
-scopes to subscriptions via `IndexCoverage::resolve()`, so this is mostly copy plus a mapping table.
-See "The configured workspace" in [`docs/ROADMAP_SECTORS.md`](ROADMAP_SECTORS.md#the-configured-workspace).
+"Pick the sectors that matter to you" instead of a flat list of indices. `sectors` table (6
+rows) + `index_sector` pivot; `SectorSeeder` owns the mapping. `UserSectorSubscription`;
+`IndexCoverage::resolve()` scopes the dashboard / regions / thresholds to the followed sectors.
+`SectorController` + `sectors/show.blade.php` — one "This week across {sector}" page per sector
+(every index as a status card, a headline attention count). The onboarding wizard
+(`OnboardingController`) is sector-first. Forecast indices read their own lane on the card
+(follow-up, commit 558cbe4).
 
 Starting mapping: **Public Health** → Malaria, Respiratory, Heat, (Waterborne, Meningitis);
 **Agriculture** → Drought, (Agriculture Stress, Irrigation, Rangeland); **Water & Flooding** →
@@ -317,15 +319,18 @@ return numbers.
 
 ## 7. Suggested sequence
 
-1. **T1 sector UI** — days. Clarity win, no risk.
+1. ~~**T1 sector UI**~~ — done.
 2. ~~**T2 Waterborne Disease**~~ — done. Proved "new index, no new data" end to end.
 3. ~~**T3 agriculture bundle**~~ — done. Agriculture Stress, Irrigation Need, Rangeland Stress all
    live; proved "new signal source + new indices" end to end.
 4. ~~**T3 fire + dust**~~ — done. Wildfire Risk + Dust Storm Risk live, FIRMS active-fire confirmation wired in.
 5. ~~**T4 forecast ingestion**~~ — done. Forecast signal + scoring lanes in separate tables,
-   Riverine Flood Forecast index on top, forecast-breach alerts. GloFAS via Open-Meteo Flood API.
-6. **T5 probabilistic scoring** — once forecasts flow. **(T4 is now in place.)**
-7. **T6 climate outlook** — in parallel; independent code path.
-8. **T8 trained model + validation** — as soon as outcome data is in hand.
-9. **T9 country #2** — after at least one index is validated in Nigeria.
-10. **T7 coastal** — whenever the coastal DEM / tide sourcing lands.
+   Riverine Flood Forecast index on top (now reach-level, 8 rivers), forecast-breach alerts.
+6. ~~**T5 probabilistic scoring**~~ — done. Ensemble members → p10/p50/p90 + exceedance
+   probability, `P(index ≥ x) ≥ %` threshold rule.
+7. **Meningitis Risk index** — small, now unblocked (HUMIDITY + DUST live). Config rows,
+   region-scoped to the meningitis-belt states, dry-season / harmattan weighting.
+8. **T6 climate outlook** — the next substantial piece; independent code path, CMIP6 free.
+9. **T8 trained model + validation** — as soon as outcome data is in hand.
+10. **T9 country #2** — after at least one index is validated in Nigeria.
+11. **T7 coastal** — whenever the coastal DEM / tide sourcing lands.
