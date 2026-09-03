@@ -38,3 +38,4 @@ The condition that should make someone reopen this.
 | [0004](0004-forecast-and-observed-separate-lanes.md) | Forecast and observed data live in separate tables, end to end |
 | [0005](0005-river-discharge-return-periods.md) | River-discharge bounds from GloFAS reanalysis return periods |
 | [0006](0006-probabilistic-scoring-ensemble.md) | Probabilistic scoring from a forecast ensemble |
+| [0007](0007-reach-level-riverine-forecast.md) | Reach-level riverine forecast (Niger–Benue corridor) |

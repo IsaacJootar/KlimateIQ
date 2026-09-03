@@ -6,6 +6,7 @@ use App\Models\Region;
 use App\Models\RegionForecastSignal;
 use App\Models\RegionScoringConfig;
 use App\Models\RegionSignal;
+use App\Models\RiverReach;
 use App\Models\ScoringIndex;
 use App\Services\Scoring\Concerns\NormalisesSignals;
 use App\Support\IndexCalibration;
@@ -52,13 +53,11 @@ class ForecastScoringStrategy
             ->groupBy('signal_type_id')
             ->map(fn ($group) => $group->sortByDesc(fn ($c) => $c->region_id !== null)->first());
 
-        // A single-signal river-discharge index (Riverine Flood Forecast) must be measured
-        // against *this reach's own* flood thresholds. With no per-region bound there is nothing
-        // defensible to score against — a borrowed number pegs a real river at 100. Refuse to
-        // score; the page shows "calibration pending" (BUILD_PLAN.md T4/T5 follow-up).
-        if ($this->isSingleDischargeIndex($configs)
-            && ! IndexCalibration::hasRegionBound($index, $region, 'RIVER_DISCHARGE')) {
-            return new ForecastScoreResult(null, null, null, 0, ['status' => 'calibration_pending'], 'forecast-formula-v1');
+        // A single-signal river-discharge index (Riverine Flood Forecast) is scored per named
+        // river reach — a confluence LGA sits on the Niger and the Benue and they flood
+        // independently (BUILD_PLAN.md T4/T5 follow-up).
+        if ($this->isSingleDischargeIndex($configs)) {
+            return $this->scoreDischargeReaches($index, $region, $issuedAt, $configs->first());
         }
 
         // signal_type_id => [target_date => value], forward of the issue date. The deterministic
@@ -123,6 +122,92 @@ class ForecastScoringStrategy
     }
 
     /**
+     * Score each river reach's forecast discharge separately (BUILD_PLAN.md T4/T5 follow-up).
+     * The index score is the WORST reach — an emergency planner acts on whichever river is
+     * about to flood — and `breakdown['reaches']` names them all. A reach with no calibrated
+     * flood threshold (its own or the LGA-wide one) is dropped, not scored against a borrowed
+     * number; if every reach is uncalibrated the result is "calibration pending".
+     */
+    private function scoreDischargeReaches(ScoringIndex $index, Region $region, Carbon $issuedAt, RegionScoringConfig $config): ForecastScoreResult
+    {
+        $rows = RegionForecastSignal::query()
+            ->where('region_id', $region->region_id)
+            ->where('member', 'control')
+            ->where('signal_type_id', $config->signal_type_id)
+            ->whereDate('target_date', '>=', $issuedAt->toDateString())
+            ->orderBy('target_date')
+            ->get()
+            ->groupBy('reach');
+
+        if ($rows->isEmpty()) {
+            return new ForecastScoreResult(null, null, null, 0, [], 'forecast-formula-v1');
+        }
+
+        $rivers = RiverReach::query()->where('region_id', $region->region_id)->pluck('river', 'reach');
+        $configs = collect([$config->signal_type_id => $config]);
+        $scored = [];
+        $uncalibrated = [];
+        $horizon = 0;
+
+        foreach ($rows as $reach => $reachRows) {
+            if (! IndexCalibration::hasRegionBound($index, $region, 'RIVER_DISCHARGE', $reach)) {
+                $uncalibrated[] = $rivers[$reach] ?? $reach;
+
+                continue;
+            }
+
+            $series = collect([$config->signal_type_id => $reachRows->mapWithKeys(
+                fn ($r) => [$r->target_date->toDateString() => (float) $r->value],
+            )]);
+            $horizon = max($horizon, $series->first()->count());
+
+            $daily = $this->scoreDailySeries($index, $region, $issuedAt, $configs, $series, collect(), $reach);
+            if ($daily === []) {
+                continue;
+            }
+
+            $peak = collect($daily)->sortByDesc('score')->first();
+            $scored[] = [
+                'reach' => $reach,
+                'river' => $rivers[$reach] ?? ($reach === 'centroid' ? null : $reach),
+                'score' => (float) $peak['score'],
+                'peak_date' => $peak['date'],
+                'lead_days' => $peak['lead_days'],
+                'daily' => $daily,
+            ];
+        }
+
+        if ($scored === []) {
+            return new ForecastScoreResult(null, null, null, 0, [
+                'status' => 'calibration_pending',
+                'uncalibrated_reaches' => array_values(array_unique($uncalibrated)),
+            ], 'forecast-formula-v1');
+        }
+
+        usort($scored, fn ($a, $b) => $b['score'] <=> $a['score']);
+        $worst = $scored[0];
+
+        return new ForecastScoreResult(
+            score: $worst['score'],
+            peakDate: Carbon::parse($worst['peak_date']),
+            leadDaysToPeak: $worst['lead_days'],
+            horizonDays: $horizon,
+            breakdown: [
+                'daily' => $worst['daily'],
+                'peak' => collect($worst['daily'])->sortByDesc('score')->first(),
+                'driving_reach' => $worst['reach'],
+                'driving_river' => $worst['river'],
+                'reaches' => array_map(fn ($r) => [
+                    'reach' => $r['reach'], 'river' => $r['river'], 'score' => $r['score'],
+                    'peak_date' => $r['peak_date'], 'lead_days' => $r['lead_days'], 'daily' => $r['daily'],
+                ], $scored),
+                'uncalibrated_reaches' => array_values(array_unique($uncalibrated)),
+            ],
+            scoringVersion: 'forecast-formula-v1',
+        );
+    }
+
+    /**
      * Score each forecast day from a set of per-signal daily series plus an observed fallback for
      * weighted signals with no series of their own — the exact normalise + weight the observed
      * engine uses. Shared by the control path above and the per-member ensemble path
@@ -141,6 +226,7 @@ class ForecastScoringStrategy
         \Illuminate\Support\Collection $configs,
         \Illuminate\Support\Collection $seriesBySignalId,
         \Illuminate\Support\Collection $observedFallback,
+        ?string $reach = null,
     ): array {
         $issuedAt = $issuedAt->copy()->startOfDay();
         $days = $seriesBySignalId->flatMap(fn ($m) => $m->keys())->unique()->sort()->values();
@@ -158,7 +244,7 @@ class ForecastScoringStrategy
                     continue;
                 }
 
-                [$min, $max] = $this->calibrationBounds($index, $region, $config->signalType->code);
+                [$min, $max] = $this->calibrationBounds($index, $region, $config->signalType->code, $reach);
                 $higherIsWorse = $config->higher_is_worse ?? $config->signalType->higher_is_worse;
                 $normalized = $this->normalize((float) $value, $min, $max, $higherIsWorse);
                 $weight = (float) $config->weight;

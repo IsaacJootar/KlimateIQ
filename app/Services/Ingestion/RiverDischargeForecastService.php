@@ -4,6 +4,7 @@ namespace App\Services\Ingestion;
 
 use App\Models\Region;
 use App\Services\Ingestion\Concerns\PersistsForecastSeries;
+use App\Services\Ingestion\Concerns\SamplesRiverReaches;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -20,7 +21,7 @@ use Illuminate\Support\Collection;
  */
 class RiverDischargeForecastService implements ForecastIngestionService
 {
-    use PersistsForecastSeries;
+    use PersistsForecastSeries, SamplesRiverReaches;
 
     public const SIGNAL_CODE = 'RIVER_DISCHARGE';
 
@@ -34,12 +35,21 @@ class RiverDischargeForecastService implements ForecastIngestionService
     public function ingestForecastForRegion(Region $region, Carbon $issuedAt, int $horizonDays): Collection
     {
         $issuedAt = $issuedAt->copy()->startOfDay();
-        $series = $this->flood->dailyDischarge($region, $issuedAt, $issuedAt->copy()->addDays($horizonDays));
+        $end = $issuedAt->copy()->addDays($horizonDays);
+        $written = collect();
 
-        if ($series === null) {
-            return collect();
+        foreach ($this->reachesFor($region) as $reach) {
+            $series = $this->flood->dailyDischarge($region, $issuedAt, $end, $reach['lat'], $reach['lon']);
+            if ($series === null) {
+                continue;
+            }
+
+            $source = 'Open-Meteo Flood API (GloFAS)'.($reach['river'] ? " — {$reach['river']}" : '');
+            $written = $written->concat(
+                $this->persistForecastSeries($region, self::SIGNAL_CODE, $source, $issuedAt, $series, $reach['reach']),
+            );
         }
 
-        return $this->persistForecastSeries($region, self::SIGNAL_CODE, 'Open-Meteo Flood API (GloFAS)', $issuedAt, $series);
+        return $written;
     }
 }

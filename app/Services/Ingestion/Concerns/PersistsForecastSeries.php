@@ -22,9 +22,11 @@ trait PersistsForecastSeries
 {
     /**
      * @param  array<string, float>  $series  date => value; may include days before $issuedAt
+     * @param  string  $reach  which named river reach this series is for ('centroid' = the
+     *                          single-point default, and every non-discharge signal)
      * @return Collection<int, RegionForecastSignal>
      */
-    protected function persistForecastSeries(Region $region, string $signalCode, string $source, Carbon $issuedAt, array $series): Collection
+    protected function persistForecastSeries(Region $region, string $signalCode, string $source, Carbon $issuedAt, array $series, string $reach = 'centroid'): Collection
     {
         $issuedAt = $issuedAt->copy()->startOfDay();
         $signalType = SignalType::query()->where('code', $signalCode)->firstOrFail();
@@ -43,6 +45,7 @@ trait PersistsForecastSeries
                 'region_id' => $region->region_id,
                 'signal_type_id' => $signalType->signal_type_id,
                 'member' => 'control',
+                'reach' => $reach,
                 'forecast_issued_at' => $issuedAt->toDateString(),
                 'target_date' => $targetDate->toDateString(),
                 'lead_days' => (int) $issuedAt->diffInDays($targetDate),
@@ -57,11 +60,12 @@ trait PersistsForecastSeries
             return collect();
         }
 
-        DB::transaction(function () use ($region, $signalType, $rows) {
+        DB::transaction(function () use ($region, $signalType, $rows, $reach) {
             RegionForecastSignal::query()
                 ->where('region_id', $region->region_id)
                 ->where('signal_type_id', $signalType->signal_type_id)
                 ->where('member', 'control')
+                ->where('reach', $reach)
                 ->delete();
 
             RegionForecastSignal::query()->insert($rows);
@@ -71,6 +75,7 @@ trait PersistsForecastSeries
             ->where('region_id', $region->region_id)
             ->where('signal_type_id', $signalType->signal_type_id)
             ->where('member', 'control')
+            ->where('reach', $reach)
             ->orderBy('target_date')
             ->get();
     }

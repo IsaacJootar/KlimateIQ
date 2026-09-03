@@ -19,9 +19,10 @@ trait PersistsEnsembleForecastSeries
 {
     /**
      * @param  array<string, array<string, float>>  $memberSeries  memberId => (date => value)
+     * @param  string  $reach  the named river reach these members are for ('centroid' default)
      * @return int  member rows written
      */
-    protected function persistEnsembleSeries(Region $region, string $signalCode, string $source, Carbon $issuedAt, array $memberSeries): int
+    protected function persistEnsembleSeries(Region $region, string $signalCode, string $source, Carbon $issuedAt, array $memberSeries, string $reach = 'centroid'): int
     {
         $issuedAt = $issuedAt->copy()->startOfDay();
         $signalType = SignalType::query()->where('code', $signalCode)->firstOrFail();
@@ -45,6 +46,7 @@ trait PersistsEnsembleForecastSeries
                     'region_id' => $region->region_id,
                     'signal_type_id' => $signalType->signal_type_id,
                     'member' => $memberId,
+                    'reach' => $reach,
                     'forecast_issued_at' => $issuedAt->toDateString(),
                     'target_date' => $targetDate->toDateString(),
                     'lead_days' => (int) $issuedAt->diffInDays($targetDate),
@@ -56,11 +58,12 @@ trait PersistsEnsembleForecastSeries
             }
         }
 
-        DB::transaction(function () use ($region, $signalType, $rows) {
+        DB::transaction(function () use ($region, $signalType, $rows, $reach) {
             RegionForecastSignal::query()
                 ->where('region_id', $region->region_id)
                 ->where('signal_type_id', $signalType->signal_type_id)
                 ->where('member', '!=', 'control')
+                ->where('reach', $reach)
                 ->delete();
 
             foreach (array_chunk($rows, 500) as $chunk) {

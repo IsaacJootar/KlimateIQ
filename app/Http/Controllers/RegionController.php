@@ -239,6 +239,18 @@ class RegionController extends Controller
             'discharge' => $d['signals']['RIVER_DISCHARGE']['raw_value'] ?? null,
         ]);
 
+        // Per-reach breakdown for a multi-river LGA (T4/T5 follow-up) — one row per named river.
+        $forecastReaches = collect($forecast?->breakdown['reaches'] ?? [])
+            ->filter(fn (array $r) => ($r['river'] ?? null) !== null)
+            ->map(fn (array $r) => [
+                'river' => $r['river'],
+                'score' => (int) round((float) $r['score']),
+                'band' => RiskBand::forScore((float) $r['score']),
+                'peak_date' => $r['peak_date'] ?? null,
+                'lead_days' => $r['lead_days'] ?? null,
+                'daily' => collect($r['daily'] ?? [])->map(fn ($d) => (float) $d['score'])->values()->all(),
+            ])->values();
+
         return view('regions.show', [
             'isForecast' => true,
             'region' => $region,
@@ -255,6 +267,8 @@ class RegionController extends Controller
             'peakScore' => $peak,
             'forecastStatus' => $forecastStatus,
             'pendingDischarge' => $pendingDischarge,
+            'forecastReaches' => $forecastReaches,
+            'drivingRiver' => $forecast?->breakdown['driving_river'] ?? null,
             'recommendedAction' => IndexActionRecommendation::textFor($index->index_id, $peak),
             'facilities' => $this->facilitiesFor($index, $region, $peak),
             // Shared shells (tab strip, description, the top @php block) still read these.

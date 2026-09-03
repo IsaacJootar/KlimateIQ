@@ -13,6 +13,7 @@ class ScoringCalibrationParameter extends Model
     protected $fillable = [
         'index_id',
         'region_id',
+        'reach',
         'parameter_key',
         'parameter_value',
         'parameter_metadata',

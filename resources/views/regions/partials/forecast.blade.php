@@ -109,6 +109,16 @@
                 @endif
             </span>
         </div>
+        @if (($forecastReaches ?? collect())->count() > 1 && $drivingRiver)
+            @php
+                $calm = $forecastReaches->first(fn ($x) => $x['river'] !== $drivingRiver);
+                $calmWord = $calm ? ['green' => 'normal', 'amber' => 'moderate', 'red' => 'high', 'none' => '—'][$calm['band']] : null;
+            @endphp
+            <p class="mt-3 text-sm text-white/90">
+                The <strong>{{ $drivingRiver }}</strong> is driving this.
+                @if ($calm) The {{ $calm['river'] }} is at {{ $calm['score'] }}, {{ $calmWord }}. @endif
+            </p>
+        @endif
         @if (! empty($forecastProbabilityLine))
             <p class="mt-3 text-sm text-white/90"><strong>{{ $forecastProbabilityLine }}</strong></p>
         @endif
@@ -121,6 +131,34 @@
             <p class="mt-1.5 text-xs text-white/60 italic">{{ $calibrationNote }}</p>
         @endif
     </section>
+
+    {{-- By river — a confluence/valley LGA is scored per named reach (T4/T5 follow-up) --}}
+    @if (($forecastReaches ?? collect())->count() > 1)
+        <section class="section-card p-5">
+            <h3 class="font-semibold text-gray-800 dark:text-gray-200 mb-3">By river</h3>
+            <ul class="divide-y divide-gray-100 dark:divide-gray-700">
+                @foreach ($forecastReaches->sortByDesc('score') as $r)
+                    <li class="flex items-center gap-3 py-2.5">
+                        <span class="w-24 text-sm font-medium text-slate-900 dark:text-white">{{ $r['river'] }}</span>
+                        @php $bandWord = ['green' => 'low', 'amber' => 'moderate', 'red' => 'high', 'none' => '—'][$r['band']]; @endphp
+                        <span class="risk-badge risk-badge-{{ $r['band'] }}">{{ $r['score'] }} · {{ $bandWord }}</span>
+                        <span class="flex-1 text-right text-xs text-slate-500 dark:text-slate-400">
+                            @if (($r['lead_days'] ?? null) === 0)
+                                peak today
+                            @elseif (($r['lead_days'] ?? null) === 1)
+                                peak tomorrow
+                            @elseif (! empty($r['peak_date']))
+                                peak {{ \Illuminate\Support\Carbon::parse($r['peak_date'])->format('M j') }} · {{ $r['lead_days'] }}d out
+                            @endif
+                        </span>
+                    </li>
+                @endforeach
+            </ul>
+            <p class="mt-2 text-xs text-slate-400">
+                Each river's forecast discharge measured against that reach's own flood levels. The headline above is the worst of them.
+            </p>
+        </section>
+    @endif
 
     {{-- 3 — The daily outlook --}}
     <section class="section-card p-5">

@@ -55,18 +55,24 @@ class IndexCalibration
     }
 
     /**
-     * Does this region have its own (not the system-wide) calibration bound for a signal, from a
-     * real source rather than an uncalibrated placeholder? Used to guard the Riverine Flood
-     * Forecast: a reach with no reach-specific flood threshold is shown as "calibration pending",
-     * not scored against a borrowed number (BUILD_PLAN.md T4/T5 follow-up).
+     * Does this region (optionally, this specific river reach) have its own — not the
+     * system-wide — calibration bound for a signal, from a real source rather than an
+     * uncalibrated placeholder? Used to guard the Riverine Flood Forecast: a reach with no
+     * flood threshold of its own (or an LGA-wide one) is shown as "calibration pending", not
+     * scored against a borrowed number (BUILD_PLAN.md T4/T5 follow-up).
+     *
+     * With $reach given, a reach-specific bound OR the LGA-wide (reach = null) bound counts.
      */
-    public static function hasRegionBound(ScoringIndex $index, Region $region, string $signalCode, string $suffix = 'MAX'): bool
+    public static function hasRegionBound(ScoringIndex $index, Region $region, string $signalCode, ?string $reach = null, string $suffix = 'MAX'): bool
     {
         return ScoringCalibrationParameter::query()
             ->where('index_id', $index->index_id)
             ->where('region_id', $region->region_id)
             ->where('parameter_key', "{$signalCode}_{$suffix}")
             ->whereNotIn('calibration_status', [CalibrationStatus::Placeholder->value])
+            ->where(fn ($q) => $reach === null
+                ? $q->whereNull('reach')
+                : $q->where('reach', $reach)->orWhereNull('reach'))
             ->exists();
     }
 

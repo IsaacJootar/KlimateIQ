@@ -182,6 +182,21 @@ curves) — that is a national-flood-agency exercise. The return level is only a
 record length: ~40 years supports a 2-to-20-year band, not a 100-year one. A state hydrologist
 can hand-set a real bound per region and the monthly job leaves it alone.
 
+**Per named reach for confluence LGAs.** A single GloFAS sample at the LGA centroid can't tell a
+Niger flood from a Benue flood. For the Niger–Benue corridor (~23 LGAs — `river_reaches`, seeded
+from `database/seeders/data/nigeria_river_reaches.json`) the index is scored **per reach**: each
+river's forecast discharge against that reach's own return levels, the headline is the worst
+reach, and the region page names the river driving it. An uncalibrated reach is dropped from the
+score, not measured against a borrowed number; an LGA with no reach data is scored once at its
+centroid as before. Decision
+[0007](decisions/0007-reach-level-riverine-forecast.md).
+
+**Failing safe.** With no calibrated bound at all (a reach the monthly job hasn't reached, or a
+reseed that cleared it) the Riverine Flood Forecast shows "calibration pending for this LGA" and
+no number — there is no system-wide `RIVER_DISCHARGE` fallback, because a single shared bound
+across rivers that span three orders of magnitude either pegs every real river at 100 or reads
+every flood as normal.
+
 ## The decision log
 
 `docs/decisions/` records *why* the non-obvious engineering choices were made and *what would

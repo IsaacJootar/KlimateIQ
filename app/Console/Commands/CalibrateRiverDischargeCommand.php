@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Region;
+use App\Models\RiverReach;
 use App\Models\ScoringCalibrationParameter;
 use App\Models\ScoringIndex;
 use App\Services\Hydrology\ReturnPeriodEstimator;
@@ -26,9 +27,12 @@ use Illuminate\Support\Carbon;
  * it is a real return-period estimate, not the "observed max × 1.4" heuristic it replaces.
  *
  * The history is pulled in ~8-year chunks (a multi-decade request over 30+ reaches is slow and
- * flaky). Reaches that can't get enough record use a median-across-reaches system-wide fallback.
- * Idempotent, runs monthly (return periods barely move), skips already-done reaches. Never
- * overwrites a bound an admin set or a real validation produced. `--refresh` recomputes anyway.
+ * flaky). Idempotent, runs monthly (return periods barely move), skips already-done reaches.
+ * Never overwrites a bound an admin set or a real validation produced. `--refresh` recomputes.
+ *
+ * T4/T5 follow-up: a multi-river LGA (Lokoja, Bassa) has curated `river_reaches` rows — the
+ * command calibrates each reach point separately and writes bounds tagged with that reach. An
+ * LGA with no reaches calibrates once at its centroid, `reach = null` (the LGA-wide bound).
  */
 class CalibrateRiverDischargeCommand extends Command
 {
@@ -36,9 +40,10 @@ class CalibrateRiverDischargeCommand extends Command
         {--start-year=1998 : First year of GloFAS reanalysis to pull}
         {--min-years=10 : Skip a reach with fewer than this many complete years of record}
         {--region= : Only this region_id}
+        {--reach= : Only this reach slug (with --region)}
         {--refresh : Recompute even for reaches already calibrated from reanalysis}';
 
-    protected $description = 'Set per-LGA river-discharge bounds from GloFAS reanalysis return periods.';
+    protected $description = 'Set per-reach river-discharge bounds from GloFAS reanalysis return periods.';
 
     private const SOURCE_PREFIX = 'GloFAS reanalysis (Open-Meteo Flood API)';
 
@@ -62,23 +67,42 @@ class CalibrateRiverDischargeCommand extends Command
             ->when($this->option('region'), fn ($q) => $q->where('region_id', $this->option('region')))
             ->get();
 
-        $this->info("Calibrating {$regions->count()} reaches from {$startYear}–{$rangeEnd->year} GloFAS reanalysis...");
+        // (region, reach) pairs: a multi-river LGA expands to one job per reach; others get one
+        // job at the centroid (reach = null → the LGA-wide bound, unchanged).
+        $jobs = $regions->flatMap(function (Region $region) {
+            $reaches = RiverReach::query()->where('region_id', $region->region_id)
+                ->when($this->option('reach'), fn ($q) => $q->where('reach', $this->option('reach')))
+                ->get();
+
+            return $reaches->isEmpty()
+                ? [['region' => $region, 'reach' => null, 'river' => null, 'lat' => null, 'lon' => null]]
+                : $reaches->map(fn (RiverReach $r) => [
+                    'region' => $region, 'reach' => $r->reach, 'river' => $r->river,
+                    'lat' => $r->latitude, 'lon' => $r->longitude,
+                ])->all();
+        });
+
+        $this->info("Calibrating {$jobs->count()} reach(es) from {$startYear}–{$rangeEnd->year} GloFAS reanalysis...");
 
         $done = 0;
         $skipped = 0;
         $thin = 0;
 
-        foreach ($regions as $region) {
-            if (! $this->option('refresh') && $this->alreadyReanalysisCalibrated($index->index_id, $region->region_id)) {
+        foreach ($jobs as $job) {
+            /** @var Region $region */
+            $region = $job['region'];
+            $reach = $job['reach'];
+
+            if (! $this->option('refresh') && $this->alreadyReanalysisCalibrated($index->index_id, $region->region_id, $reach)) {
                 $skipped++;
 
                 continue;
             }
 
-            $series = $this->pullInChunks($flood, $region, $rangeStart, $rangeEnd);
+            $series = $this->pullInChunks($flood, $region, $rangeStart, $rangeEnd, $job['lat'], $job['lon']);
             if ($series === null || count($estimator->annualMaxima($series)) < $minYears) {
                 $thin++;
-                $this->dropStalePerRegionBounds($index->index_id, $region->region_id);
+                $this->dropStalePerRegionBounds($index->index_id, $region->region_id, $reach);
 
                 continue;
             }
@@ -88,17 +112,18 @@ class CalibrateRiverDischargeCommand extends Command
             $rl = $estimator->returnLevels($annualMaxima, [2, 5, 20]);
             $low = $estimator->lowFlow($series);
             $years = count($annualMaxima);
+            $riverNote = $job['river'] ? " ({$job['river']})" : '';
 
-            $this->writeBound($index->index_id, $region->region_id, 'MIN', round($low, 2), [
+            $this->writeBound($index->index_id, $region->region_id, $reach, 'MIN', round($low, 2), [
                 'method' => 'p10-daily',
                 'years_of_record' => $years,
-            ], "{$this->sourceRange($startYear, $rangeEnd->year)}: 10th-percentile daily flow.");
+            ], "{$this->sourceRange($startYear, $rangeEnd->year)}{$riverNote}: 10th-percentile daily flow.");
 
-            $this->writeBound($index->index_id, $region->region_id, 'MAX', round($rl['20'], 2), [
+            $this->writeBound($index->index_id, $region->region_id, $reach, 'MAX', round($rl['20'], 2), [
                 'method' => 'weibull-annual-maxima',
                 'years_of_record' => $years,
                 'return_levels' => ['2' => round($rl['2'], 2), '5' => round($rl['5'], 2), '20' => round($rl['20'], 2)],
-            ], "{$this->sourceRange($startYear, $rangeEnd->year)}: empirical 20-year return level (annual maxima, Weibull plotting position).");
+            ], "{$this->sourceRange($startYear, $rangeEnd->year)}{$riverNote}: empirical 20-year return level (annual maxima, Weibull plotting position).");
 
             $done++;
 
@@ -124,14 +149,14 @@ class CalibrateRiverDischargeCommand extends Command
      *
      * @return array<string, float>|null
      */
-    private function pullInChunks(OpenMeteoFloodClient $flood, Region $region, Carbon $rangeStart, Carbon $rangeEnd): ?array
+    private function pullInChunks(OpenMeteoFloodClient $flood, Region $region, Carbon $rangeStart, Carbon $rangeEnd, ?float $lat = null, ?float $lon = null): ?array
     {
         $merged = [];
         $windowStart = $rangeStart->copy();
 
         while ($windowStart->lte($rangeEnd)) {
             $windowEnd = min($windowStart->copy()->addYears(8)->subDay(), $rangeEnd);
-            $chunk = $flood->dailyDischarge($region, $windowStart, $windowEnd);
+            $chunk = $flood->dailyDischarge($region, $windowStart, $windowEnd, $lat, $lon);
 
             if ($chunk === null) {
                 break;
@@ -146,14 +171,15 @@ class CalibrateRiverDischargeCommand extends Command
     }
 
     /**
-     * A reach we can't get enough reanalysis for is better off using the data-derived
-     * system-wide fallback than a stale per-region bound from the old "observed max × 1.4"
-     * calibration. Drop those; leave a hand-set or reanalysis-derived one alone.
+     * A reach we can't get enough reanalysis for is left with no bound — the forecast scorer
+     * then shows "calibration pending" rather than a borrowed number. Drop a stale bound we
+     * wrote before; leave a hand-set or already-reanalysis-derived one alone.
      */
-    private function dropStalePerRegionBounds(int $indexId, int $regionId): void
+    private function dropStalePerRegionBounds(int $indexId, int $regionId, ?string $reach): void
     {
         ScoringCalibrationParameter::query()
             ->where('index_id', $indexId)->where('region_id', $regionId)
+            ->where(fn ($q) => $reach === null ? $q->whereNull('reach') : $q->where('reach', $reach))
             ->whereIn('parameter_key', ['RIVER_DISCHARGE_MIN', 'RIVER_DISCHARGE_MAX'])
             ->get()
             ->each(function (ScoringCalibrationParameter $param) {
@@ -163,10 +189,11 @@ class CalibrateRiverDischargeCommand extends Command
             });
     }
 
-    private function alreadyReanalysisCalibrated(int $indexId, int $regionId): bool
+    private function alreadyReanalysisCalibrated(int $indexId, int $regionId, ?string $reach): bool
     {
         return ScoringCalibrationParameter::query()
             ->where('index_id', $indexId)->where('region_id', $regionId)
+            ->where(fn ($q) => $reach === null ? $q->whereNull('reach') : $q->where('reach', $reach))
             ->where('parameter_key', 'RIVER_DISCHARGE_MAX')
             ->where('calibration_status', 'reference_derived')
             ->exists();
@@ -175,11 +202,12 @@ class CalibrateRiverDischargeCommand extends Command
     /**
      * @param  array<string, mixed>  $metadata
      */
-    private function writeBound(int $indexId, int $regionId, string $suffix, float $value, array $metadata, string $sourceReference): void
+    private function writeBound(int $indexId, int $regionId, ?string $reach, string $suffix, float $value, array $metadata, string $sourceReference): void
     {
         $existing = ScoringCalibrationParameter::query()
             ->where('index_id', $indexId)
             ->where('region_id', $regionId)
+            ->where(fn ($q) => $reach === null ? $q->whereNull('reach') : $q->where('reach', $reach))
             ->where('parameter_key', "RIVER_DISCHARGE_{$suffix}")
             ->first();
 
@@ -189,7 +217,7 @@ class CalibrateRiverDischargeCommand extends Command
         }
 
         ScoringCalibrationParameter::query()->updateOrCreate(
-            ['index_id' => $indexId, 'region_id' => $regionId, 'parameter_key' => "RIVER_DISCHARGE_{$suffix}"],
+            ['index_id' => $indexId, 'region_id' => $regionId, 'reach' => $reach, 'parameter_key' => "RIVER_DISCHARGE_{$suffix}"],
             [
                 'parameter_value' => $value,
                 'parameter_metadata' => $metadata,

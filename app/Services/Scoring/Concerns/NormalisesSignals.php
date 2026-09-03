@@ -27,19 +27,26 @@ trait NormalisesSignals
     }
 
     /**
+     * $reach (T4/T5 follow-up) selects a per-reach bound for a multi-river LGA — the Niger and
+     * the Benue at Lokoja have different flood levels. Resolution order: this reach's own bound,
+     * then the LGA-wide (reach = null) bound, then the system-wide, then a hard default.
+     *
      * @return array{0: float, 1: float}
      */
-    protected function calibrationBounds(ScoringIndex $index, Region $region, string $signalCode): array
+    protected function calibrationBounds(ScoringIndex $index, Region $region, string $signalCode, ?string $reach = null): array
     {
-        $lookup = fn (?int $regionId, string $suffix) => ScoringCalibrationParameter::query()
+        $lookup = fn (?int $regionId, ?string $reachSlug, string $suffix) => ScoringCalibrationParameter::query()
             ->where('index_id', $index->index_id)
             ->where('region_id', $regionId)
+            ->where(fn ($q) => $reachSlug === null ? $q->whereNull('reach') : $q->where('reach', $reachSlug))
             ->where('parameter_key', "{$signalCode}_{$suffix}")
             ->value('parameter_value');
 
-        $min = $lookup($region->region_id, 'MIN') ?? $lookup(null, 'MIN') ?? 0.0;
-        $max = $lookup($region->region_id, 'MAX') ?? $lookup(null, 'MAX') ?? 100.0;
+        $resolve = fn (string $suffix, float $default) => ($reach !== null ? $lookup($region->region_id, $reach, $suffix) : null)
+            ?? $lookup($region->region_id, null, $suffix)
+            ?? $lookup(null, null, $suffix)
+            ?? $default;
 
-        return [(float) $min, (float) $max];
+        return [(float) $resolve('MIN', 0.0), (float) $resolve('MAX', 100.0)];
     }
 }

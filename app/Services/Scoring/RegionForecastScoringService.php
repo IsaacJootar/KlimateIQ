@@ -44,7 +44,10 @@ class RegionForecastScoringService
             return $result;
         }
 
-        $dist = $withEnsemble ? $this->ensemble->distribution($index, $region, $issuedAt) : null;
+        // For a per-reach discharge index, pin the distribution to the reach that drives the
+        // headline score, so the "≈NN% chance" matches it (T4/T5 follow-up).
+        $drivingReach = $result->breakdown['driving_reach'] ?? null;
+        $dist = $withEnsemble ? $this->ensemble->distribution($index, $region, $issuedAt, $drivingReach) : null;
 
         $breakdown = $result->breakdown;
         if ($dist !== null) {

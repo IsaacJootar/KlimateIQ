@@ -4,6 +4,7 @@ namespace App\Services\Ingestion;
 
 use App\Models\Region;
 use App\Services\Ingestion\Concerns\PersistsEnsembleForecastSeries;
+use App\Services\Ingestion\Concerns\SamplesRiverReaches;
 use Illuminate\Support\Carbon;
 
 /**
@@ -13,7 +14,7 @@ use Illuminate\Support\Carbon;
  */
 class RiverDischargeEnsembleService implements EnsembleForecastIngestionService
 {
-    use PersistsEnsembleForecastSeries;
+    use PersistsEnsembleForecastSeries, SamplesRiverReaches;
 
     public const SIGNAL_CODE = 'RIVER_DISCHARGE';
 
@@ -27,12 +28,19 @@ class RiverDischargeEnsembleService implements EnsembleForecastIngestionService
     public function ingestEnsembleForRegion(Region $region, Carbon $issuedAt, int $horizonDays): int
     {
         $issuedAt = $issuedAt->copy()->startOfDay();
-        $members = $this->flood->ensembleDailyDischarge($region, $issuedAt, $issuedAt->copy()->addDays($horizonDays));
+        $end = $issuedAt->copy()->addDays($horizonDays);
+        $written = 0;
 
-        if ($members === null || $members === []) {
-            return 0;
+        foreach ($this->reachesFor($region) as $reach) {
+            $members = $this->flood->ensembleDailyDischarge($region, $issuedAt, $end, $reach['lat'], $reach['lon']);
+            if ($members === null || $members === []) {
+                continue;
+            }
+
+            $source = 'Open-Meteo Flood API (GloFAS ensemble)'.($reach['river'] ? " — {$reach['river']}" : '');
+            $written += $this->persistEnsembleSeries($region, self::SIGNAL_CODE, $source, $issuedAt, $members, $reach['reach']);
         }
 
-        return $this->persistEnsembleSeries($region, self::SIGNAL_CODE, 'Open-Meteo Flood API (GloFAS ensemble)', $issuedAt, $members);
+        return $written;
     }
 }

@@ -29,7 +29,11 @@ class EnsembleForecastScoringService
 
     public function __construct(private readonly ForecastScoringStrategy $strategy) {}
 
-    public function distribution(ScoringIndex $index, Region $region, Carbon $issuedAt): ?EnsembleScoreResult
+    /**
+     * $reach (T4/T5 follow-up) pins the distribution to one named river reach — the one the
+     * control run flagged as driving, so the headline probability matches the headline score.
+     */
+    public function distribution(ScoringIndex $index, Region $region, Carbon $issuedAt, ?string $reach = null): ?EnsembleScoreResult
     {
         $issuedAt = $issuedAt->copy()->startOfDay();
 
@@ -47,19 +51,20 @@ class EnsembleForecastScoringService
         }
 
         // Same guard as the control path (ForecastScoringStrategy): a single-signal
-        // river-discharge index with no per-reach flood threshold is not scored at all.
+        // river-discharge index with no calibrated flood threshold is not scored at all.
         $enabled = $configs->filter(fn ($c) => (float) $c->weight > 0);
-        if ($enabled->count() === 1
-            && $enabled->first()?->signalType?->code === 'RIVER_DISCHARGE'
-            && ! IndexCalibration::hasRegionBound($index, $region, 'RIVER_DISCHARGE')) {
+        $isDischarge = $enabled->count() === 1 && $enabled->first()?->signalType?->code === 'RIVER_DISCHARGE';
+        if ($isDischarge && ! IndexCalibration::hasRegionBound($index, $region, 'RIVER_DISCHARGE', $reach)) {
             return null;
         }
 
-        // signal_type_id => member => (date => value), forward of the issue date.
+        // signal_type_id => member => (date => value), forward of the issue date. For the
+        // discharge index, only the driving reach's members.
         $bySignalMember = RegionForecastSignal::query()
             ->where('region_id', $region->region_id)
             ->where('member', '!=', 'control')
             ->whereIn('signal_type_id', $configs->keys())
+            ->when($reach !== null, fn ($q) => $q->where('reach', $reach))
             ->whereDate('target_date', '>=', $issuedAt->toDateString())
             ->orderBy('target_date')
             ->get()
@@ -97,7 +102,7 @@ class EnsembleForecastScoringService
                 continue;
             }
 
-            $daily = $this->strategy->scoreDailySeries($index, $region, $issuedAt, $configs, $seriesBySignalId, $observedFallback);
+            $daily = $this->strategy->scoreDailySeries($index, $region, $issuedAt, $configs, $seriesBySignalId, $observedFallback, $isDischarge ? $reach : null);
             if ($daily === []) {
                 continue;
             }

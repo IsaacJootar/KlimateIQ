@@ -1,0 +1,202 @@
+[
+  {
+    "lga_code": "NG-BE-119",
+    "reach": "benue-NG-BE-119",
+    "river": "Benue",
+    "latitude": 8.0029,
+    "longitude": 7.6143,
+    "source": "OpenStreetMap river geometry (Niger relation 9110137) / a waypoint polyline for the Benue anchored on the published Niger–Benue confluence (7.7533,6.7567) and Makurdi gauge (7.7306,8.5361), intersected with geoBoundaries NGA ADM2 (CC-BY 4.0); sample point snapped to the GloFAS modelled channel (highest-discharge cell in a ±0.1° grid)."
+  },
+  {
+    "lga_code": "NG-BE-120",
+    "reach": "benue-NG-BE-120",
+    "river": "Benue",
+    "latitude": 7.9,
+    "longitude": 7.9786,
+    "source": "OpenStreetMap river geometry (Niger relation 9110137) / a waypoint polyline for the Benue anchored on the published Niger–Benue confluence (7.7533,6.7567) and Makurdi gauge (7.7306,8.5361), intersected with geoBoundaries NGA ADM2 (CC-BY 4.0); sample point snapped to the GloFAS modelled channel (highest-discharge cell in a ±0.1° grid)."
+  },
+  {
+    "lga_code": "NG-BE-124",
+    "reach": "benue-NG-BE-124",
+    "river": "Benue",
+    "latitude": 7.84,
+    "longitude": 8.825,
+    "source": "OpenStreetMap river geometry (Niger relation 9110137) / a waypoint polyline for the Benue anchored on the published Niger–Benue confluence (7.7533,6.7567) and Makurdi gauge (7.7306,8.5361), intersected with geoBoundaries NGA ADM2 (CC-BY 4.0); sample point snapped to the GloFAS modelled channel (highest-discharge cell in a ±0.1° grid)."
+  },
+  {
+    "lga_code": "NG-BE-126",
+    "reach": "benue-NG-BE-126",
+    "river": "Benue",
+    "latitude": 7.8727,
+    "longitude": 8.1364,
+    "source": "OpenStreetMap river geometry (Niger relation 9110137) / a waypoint polyline for the Benue anchored on the published Niger–Benue confluence (7.7533,6.7567) and Makurdi gauge (7.7306,8.5361), intersected with geoBoundaries NGA ADM2 (CC-BY 4.0); sample point snapped to the GloFAS modelled channel (highest-discharge cell in a ±0.1° grid)."
+  },
+  {
+    "lga_code": "NG-BE-130",
+    "reach": "benue-NG-BE-130",
+    "river": "Benue",
+    "latitude": 7.8516,
+    "longitude": 9.0263,
+    "source": "OpenStreetMap river geometry (Niger relation 9110137) / a waypoint polyline for the Benue anchored on the published Niger–Benue confluence (7.7533,6.7567) and Makurdi gauge (7.7306,8.5361), intersected with geoBoundaries NGA ADM2 (CC-BY 4.0); sample point snapped to the GloFAS modelled channel (highest-discharge cell in a ±0.1° grid)."
+  },
+  {
+    "lga_code": "NG-BE-131",
+    "reach": "benue-NG-BE-131",
+    "river": "Benue",
+    "latitude": 7.7306,
+    "longitude": 8.4361,
+    "source": "OpenStreetMap river geometry (Niger relation 9110137) / a waypoint polyline for the Benue anchored on the published Niger–Benue confluence (7.7533,6.7567) and Makurdi gauge (7.7306,8.5361), intersected with geoBoundaries NGA ADM2 (CC-BY 4.0); sample point snapped to the GloFAS modelled channel (highest-discharge cell in a ±0.1° grid)."
+  },
+  {
+    "lga_code": "NG-KO-472",
+    "reach": "benue-NG-KO-472",
+    "river": "Benue",
+    "latitude": 7.92,
+    "longitude": 6.975,
+    "source": "OpenStreetMap river geometry (Niger relation 9110137) / a waypoint polyline for the Benue anchored on the published Niger–Benue confluence (7.7533,6.7567) and Makurdi gauge (7.7306,8.5361), intersected with geoBoundaries NGA ADM2 (CC-BY 4.0); sample point snapped to the GloFAS modelled channel (highest-discharge cell in a ±0.1° grid)."
+  },
+  {
+    "lga_code": "NG-KO-480",
+    "reach": "benue-NG-KO-480",
+    "river": "Benue",
+    "latitude": 7.89,
+    "longitude": 6.91,
+    "source": "OpenStreetMap river geometry (Niger relation 9110137) / a waypoint polyline for the Benue anchored on the published Niger–Benue confluence (7.7533,6.7567) and Makurdi gauge (7.7306,8.5361), intersected with geoBoundaries NGA ADM2 (CC-BY 4.0); sample point snapped to the GloFAS modelled channel (highest-discharge cell in a ±0.1° grid). Benue arm, confluence-adjacent (manual)."
+  },
+  {
+    "lga_code": "NG-AN-72",
+    "reach": "niger-NG-AN-72",
+    "river": "Niger",
+    "latitude": 6.4709,
+    "longitude": 6.6407,
+    "source": "OpenStreetMap river geometry (Niger relation 9110137) / a waypoint polyline for the Benue anchored on the published Niger–Benue confluence (7.7533,6.7567) and Makurdi gauge (7.7306,8.5361), intersected with geoBoundaries NGA ADM2 (CC-BY 4.0); sample point snapped to the GloFAS modelled channel (highest-discharge cell in a ±0.1° grid)."
+  },
+  {
+    "lga_code": "NG-AN-85",
+    "reach": "niger-NG-AN-85",
+    "river": "Niger",
+    "latitude": 6.0109,
+    "longitude": 6.6693,
+    "source": "OpenStreetMap river geometry (Niger relation 9110137) / a waypoint polyline for the Benue anchored on the published Niger–Benue confluence (7.7533,6.7567) and Makurdi gauge (7.7306,8.5361), intersected with geoBoundaries NGA ADM2 (CC-BY 4.0); sample point snapped to the GloFAS modelled channel (highest-discharge cell in a ±0.1° grid)."
+  },
+  {
+    "lga_code": "NG-AN-87",
+    "reach": "niger-NG-AN-87",
+    "river": "Niger",
+    "latitude": 6.0437,
+    "longitude": 6.6671,
+    "source": "OpenStreetMap river geometry (Niger relation 9110137) / a waypoint polyline for the Benue anchored on the published Niger–Benue confluence (7.7533,6.7567) and Makurdi gauge (7.7306,8.5361), intersected with geoBoundaries NGA ADM2 (CC-BY 4.0); sample point snapped to the GloFAS modelled channel (highest-discharge cell in a ±0.1° grid)."
+  },
+  {
+    "lga_code": "NG-ED-229",
+    "reach": "niger-NG-ED-229",
+    "river": "Niger",
+    "latitude": 6.687,
+    "longitude": 6.5646,
+    "source": "OpenStreetMap river geometry (Niger relation 9110137) / a waypoint polyline for the Benue anchored on the published Niger–Benue confluence (7.7533,6.7567) and Makurdi gauge (7.7306,8.5361), intersected with geoBoundaries NGA ADM2 (CC-BY 4.0); sample point snapped to the GloFAS modelled channel (highest-discharge cell in a ±0.1° grid)."
+  },
+  {
+    "lga_code": "NG-ED-231",
+    "reach": "niger-NG-ED-231",
+    "river": "Niger",
+    "latitude": 6.775,
+    "longitude": 6.5887,
+    "source": "OpenStreetMap river geometry (Niger relation 9110137) / a waypoint polyline for the Benue anchored on the published Niger–Benue confluence (7.7533,6.7567) and Makurdi gauge (7.7306,8.5361), intersected with geoBoundaries NGA ADM2 (CC-BY 4.0); sample point snapped to the GloFAS modelled channel (highest-discharge cell in a ±0.1° grid)."
+  },
+  {
+    "lga_code": "NG-ED-232",
+    "reach": "niger-NG-ED-232",
+    "river": "Niger",
+    "latitude": 6.9861,
+    "longitude": 6.643,
+    "source": "OpenStreetMap river geometry (Niger relation 9110137) / a waypoint polyline for the Benue anchored on the published Niger–Benue confluence (7.7533,6.7567) and Makurdi gauge (7.7306,8.5361), intersected with geoBoundaries NGA ADM2 (CC-BY 4.0); sample point snapped to the GloFAS modelled channel (highest-discharge cell in a ±0.1° grid)."
+  },
+  {
+    "lga_code": "NG-KO-470",
+    "reach": "niger-NG-KO-470",
+    "river": "Niger",
+    "latitude": 7.4748,
+    "longitude": 6.6993,
+    "source": "OpenStreetMap river geometry (Niger relation 9110137) / a waypoint polyline for the Benue anchored on the published Niger–Benue confluence (7.7533,6.7567) and Makurdi gauge (7.7306,8.5361), intersected with geoBoundaries NGA ADM2 (CC-BY 4.0); sample point snapped to the GloFAS modelled channel (highest-discharge cell in a ±0.1° grid)."
+  },
+  {
+    "lga_code": "NG-KO-472",
+    "reach": "niger-NG-KO-472",
+    "river": "Niger",
+    "latitude": 7.7217,
+    "longitude": 6.7039,
+    "source": "OpenStreetMap river geometry (Niger relation 9110137) / a waypoint polyline for the Benue anchored on the published Niger–Benue confluence (7.7533,6.7567) and Makurdi gauge (7.7306,8.5361), intersected with geoBoundaries NGA ADM2 (CC-BY 4.0); sample point snapped to the GloFAS modelled channel (highest-discharge cell in a ±0.1° grid)."
+  },
+  {
+    "lga_code": "NG-KO-474",
+    "reach": "niger-NG-KO-474",
+    "river": "Niger",
+    "latitude": 6.8375,
+    "longitude": 6.5867,
+    "source": "OpenStreetMap river geometry (Niger relation 9110137) / a waypoint polyline for the Benue anchored on the published Niger–Benue confluence (7.7533,6.7567) and Makurdi gauge (7.7306,8.5361), intersected with geoBoundaries NGA ADM2 (CC-BY 4.0); sample point snapped to the GloFAS modelled channel (highest-discharge cell in a ±0.1° grid)."
+  },
+  {
+    "lga_code": "NG-KO-475",
+    "reach": "niger-NG-KO-475",
+    "river": "Niger",
+    "latitude": 6.9978,
+    "longitude": 6.6152,
+    "source": "OpenStreetMap river geometry (Niger relation 9110137) / a waypoint polyline for the Benue anchored on the published Niger–Benue confluence (7.7533,6.7567) and Makurdi gauge (7.7306,8.5361), intersected with geoBoundaries NGA ADM2 (CC-BY 4.0); sample point snapped to the GloFAS modelled channel (highest-discharge cell in a ±0.1° grid)."
+  },
+  {
+    "lga_code": "NG-KO-476",
+    "reach": "niger-NG-KO-476",
+    "river": "Niger",
+    "latitude": 7.0258,
+    "longitude": 6.6172,
+    "source": "OpenStreetMap river geometry (Niger relation 9110137) / a waypoint polyline for the Benue anchored on the published Niger–Benue confluence (7.7533,6.7567) and Makurdi gauge (7.7306,8.5361), intersected with geoBoundaries NGA ADM2 (CC-BY 4.0); sample point snapped to the GloFAS modelled channel (highest-discharge cell in a ±0.1° grid)."
+  },
+  {
+    "lga_code": "NG-KO-480",
+    "reach": "niger-NG-KO-480",
+    "river": "Niger",
+    "latitude": 7.7022,
+    "longitude": 6.7041,
+    "source": "OpenStreetMap river geometry (Niger relation 9110137) / a waypoint polyline for the Benue anchored on the published Niger–Benue confluence (7.7533,6.7567) and Makurdi gauge (7.7306,8.5361), intersected with geoBoundaries NGA ADM2 (CC-BY 4.0); sample point snapped to the GloFAS modelled channel (highest-discharge cell in a ±0.1° grid)."
+  },
+  {
+    "lga_code": "NG-KO-482",
+    "reach": "niger-NG-KO-482",
+    "river": "Niger",
+    "latitude": 7.2761,
+    "longitude": 6.6153,
+    "source": "OpenStreetMap river geometry (Niger relation 9110137) / a waypoint polyline for the Benue anchored on the published Niger–Benue confluence (7.7533,6.7567) and Makurdi gauge (7.7306,8.5361), intersected with geoBoundaries NGA ADM2 (CC-BY 4.0); sample point snapped to the GloFAS modelled channel (highest-discharge cell in a ±0.1° grid)."
+  },
+  {
+    "lga_code": "NG-NI-539",
+    "reach": "niger-NG-NI-539",
+    "river": "Niger",
+    "latitude": 8.6226,
+    "longitude": 6.3185,
+    "source": "OpenStreetMap river geometry (Niger relation 9110137) / a waypoint polyline for the Benue anchored on the published Niger–Benue confluence (7.7533,6.7567) and Makurdi gauge (7.7306,8.5361), intersected with geoBoundaries NGA ADM2 (CC-BY 4.0); sample point snapped to the GloFAS modelled channel (highest-discharge cell in a ±0.1° grid)."
+  },
+  {
+    "lga_code": "NG-NI-548",
+    "reach": "niger-NG-NI-548",
+    "river": "Niger",
+    "latitude": 8.6418,
+    "longitude": 6.3234,
+    "source": "OpenStreetMap river geometry (Niger relation 9110137) / a waypoint polyline for the Benue anchored on the published Niger–Benue confluence (7.7533,6.7567) and Makurdi gauge (7.7306,8.5361), intersected with geoBoundaries NGA ADM2 (CC-BY 4.0); sample point snapped to the GloFAS modelled channel (highest-discharge cell in a ±0.1° grid)."
+  },
+  {
+    "lga_code": "NG-NI-550",
+    "reach": "niger-NG-NI-550",
+    "river": "Niger",
+    "latitude": 8.4831,
+    "longitude": 6.3649,
+    "source": "OpenStreetMap river geometry (Niger relation 9110137) / a waypoint polyline for the Benue anchored on the published Niger–Benue confluence (7.7533,6.7567) and Makurdi gauge (7.7306,8.5361), intersected with geoBoundaries NGA ADM2 (CC-BY 4.0); sample point snapped to the GloFAS modelled channel (highest-discharge cell in a ±0.1° grid)."
+  },
+  {
+    "lga_code": "NG-NI-551",
+    "reach": "niger-NG-NI-551",
+    "river": "Niger",
+    "latitude": 8.7977,
+    "longitude": 5.9865,
+    "source": "OpenStreetMap river geometry (Niger relation 9110137) / a waypoint polyline for the Benue anchored on the published Niger–Benue confluence (7.7533,6.7567) and Makurdi gauge (7.7306,8.5361), intersected with geoBoundaries NGA ADM2 (CC-BY 4.0); sample point snapped to the GloFAS modelled channel (highest-discharge cell in a ±0.1° grid)."
+  }
+]

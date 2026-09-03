@@ -19,6 +19,7 @@ class RegionForecastSignal extends Model
         'region_id',
         'signal_type_id',
         'member',
+        'reach',
         'forecast_issued_at',
         'target_date',
         'lead_days',

@@ -243,6 +243,25 @@ ensemble. Shipped in four milestones, all in the forecast lane (the original "wr
 Horizon stays 14 days (ensemble skill past two weeks is poor). Data: Open-Meteo Ensemble API +
 Flood API `&ensemble=true` — both free.
 
+- **Follow-up — calibration safety.** An uncalibrated LGA was showing "100 — severe flooding"
+  because scoring fell back to a system-wide `RIVER_DISCHARGE_MAX` (the median 20-year level
+  across the calibrated reaches, ≈22 m³/s — most modelled LGA centroids sit on minor streams, so
+  any real river pegged at 100). `CalibrateRiverDischargeCommand` no longer writes that fallback;
+  `ForecastScoringStrategy` / `EnsembleForecastScoringService` refuse to score a single-signal
+  discharge index with no real per-reach bound (`App\Support\IndexCalibration::hasRegionBound`),
+  and the region page shows an honest "isn't calibrated yet" state with the raw discharge.
+  `RegionForecastScoringService` retracts a stale score when a reach loses calibration.
+- **Follow-up — reach-level riverine forecast.** A confluence/valley LGA (Lokoja, Bassa) is
+  scored per named river reach — the Niger and the Benue separately — because one centroid sample
+  can't tell which river is about to flood. `database/seeders/data/nigeria_river_reaches.json`
+  (curated from OSM channel geometry + geoBoundaries LGA polygons, snapped to the GloFAS
+  network), `river_reaches` table, a `reach` dimension on `region_forecast_signals` /
+  `scoring_calibration_parameters`. Ingestion, `calibrate:river-discharge` and
+  `ForecastScoringStrategy` iterate reaches; the index score is the worst reach; the region page
+  shows a "By river" panel and names the driving river; the forecast alert says "the Benue at
+  Lokoja". Niger–Benue corridor pilot (~23 LGAs); an LGA with no reaches is unchanged. Decision
+  [0007](decisions/0007-reach-level-riverine-forecast.md).
+
 ### T6 — Climate outlook module · Ready · size M–L
 
 A multi-decade planning view — how malaria suitability, heat-days and drought frequency shift to

@@ -41,6 +41,32 @@ class ThresholdBreachedNotification extends Notification
         return rtrim(rtrim((string) $this->alert->threshold_value, '0'), '.');
     }
 
+    /**
+     * The named river driving a Riverine Flood Forecast alert, e.g. "Benue" — so the message
+     * says "the Benue at Lokoja", not just "Lokoja" (T4/T5 follow-up). Null for every other index.
+     */
+    private function drivingRiver(): ?string
+    {
+        if ($this->alert->index_id === null) {
+            return null;
+        }
+
+        $breakdown = \App\Models\RegionForecastScore::query()
+            ->where('index_id', $this->alert->index_id)
+            ->where('region_id', $this->alert->region_id)
+            ->value('breakdown');
+
+        return is_array($breakdown) ? ($breakdown['driving_river'] ?? null) : null;
+    }
+
+    /** "the Benue at Lokoja" when a river is known, else just "{target} for {LGA}". */
+    private function forecastSubject(string $target, string $region): string
+    {
+        $river = $this->drivingRiver();
+
+        return $river !== null ? "the {$river} at {$region}" : "{$target} for {$region}";
+    }
+
     /** "in about 5 days (around Sep 9)" — the lead-time clause for a forecast alert. */
     private function forecastWhen(): string
     {
@@ -122,11 +148,12 @@ class ThresholdBreachedNotification extends Notification
         }
 
         if ($this->alert->is_forecast) {
+            $subject = ucfirst($this->forecastSubject($target, $region));
             $mail = (new MailMessage)
-                ->subject("FORECAST — {$target} for {$region} projected to breach")
+                ->subject("FORECAST — {$subject} projected to breach")
                 ->greeting('Hi '.$notifiable->name.',')
                 ->line('This is a forecast, not a current reading.')
-                ->line("{$target} for {$region} is projected to reach {$this->forecastPeak()} ".$this->forecastWhen().
+                ->line("{$subject} is projected to reach {$this->forecastPeak()} ".$this->forecastWhen().
                     ($this->alert->threshold_value !== null ? " — past the {$this->alert->threshold_value} threshold you set." : '.'));
 
             if ($action = $this->recommendedAction()) {
@@ -162,7 +189,7 @@ class ThresholdBreachedNotification extends Notification
 
         $body = match (true) {
             $this->isProbabilityAlert() => "FORECAST: about a {$this->forecastProbabilityPct()} chance {$target} for {$this->alert->region->name} reaches {$this->level()}+ within the forecast window (most-likely peak {$this->forecastPeak()} ".$this->forecastWhen().'). A probability from an ensemble forecast, not a certainty.',
-            $this->alert->is_forecast => "FORECAST: {$target} for {$this->alert->region->name} is projected to reach {$this->forecastPeak()} ".$this->forecastWhen().'. This is a forecast, not a current reading.',
+            $this->alert->is_forecast => 'FORECAST: '.ucfirst($this->forecastSubject($target, $this->alert->region->name))." is projected to reach {$this->forecastPeak()} ".$this->forecastWhen().'. This is a forecast, not a current reading.',
             default => "{$target} in {$this->alert->region->name} crossed a threshold you set.",
         };
 

@@ -30,11 +30,16 @@ class OpenMeteoFloodClient
      * map (only the days the API actually reported a numeric value), or null when the region
      * has no coordinates or the request failed or the reach is unmodelled.
      *
+     * `$lat` / `$lon` override the region centroid — for sampling a specific named river reach
+     * within a multi-river LGA (T4/T5 follow-up). Omitted → the centroid, unchanged behaviour.
+     *
      * @return array<string, float>|null
      */
-    public function dailyDischarge(Region $region, Carbon $start, Carbon $end): ?array
+    public function dailyDischarge(Region $region, Carbon $start, Carbon $end, ?float $lat = null, ?float $lon = null): ?array
     {
-        if ($region->latitude === null || $region->longitude === null) {
+        $lat ??= $region->latitude !== null ? (float) $region->latitude : null;
+        $lon ??= $region->longitude !== null ? (float) $region->longitude : null;
+        if ($lat === null || $lon === null) {
             return null;
         }
 
@@ -46,8 +51,8 @@ class OpenMeteoFloodClient
             ->timeout($timeout)
             ->retry(2, 2000, throw: false)
             ->get(self::BASE_URL, [
-                'latitude' => (float) $region->latitude,
-                'longitude' => (float) $region->longitude,
+                'latitude' => $lat,
+                'longitude' => $lon,
                 'daily' => self::VARIABLE,
                 'start_date' => $start->toDateString(),
                 'end_date' => $end->toDateString(),
@@ -76,13 +81,16 @@ class OpenMeteoFloodClient
      * The GloFAS ensemble forecast (BUILD_PLAN.md T5) — all ~50 members of river discharge over a
      * date range, for probabilistic scoring. Returns `memberId => (date => m³/s)` with memberId
      * e.g. "glofas-07", or null when the region has no coordinates, the request failed, or the
-     * reach is unmodelled. The deterministic dailyDischarge() above is unaffected.
+     * reach is unmodelled. `$lat` / `$lon` override the centroid for a specific reach (T4/T5
+     * follow-up). The deterministic dailyDischarge() above is unaffected.
      *
      * @return array<string, array<string, float>>|null
      */
-    public function ensembleDailyDischarge(Region $region, Carbon $start, Carbon $end): ?array
+    public function ensembleDailyDischarge(Region $region, Carbon $start, Carbon $end, ?float $lat = null, ?float $lon = null): ?array
     {
-        if ($region->latitude === null || $region->longitude === null) {
+        $lat ??= $region->latitude !== null ? (float) $region->latitude : null;
+        $lon ??= $region->longitude !== null ? (float) $region->longitude : null;
+        if ($lat === null || $lon === null) {
             return null;
         }
 
@@ -90,8 +98,8 @@ class OpenMeteoFloodClient
             ->timeout(45)
             ->retry(2, 2000, throw: false)
             ->get(self::BASE_URL, [
-                'latitude' => (float) $region->latitude,
-                'longitude' => (float) $region->longitude,
+                'latitude' => $lat,
+                'longitude' => $lon,
                 'daily' => self::VARIABLE,
                 'ensemble' => 'true',
                 'start_date' => $start->toDateString(),
