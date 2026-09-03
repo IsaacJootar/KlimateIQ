@@ -31,8 +31,16 @@ class RegionForecastScoringService
         $result = $this->strategy->score($index, $region, $issuedAt);
 
         if ($result->score === null) {
-            // No forecast coverage for this region (unmodelled reach) — leave any stale row in
-            // place rather than writing a null score the UI would have to special-case anyway.
+            // No score to write. If the reason is "this reach isn't calibrated" (T4/T5
+            // follow-up), a stale row from a previous run would keep showing a now-retracted
+            // number — drop it. A plain coverage gap leaves any existing row alone.
+            if (($result->breakdown['status'] ?? null) === 'calibration_pending') {
+                DB::table('region_forecast_scores')
+                    ->where('index_id', $index->index_id)
+                    ->where('region_id', $region->region_id)
+                    ->delete();
+            }
+
             return $result;
         }
 

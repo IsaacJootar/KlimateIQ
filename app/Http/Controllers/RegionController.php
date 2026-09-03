@@ -6,6 +6,7 @@ use App\Models\CropCalendar;
 use App\Models\IndexActionRecommendation;
 use App\Models\Region;
 use App\Models\RegionForecastScore;
+use App\Models\RegionForecastSignal;
 use App\Models\RegionScore;
 use App\Models\RegionSignal;
 use App\Models\ScoringIndex;
@@ -208,6 +209,27 @@ class RegionController extends Controller
             ->where('region_id', $region->region_id)
             ->first();
 
+        // Distinguish "GloFAS doesn't model a reach here" from "it does, but this reach's flood
+        // thresholds aren't calibrated yet" — the latter shows an honest pending state, not a
+        // borrowed number (T4/T5 follow-up).
+        $forecastStatus = 'ok';
+        $pendingDischarge = collect();
+        if ($forecast === null || $forecast->score === null) {
+            $dischargeForecast = RegionForecastSignal::query()
+                ->where('region_id', $region->region_id)
+                ->where('member', 'control')
+                ->whereHas('signalType', fn ($q) => $q->where('code', 'RIVER_DISCHARGE'))
+                ->orderBy('target_date')
+                ->get(['target_date', 'value']);
+
+            if ($dischargeForecast->isNotEmpty() && ! IndexCalibration::hasRegionBound($index, $region, 'RIVER_DISCHARGE')) {
+                $forecastStatus = 'calibration_pending';
+                $pendingDischarge = $dischargeForecast->map(fn ($r) => (float) $r->value);
+            } else {
+                $forecastStatus = 'no_coverage';
+            }
+        }
+
         $peak = $forecast?->score !== null ? (float) $forecast->score : null;
         $daily = collect($forecast?->breakdown['daily'] ?? [])->map(fn (array $d) => [
             'date' => $d['date'],
@@ -231,6 +253,8 @@ class RegionController extends Controller
                 ->values()->all(),
             'calibrationNote' => IndexCalibration::note($index),
             'peakScore' => $peak,
+            'forecastStatus' => $forecastStatus,
+            'pendingDischarge' => $pendingDischarge,
             'recommendedAction' => IndexActionRecommendation::textFor($index->index_id, $peak),
             'facilities' => $this->facilitiesFor($index, $region, $peak),
             // Shared shells (tab strip, description, the top @php block) still read these.

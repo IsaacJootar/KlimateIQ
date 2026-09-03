@@ -32,7 +32,33 @@
     $fanPolygon = $fanTop->concat($fanBottom)->implode(' ');
 @endphp
 
-@if ($peakScore === null)
+@if ($peakScore === null && ($forecastStatus ?? 'no_coverage') === 'calibration_pending')
+    <section class="section-card p-5 step-accent-none">
+        <h3 class="font-semibold text-gray-800 dark:text-gray-200 mb-2">River-flood scoring for {{ $region->name }} isn't calibrated yet</h3>
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+            GloFAS models a river reach here and a forecast has been pulled, but this reach's own flood
+            thresholds (the flow levels that count as a 2-year or 20-year flood) haven't been derived yet.
+            No score is shown rather than a misleading one — the discharge forecast itself is below, and a
+            calibrated score will appear once the reach is processed.
+        </p>
+    </section>
+    @if (($pendingDischarge ?? collect())->isNotEmpty())
+        <section class="section-card p-5">
+            <h3 class="font-semibold text-gray-800 dark:text-gray-200 mb-2">The discharge forecast</h3>
+            <p class="text-sm text-gray-700 dark:text-gray-300">
+                River flow is forecast to
+                @if ($pendingDischarge->last() > $pendingDischarge->first() * 1.05)
+                    rise from about {{ $num($pendingDischarge->first()) }} to {{ $num($pendingDischarge->max()) }} m&sup3;/s
+                @elseif ($pendingDischarge->last() < $pendingDischarge->first() * 0.95)
+                    ease from about {{ $num($pendingDischarge->first()) }} toward {{ $num($pendingDischarge->min()) }} m&sup3;/s
+                @else
+                    hold near <strong>{{ $num($pendingDischarge->avg()) }} m&sup3;/s</strong>
+                @endif
+                over the next {{ $pendingDischarge->count() }} days &mdash; how that translates to flood risk needs the reach's calibrated thresholds.
+            </p>
+        </section>
+    @endif
+@elseif ($peakScore === null)
     <section class="section-card p-5 step-accent-none">
         <h3 class="font-semibold text-gray-800 dark:text-gray-200 mb-2">No river-flood forecast for {{ $region->name }} yet</h3>
         <p class="text-sm text-slate-500 dark:text-slate-400">

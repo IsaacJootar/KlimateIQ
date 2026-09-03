@@ -7,9 +7,8 @@ use App\Models\RegionForecastSignal;
 use App\Models\RegionScoringConfig;
 use App\Models\RegionSignal;
 use App\Models\ScoringIndex;
-use App\Support\RiskBand;
+use App\Support\IndexCalibration;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 
 /**
  * Scores every ensemble member of a forward index through the same formula the control run uses
@@ -44,6 +43,15 @@ class EnsembleForecastScoringService
             ->map(fn ($group) => $group->sortByDesc(fn ($c) => $c->region_id !== null)->first());
 
         if ($configs->isEmpty()) {
+            return null;
+        }
+
+        // Same guard as the control path (ForecastScoringStrategy): a single-signal
+        // river-discharge index with no per-reach flood threshold is not scored at all.
+        $enabled = $configs->filter(fn ($c) => (float) $c->weight > 0);
+        if ($enabled->count() === 1
+            && $enabled->first()?->signalType?->code === 'RIVER_DISCHARGE'
+            && ! IndexCalibration::hasRegionBound($index, $region, 'RIVER_DISCHARGE')) {
             return null;
         }
 

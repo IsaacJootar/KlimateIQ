@@ -67,8 +67,6 @@ class CalibrateRiverDischargeCommand extends Command
         $done = 0;
         $skipped = 0;
         $thin = 0;
-        $rl20s = [];
-        $lows = [];
 
         foreach ($regions as $region) {
             if (! $this->option('refresh') && $this->alreadyReanalysisCalibrated($index->index_id, $region->region_id)) {
@@ -102,25 +100,17 @@ class CalibrateRiverDischargeCommand extends Command
                 'return_levels' => ['2' => round($rl['2'], 2), '5' => round($rl['5'], 2), '20' => round($rl['20'], 2)],
             ], "{$this->sourceRange($startYear, $rangeEnd->year)}: empirical 20-year return level (annual maxima, Weibull plotting position).");
 
-            $rl20s[] = $rl['20'];
-            $lows[] = $low;
             $done++;
 
             usleep(300_000); // be gentle with the free API between multi-decade pulls
         }
 
-        // A data-derived system-wide fallback for reaches skipped for a thin record — the median
-        // across everything we did calibrate, better than the crude [0, 4000] placeholder.
-        if (count($rl20s) >= 3) {
-            $this->writeBound($index->index_id, null, 'MAX', round($this->median($rl20s), 2), [
-                'method' => 'median-of-per-reach-20-year-levels',
-                'reaches' => count($rl20s),
-            ], "{$this->sourceRange($startYear, $rangeEnd->year)}: median 20-year return level across {$done} calibrated reaches (system-wide fallback).");
-            $this->writeBound($index->index_id, null, 'MIN', round($this->median($lows), 2), [
-                'method' => 'median-of-per-reach-low-flows',
-                'reaches' => count($lows),
-            ], "{$this->sourceRange($startYear, $rangeEnd->year)}: median 10th-percentile flow across calibrated reaches (system-wide fallback).");
-        }
+        // No system-wide fallback bound. Rivers span three orders of magnitude of flow — a
+        // single shared MAX is either far too low (any real river pegs at 100 — the failure
+        // this platform actually hit) or far too high (every flood reads as normal). A reach we
+        // can't calibrate individually is left with *no* per-region bound, and the forecast
+        // scorer refuses to score it (shows "calibration pending") rather than emit a number
+        // that isn't grounded in that reach's own hydrology.
 
         $this->info("Calibrated {$done} reaches, skipped {$skipped} (already done), {$thin} with too little record.");
 
@@ -183,25 +173,13 @@ class CalibrateRiverDischargeCommand extends Command
     }
 
     /**
-     * @param  array<int, float>  $values
-     */
-    private function median(array $values): float
-    {
-        sort($values);
-        $n = count($values);
-        $mid = intdiv($n, 2);
-
-        return $n % 2 ? $values[$mid] : ($values[$mid - 1] + $values[$mid]) / 2;
-    }
-
-    /**
      * @param  array<string, mixed>  $metadata
      */
-    private function writeBound(int $indexId, ?int $regionId, string $suffix, float $value, array $metadata, string $sourceReference): void
+    private function writeBound(int $indexId, int $regionId, string $suffix, float $value, array $metadata, string $sourceReference): void
     {
         $existing = ScoringCalibrationParameter::query()
             ->where('index_id', $indexId)
-            ->where(fn ($q) => $regionId === null ? $q->whereNull('region_id') : $q->where('region_id', $regionId))
+            ->where('region_id', $regionId)
             ->where('parameter_key', "RIVER_DISCHARGE_{$suffix}")
             ->first();
 

@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Region;
 use App\Models\RegionScoringConfig;
 use App\Models\ScoringCalibrationParameter;
 use App\Models\ScoringIndex;
@@ -51,6 +52,22 @@ class IndexCalibration
                 ? CalibrationStatus::Placeholder
                 : $all->sortBy(fn (CalibrationStatus $s) => $s->rank())->first();
         });
+    }
+
+    /**
+     * Does this region have its own (not the system-wide) calibration bound for a signal, from a
+     * real source rather than an uncalibrated placeholder? Used to guard the Riverine Flood
+     * Forecast: a reach with no reach-specific flood threshold is shown as "calibration pending",
+     * not scored against a borrowed number (BUILD_PLAN.md T4/T5 follow-up).
+     */
+    public static function hasRegionBound(ScoringIndex $index, Region $region, string $signalCode, string $suffix = 'MAX'): bool
+    {
+        return ScoringCalibrationParameter::query()
+            ->where('index_id', $index->index_id)
+            ->where('region_id', $region->region_id)
+            ->where('parameter_key', "{$signalCode}_{$suffix}")
+            ->whereNotIn('calibration_status', [CalibrationStatus::Placeholder->value])
+            ->exists();
     }
 
     /**

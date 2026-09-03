@@ -27,9 +27,6 @@ class CalculateForecastScoresCommandTest extends TestCase
         $dischargeId = SignalType::query()->where('code', 'RIVER_DISCHARGE')->value('signal_type_id');
         $index = ScoringIndex::query()->create(['code' => 'TEST_FF', 'name' => 'Test FF', 'is_forecast' => true]);
         RegionScoringConfig::query()->create(['index_id' => $index->index_id, 'region_id' => null, 'signal_type_id' => $dischargeId, 'weight' => 1.0, 'enabled' => true]);
-        foreach (['MIN' => 0, 'MAX' => 1000] as $s => $v) {
-            ScoringCalibrationParameter::query()->create(['index_id' => $index->index_id, 'region_id' => null, 'parameter_key' => "RIVER_DISCHARGE_{$s}", 'parameter_value' => $v]);
-        }
 
         return $index;
     }
@@ -38,6 +35,14 @@ class CalculateForecastScoresCommandTest extends TestCase
     {
         $region = Region::query()->orderBy('region_id')->first();
         $region->subscribers()->create(['user_id' => User::factory()->create()->id]);
+        // A single-signal discharge index needs a real per-reach bound to score (T4/T5 safety).
+        $index = ScoringIndex::query()->where('code', 'TEST_FF')->first();
+        foreach (['MIN' => 0, 'MAX' => 1000] as $s => $v) {
+            ScoringCalibrationParameter::query()->create([
+                'index_id' => $index->index_id, 'region_id' => $region->region_id,
+                'parameter_key' => "RIVER_DISCHARGE_{$s}", 'parameter_value' => $v, 'calibration_status' => 'reference_derived',
+            ]);
+        }
         RegionForecastSignal::query()->create([
             'region_id' => $region->region_id,
             'signal_type_id' => SignalType::query()->where('code', 'RIVER_DISCHARGE')->value('signal_type_id'),

@@ -8,6 +8,7 @@ use App\Models\RegionScoringConfig;
 use App\Models\RegionSignal;
 use App\Models\ScoringIndex;
 use App\Services\Scoring\Concerns\NormalisesSignals;
+use App\Support\IndexCalibration;
 use Illuminate\Support\Carbon;
 
 /**
@@ -50,6 +51,15 @@ class ForecastScoringStrategy
             ->get()
             ->groupBy('signal_type_id')
             ->map(fn ($group) => $group->sortByDesc(fn ($c) => $c->region_id !== null)->first());
+
+        // A single-signal river-discharge index (Riverine Flood Forecast) must be measured
+        // against *this reach's own* flood thresholds. With no per-region bound there is nothing
+        // defensible to score against — a borrowed number pegs a real river at 100. Refuse to
+        // score; the page shows "calibration pending" (BUILD_PLAN.md T4/T5 follow-up).
+        if ($this->isSingleDischargeIndex($configs)
+            && ! IndexCalibration::hasRegionBound($index, $region, 'RIVER_DISCHARGE')) {
+            return new ForecastScoreResult(null, null, null, 0, ['status' => 'calibration_pending'], 'forecast-formula-v1');
+        }
 
         // signal_type_id => [target_date => value], forward of the issue date. The deterministic
         // (control) series only — the ensemble members (T5) are scored by their own service.
@@ -95,6 +105,21 @@ class ForecastScoringStrategy
             breakdown: ['daily' => $daily, 'peak' => $peak],
             scoringVersion: 'forecast-formula-v1',
         );
+    }
+
+    /**
+     * True when the index is driven by RIVER_DISCHARGE alone (Riverine Flood Forecast) — the
+     * case where a per-reach flood threshold is mandatory. A blended index that also weights
+     * discharge (Flood Risk) is not affected: its other signals carry the score.
+     *
+     * @param  \Illuminate\Support\Collection<int, \App\Models\RegionScoringConfig>  $configs
+     */
+    private function isSingleDischargeIndex(\Illuminate\Support\Collection $configs): bool
+    {
+        $enabled = $configs->filter(fn ($c) => (float) $c->weight > 0);
+
+        return $enabled->count() === 1
+            && $enabled->first()?->signalType?->code === 'RIVER_DISCHARGE';
     }
 
     /**

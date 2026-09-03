@@ -44,13 +44,15 @@ class ForecastScoringTest extends TestCase
             'index_id' => $this->index->index_id, 'region_id' => null,
             'signal_type_id' => $this->dischargeTypeId, 'weight' => 1.0, 'enabled' => true,
         ]);
+        $this->region = Region::query()->orderBy('region_id')->first();
+        // A single-signal discharge index needs a real per-reach bound to score (T4/T5 safety).
         foreach (['MIN' => 0, 'MAX' => 1000] as $suffix => $value) {
             ScoringCalibrationParameter::query()->create([
-                'index_id' => $this->index->index_id, 'region_id' => null,
+                'index_id' => $this->index->index_id, 'region_id' => $this->region->region_id,
                 'parameter_key' => "RIVER_DISCHARGE_{$suffix}", 'parameter_value' => $value,
+                'calibration_status' => 'reference_derived',
             ]);
         }
-        $this->region = Region::query()->orderBy('region_id')->first();
     }
 
     private function forecastDay(string $date, float $value, string $issued = '2026-09-01'): void
