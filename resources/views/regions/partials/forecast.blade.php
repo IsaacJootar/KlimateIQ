@@ -121,6 +121,9 @@
         @endif
         @if (! empty($forecastProbabilityLine))
             <p class="mt-3 text-sm text-white/90"><strong>{{ $forecastProbabilityLine }}</strong></p>
+            <p class="mt-1 text-xs text-white/70">
+                The chance is worked out by running the forecast about 50 times with slightly different starting conditions and counting how many cross the line.
+            </p>
         @endif
         <p class="mt-3 text-xs text-white/70">
             0&ndash;100 scale. Green below 34, amber 34&ndash;66, red 67 and above.

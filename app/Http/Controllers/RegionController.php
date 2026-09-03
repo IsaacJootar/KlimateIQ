@@ -483,18 +483,20 @@ class RegionController extends Controller
         $pct = (int) round((float) $forecast->exceedance_probability * 100);
         $reference = (int) round((float) $forecast->exceedance_reference);
         $horizon = (int) $forecast->horizon_days;
-        $members = (int) $forecast->member_count;
 
-        $phrase = match (true) {
-            $pct >= 80 => "Very likely ({$pct}%)",
-            $pct >= 45 => "About a {$pct}% chance",
-            $pct >= 15 => "A {$pct}% chance",
-            $pct >= 1 => "Only a {$pct}% chance",
-            default => 'Less than a 1% chance',
+        $band = match (true) {
+            $reference >= 67 => 'high risk',
+            $reference >= 34 => 'moderate risk',
+            default => "a score of {$reference}",
         };
 
-        return "{$phrase} of crossing {$reference} at some point in the next {$horizon} days "
-            ."(across {$members} ensemble forecast members).";
+        return match (true) {
+            $pct >= 80 => "Very likely to cross into {$band} at some point in the next {$horizon} days (about {$pct}% chance).",
+            $pct >= 45 => "About a {$pct}% chance of crossing into {$band} in the next {$horizon} days.",
+            $pct >= 15 => "Around a {$pct}% chance of crossing into {$band} in the next {$horizon} days.",
+            $pct >= 5 => "A small chance ({$pct}%) of crossing into {$band} in the next {$horizon} days.",
+            default => "Very unlikely to cross into {$band} in the next {$horizon} days.",
+        };
     }
 
     public function generateSummary(Region $region, RegionScoreSummaryService $summarizer): RedirectResponse

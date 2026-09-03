@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Region;
+use App\Models\RegionForecastScore;
 use App\Models\RegionScore;
 use App\Models\ScoringIndex;
 use App\Models\Sector;
@@ -57,6 +58,29 @@ class SectorHomeTest extends TestCase
             ->assertSee('1 of your 2 LGAs need attention', false)
             ->assertSee('1 of 2 LGAs need attention', false)   // the malaria card
             ->assertSee('Highest:', false);
+    }
+
+    public function test_a_forecast_index_card_reads_its_own_lane_not_no_data(): void
+    {
+        $user = User::factory()->create();
+        [$r1, $r2] = Region::query()->take(2)->get();
+        $user->regionSubscriptions()->create(['region_id' => $r1->region_id]);
+        $user->regionSubscriptions()->create(['region_id' => $r2->region_id]);
+        $user->sectorSubscriptions()->create(['sector_id' => Sector::query()->where('code', 'EMERGENCY_RESPONSE')->value('sector_id')]);
+
+        $ff = ScoringIndex::query()->where('code', 'RIVERINE_FLOOD_FORECAST')->firstOrFail();
+        RegionForecastScore::query()->insert([
+            'index_id' => $ff->index_id, 'region_id' => $r1->region_id, 'forecast_issued_at' => now()->toDateString(),
+            'horizon_days' => 14, 'score' => 25.0, 'peak_date' => now()->addDays(5)->toDateString(), 'lead_days_to_peak' => 5,
+            'scoring_strategy' => 'forecast_formula', 'breakdown' => '{}', 'calculated_at' => now(),
+        ]);
+
+        // A forecast score exists — the card must read region_forecast_scores, not report "no data".
+        $this->actingAs($user)->get(route('sectors.show', 'EMERGENCY_RESPONSE'))
+            ->assertOk()
+            ->assertSee('Riverine Flood Forecast', false)
+            ->assertSee('Highest forecast: '.$r1->name.' (25)', false)
+            ->assertSee('no week-on-week trend', false);
     }
 
     public function test_a_clear_sector_says_so(): void

@@ -86,7 +86,8 @@ class RegionForecastPageTest extends TestCase
         $this->actingAs($user)->get(route('regions.show', ['region' => $region, 'index' => 'RIVERINE_FLOOD_FORECAST']))
             ->assertOk()
             ->assertSee('62% chance')
-            ->assertSee('50 ensemble forecast members')
+            ->assertSee('crossing into high risk', false)
+            ->assertSee('running the forecast about 50 times', false)
             ->assertSee('10th–90th percentile', false);
     }
 
@@ -98,7 +99,8 @@ class RegionForecastPageTest extends TestCase
 
         $this->actingAs($user)->get(route('regions.show', ['region' => $region, 'index' => 'RIVERINE_FLOOD_FORECAST']))
             ->assertOk()
-            ->assertDontSee('ensemble forecast members')
+            ->assertDontSee('% chance of crossing')
+            ->assertDontSee('running the forecast about 50 times')
             ->assertDontSee('percentile range');
     }
 

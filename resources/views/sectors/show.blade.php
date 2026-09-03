@@ -67,30 +67,46 @@
                                 </span>
                             </div>
 
-                            @if ($card['scored_count'] === 0)
-                                <p class="text-sm text-slate-500">No scored LGAs yet for this index.</p>
+                            @php
+                                $n = $card['scored_count'];
+                                $unit = $n === 1 ? 'LGA' : 'LGAs';
+                            @endphp
+                            @if ($n === 0)
+                                <p class="text-sm text-slate-500">{{ $card['is_forecast'] ? 'No forecast on file yet for the LGAs you follow.' : 'No scored LGAs yet for this index.' }}</p>
                             @else
                                 @if ($card['need_attention'] > 0)
                                     <p class="text-sm font-semibold text-slate-900 dark:text-white">
-                                        {{ $card['need_attention'] }} of {{ $card['scored_count'] }} {{ $card['scored_count'] === 1 ? 'LGA needs' : 'LGAs need' }} attention
+                                        @if ($card['is_forecast'])
+                                            {{ $card['need_attention'] }} of {{ $n }} {{ $unit }} forecast to need attention
+                                        @else
+                                            {{ $card['need_attention'] }} of {{ $n }} {{ $n === 1 ? 'LGA needs' : 'LGAs need' }} attention
+                                        @endif
                                     </p>
                                 @else
                                     <p class="text-sm text-slate-700 dark:text-slate-300">
-                                        All {{ $card['scored_count'] }} {{ $card['scored_count'] === 1 ? 'LGA is' : 'LGAs are' }} clear
+                                        @if ($card['is_forecast'])
+                                            None of the {{ $n }} forecast {{ $unit }} need attention
+                                        @else
+                                            All {{ $n }} {{ $n === 1 ? 'LGA is' : 'LGAs are' }} clear
+                                        @endif
                                     </p>
                                 @endif
 
                                 @if ($card['worst_region'])
                                     <p class="text-xs text-slate-500 dark:text-slate-400">
-                                        Highest: {{ $card['worst_region'] }} ({{ $card['worst_score'] }})
+                                        {{ $card['is_forecast'] ? 'Highest forecast' : 'Highest' }}: {{ $card['worst_region'] }} ({{ $card['worst_score'] }})
                                     </p>
                                 @endif
 
-                                <p class="text-xs
-                                    {{ ['up' => 'text-red-600 dark:text-red-400', 'down' => 'text-emerald-600 dark:text-emerald-400'][$card['trend']['direction']] ?? 'text-slate-400' }}">
-                                    @if ($card['trend']['direction'] === 'up') &uarr; @elseif ($card['trend']['direction'] === 'down') &darr; @endif
-                                    {{ $card['trend']['label'] }}
-                                </p>
+                                @if ($card['is_forecast'])
+                                    <p class="text-xs text-slate-400">Forecast, up to 14 days ahead &mdash; no week-on-week trend.</p>
+                                @else
+                                    <p class="text-xs
+                                        {{ ['up' => 'text-red-600 dark:text-red-400', 'down' => 'text-emerald-600 dark:text-emerald-400'][$card['trend']['direction']] ?? 'text-slate-400' }}">
+                                        @if ($card['trend']['direction'] === 'up') &uarr; @elseif ($card['trend']['direction'] === 'down') &darr; @endif
+                                        {{ $card['trend']['label'] }}
+                                    </p>
+                                @endif
                             @endif
 
                             <span class="mt-auto pt-1 text-xs font-semibold text-primary">View all LGAs &rarr;</span>

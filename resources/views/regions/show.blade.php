@@ -291,6 +291,7 @@
                     </p>
                     @if (! empty($forecastTrajectory['probability_line']))
                         <p class="mt-1 text-sm text-gray-700 dark:text-gray-300">{{ $forecastTrajectory['probability_line'] }}</p>
+                        <p class="text-xs text-slate-400">Worked out by running the forecast about 50 times with slightly different starting conditions.</p>
                     @endif
                     @if ($fc->count() > 1)
                         <div class="mt-3 overflow-x-auto">

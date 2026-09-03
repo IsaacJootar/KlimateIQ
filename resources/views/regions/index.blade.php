@@ -103,7 +103,7 @@
                                     <td class="px-4 py-3 text-sm font-semibold whitespace-nowrap">
                                         {{ $region->current_score ?? '—' }}
                                         @if (! empty($region->forecast_probability))
-                                            <span class="ms-1 text-xs font-semibold text-sky-700 dark:text-sky-300" title="Ensemble forecast: chance of crossing into red (67+) within the horizon">≈{{ $region->forecast_probability }}%</span>
+                                            <span class="ms-1 text-xs font-semibold text-sky-700 dark:text-sky-300" title="Forecast: chance of reaching high risk (67+) within the next 2 weeks">≈{{ $region->forecast_probability }}%</span>
                                         @endif
                                     </td>
                                     <td class="px-4 py-3 text-sm whitespace-nowrap">

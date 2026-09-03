@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Region;
+use App\Models\RegionForecastScore;
 use App\Models\RegionScore;
+use App\Models\ScoringIndex;
 use App\Models\Sector;
 use App\Support\RiskBand;
 use App\Support\TrendSummary;
@@ -51,12 +53,14 @@ class SectorController extends Controller
 
             return [
                 'index' => $index,
+                'is_forecast' => (bool) $index->is_forecast,
                 'scored_count' => $scored->count(),
                 'need_attention' => $needAttention->count(),
                 'band' => $worst !== null ? RiskBand::forScore((float) $worst->score) : 'none',
                 'worst_region' => $worst !== null ? ($regions[$worst->region_id]->name ?? null) : null,
                 'worst_score' => $worst !== null ? rtrim(rtrim(number_format((float) $worst->score, 1), '0'), '.') : null,
-                'trend' => TrendSummary::describe($avgNow, $avgThen),
+                // A forecast index has no history — no "up / down over 2 weeks".
+                'trend' => $index->is_forecast ? TrendSummary::describe(null, null) : TrendSummary::describe($avgNow, $avgThen),
             ];
         });
 
@@ -79,9 +83,12 @@ class SectorController extends Controller
      * The most recent score per region for each of the given indices — one grouped collection,
      * keyed by index_id. $onOrBefore narrows to "the score as of N days ago" for a trend.
      *
+     * A forecast index (BUILD_PLAN.md T4) is read from its own lane (region_forecast_scores) —
+     * one current row per region, no history, so it is skipped for the "as of N days ago" pass.
+     *
      * @param  array<int>  $indexIds
      * @param  array<int>  $regionIds
-     * @return Collection<int, Collection<int, RegionScore>>
+     * @return Collection<int, Collection<int, object>>
      */
     private function latestScoresByIndex(array $indexIds, array $regionIds, ?string $onOrBefore): Collection
     {
@@ -89,13 +96,24 @@ class SectorController extends Controller
             return collect();
         }
 
-        return RegionScore::query()
-            ->whereIn('index_id', $indexIds)
+        $forecastIds = ScoringIndex::query()->whereIn('index_id', $indexIds)->forecast()->pluck('index_id')->all();
+        $observedIds = array_values(array_diff($indexIds, $forecastIds));
+
+        $observed = $observedIds === [] ? collect() : RegionScore::query()
+            ->whereIn('index_id', $observedIds)
             ->whereIn('region_id', $regionIds)
             ->when($onOrBefore !== null, fn ($q) => $q->where('period_start', '<=', $onOrBefore))
             ->orderByDesc('period_start')
             ->get(['index_id', 'region_id', 'period_start', 'score'])
             ->groupBy('index_id')
             ->map(fn ($group) => $group->unique('region_id')->values());
+
+        $forecast = ($forecastIds === [] || $onOrBefore !== null) ? collect() : RegionForecastScore::query()
+            ->whereIn('index_id', $forecastIds)
+            ->whereIn('region_id', $regionIds)
+            ->get(['index_id', 'region_id', 'score'])
+            ->groupBy('index_id');
+
+        return $observed->union($forecast);
     }
 }
