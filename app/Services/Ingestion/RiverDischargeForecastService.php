@@ -50,6 +50,8 @@ class RiverDischargeForecastService implements ForecastIngestionService
             );
         }
 
+        $this->pruneCentroidRows($region, self::SIGNAL_CODE);
+
         return $written;
     }
 }

@@ -41,6 +41,8 @@ class RiverDischargeEnsembleService implements EnsembleForecastIngestionService
             $written += $this->persistEnsembleSeries($region, self::SIGNAL_CODE, $source, $issuedAt, $members, $reach['reach']);
         }
 
+        $this->pruneCentroidRows($region, self::SIGNAL_CODE);
+
         return $written;
     }
 }

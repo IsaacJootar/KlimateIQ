@@ -139,11 +139,18 @@ class ForecastScoringStrategy
             ->get()
             ->groupBy('reach');
 
+        $rivers = RiverReach::query()->where('region_id', $region->region_id)->pluck('river', 'reach');
+
+        // Once an LGA has named reaches, ignore any leftover 'centroid' rows from before it did —
+        // the named reaches are the whole picture (T4/T5 follow-up).
+        if ($rivers->isNotEmpty()) {
+            $rows = $rows->reject(fn ($_, $reach) => $reach === 'centroid');
+        }
+
         if ($rows->isEmpty()) {
             return new ForecastScoreResult(null, null, null, 0, [], 'forecast-formula-v1');
         }
 
-        $rivers = RiverReach::query()->where('region_id', $region->region_id)->pluck('river', 'reach');
         $configs = collect([$config->signal_type_id => $config]);
         $scored = [];
         $uncalibrated = [];

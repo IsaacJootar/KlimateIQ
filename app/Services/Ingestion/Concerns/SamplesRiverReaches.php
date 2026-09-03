@@ -3,7 +3,9 @@
 namespace App\Services\Ingestion\Concerns;
 
 use App\Models\Region;
+use App\Models\RegionForecastSignal;
 use App\Models\RiverReach;
+use App\Models\SignalType;
 use Illuminate\Support\Collection;
 
 /**
@@ -29,5 +31,23 @@ trait SamplesRiverReaches
             'lat' => $r->latitude,
             'lon' => $r->longitude,
         ])->values();
+    }
+
+    /**
+     * Drop any leftover 'centroid' forecast-discharge rows for a region that now has named
+     * reaches — a one-time cleanup on the first ingest after an LGA is added to river_reaches.
+     */
+    protected function pruneCentroidRows(Region $region, string $signalCode): void
+    {
+        if (RiverReach::query()->where('region_id', $region->region_id)->doesntExist()) {
+            return;
+        }
+
+        $signalTypeId = SignalType::query()->where('code', $signalCode)->value('signal_type_id');
+        RegionForecastSignal::query()
+            ->where('region_id', $region->region_id)
+            ->where('signal_type_id', $signalTypeId)
+            ->where('reach', 'centroid')
+            ->delete();
     }
 }
