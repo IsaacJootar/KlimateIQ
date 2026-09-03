@@ -18,7 +18,8 @@ class CalculateForecastScoresCommand extends Command
 {
     protected $signature = 'scores:forecast
         {--region= : Only score this region_id}
-        {--index= : Only score this index code, e.g. RIVERINE_FLOOD_FORECAST}';
+        {--index= : Only score this index code, e.g. RIVERINE_FLOOD_FORECAST}
+        {--no-ensemble : Skip the probabilistic (ensemble) pass — control score only}';
 
     protected $description = 'Calculate every forecast index for every active region from the forecast signals on file.';
 
@@ -38,9 +39,11 @@ class CalculateForecastScoresCommand extends Command
 
         $scored = 0;
 
+        $withEnsemble = ! $this->option('no-ensemble');
+
         foreach ($indices as $index) {
             foreach ($regions as $region) {
-                $result = $service->calculate($index, $region);
+                $result = $service->calculate($index, $region, null, $withEnsemble);
                 $this->line($result->score !== null
                     ? "  {$index->code} — {$region->name}: {$result->score} (peak +{$result->leadDaysToPeak}d)"
                     : "  {$index->code} — {$region->name}: no forecast coverage");
