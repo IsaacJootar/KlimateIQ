@@ -51,9 +51,11 @@ class ForecastScoringStrategy
             ->groupBy('signal_type_id')
             ->map(fn ($group) => $group->sortByDesc(fn ($c) => $c->region_id !== null)->first());
 
-        // signal_type_id => [target_date => value], forward of the issue date.
+        // signal_type_id => [target_date => value], forward of the issue date. The deterministic
+        // (control) series only — the ensemble members (T5) are scored by their own service.
         $series = RegionForecastSignal::query()
             ->where('region_id', $region->region_id)
+            ->where('member', 'control')
             ->whereIn('signal_type_id', $configs->keys())
             ->whereDate('target_date', '>=', $issuedAt->toDateString())
             ->orderBy('target_date')
@@ -77,40 +79,7 @@ class ForecastScoringStrategy
             ->groupBy('signal_type_id')
             ->map(fn ($rows) => (float) $rows->first()->value);
 
-        $daily = [];
-        foreach ($days as $date) {
-            $weightedSum = 0.0;
-            $totalWeight = 0.0;
-            $signals = [];
-
-            foreach ($configs as $config) {
-                $value = $series->get($config->signal_type_id)?->get($date)
-                    ?? $observedFallback->get($config->signal_type_id);
-                if ($value === null) {
-                    continue;
-                }
-
-                [$min, $max] = $this->calibrationBounds($index, $region, $config->signalType->code);
-                $higherIsWorse = $config->higher_is_worse ?? $config->signalType->higher_is_worse;
-                $normalized = $this->normalize($value, $min, $max, $higherIsWorse);
-                $weight = (float) $config->weight;
-
-                $weightedSum += $normalized * $weight;
-                $totalWeight += $weight;
-                $signals[$config->signalType->code] = ['raw_value' => $value, 'normalized_score' => round($normalized, 2)];
-            }
-
-            if ($totalWeight <= 0.0) {
-                continue;
-            }
-
-            $daily[] = [
-                'date' => $date,
-                'lead_days' => (int) $issuedAt->diffInDays(Carbon::parse($date)),
-                'score' => round(min(100, max(0, $weightedSum / $totalWeight)), 2),
-                'signals' => $signals,
-            ];
-        }
+        $daily = $this->scoreDailySeries($index, $region, $issuedAt, $configs, $series, $observedFallback);
 
         if ($daily === []) {
             return new ForecastScoreResult(null, null, null, $days->count(), [], 'forecast-formula-v1');
@@ -126,5 +95,66 @@ class ForecastScoringStrategy
             breakdown: ['daily' => $daily, 'peak' => $peak],
             scoringVersion: 'forecast-formula-v1',
         );
+    }
+
+    /**
+     * Score each forecast day from a set of per-signal daily series plus an observed fallback for
+     * weighted signals with no series of their own — the exact normalise + weight the observed
+     * engine uses. Shared by the control path above and the per-member ensemble path
+     * (EnsembleForecastScoringService, BUILD_PLAN.md T5), so a member score and the control score
+     * differ only through the forecast values fed in.
+     *
+     * @param  \Illuminate\Support\Collection<int, \App\Models\RegionScoringConfig>  $configs  keyed by signal_type_id
+     * @param  \Illuminate\Support\Collection<int, \Illuminate\Support\Collection<string, float>>  $seriesBySignalId  signal_type_id => (date => value)
+     * @param  \Illuminate\Support\Collection<int, float>  $observedFallback  signal_type_id => latest observed value
+     * @return list<array{date: string, lead_days: int, score: float, signals: array<string, array{raw_value: float, normalized_score: float}>}>
+     */
+    public function scoreDailySeries(
+        ScoringIndex $index,
+        Region $region,
+        Carbon $issuedAt,
+        \Illuminate\Support\Collection $configs,
+        \Illuminate\Support\Collection $seriesBySignalId,
+        \Illuminate\Support\Collection $observedFallback,
+    ): array {
+        $issuedAt = $issuedAt->copy()->startOfDay();
+        $days = $seriesBySignalId->flatMap(fn ($m) => $m->keys())->unique()->sort()->values();
+
+        $daily = [];
+        foreach ($days as $date) {
+            $weightedSum = 0.0;
+            $totalWeight = 0.0;
+            $signals = [];
+
+            foreach ($configs as $config) {
+                $value = $seriesBySignalId->get($config->signal_type_id)?->get($date)
+                    ?? $observedFallback->get($config->signal_type_id);
+                if ($value === null) {
+                    continue;
+                }
+
+                [$min, $max] = $this->calibrationBounds($index, $region, $config->signalType->code);
+                $higherIsWorse = $config->higher_is_worse ?? $config->signalType->higher_is_worse;
+                $normalized = $this->normalize((float) $value, $min, $max, $higherIsWorse);
+                $weight = (float) $config->weight;
+
+                $weightedSum += $normalized * $weight;
+                $totalWeight += $weight;
+                $signals[$config->signalType->code] = ['raw_value' => (float) $value, 'normalized_score' => round($normalized, 2)];
+            }
+
+            if ($totalWeight <= 0.0) {
+                continue;
+            }
+
+            $daily[] = [
+                'date' => $date,
+                'lead_days' => (int) $issuedAt->diffInDays(Carbon::parse($date)),
+                'score' => round(min(100, max(0, $weightedSum / $totalWeight)), 2),
+                'signals' => $signals,
+            ];
+        }
+
+        return $daily;
     }
 }

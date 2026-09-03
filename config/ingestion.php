@@ -10,12 +10,15 @@ use App\Services\Ingestion\ElevationIngestionService;
 use App\Services\Ingestion\EvapotranspirationIngestionService;
 use App\Services\Ingestion\HumidityIngestionService;
 use App\Services\Ingestion\PopulationExposureIngestionService;
+use App\Services\Ingestion\RainfallEnsembleService;
 use App\Services\Ingestion\RainfallForecastService;
 use App\Services\Ingestion\RainfallIngestionService;
+use App\Services\Ingestion\RiverDischargeEnsembleService;
 use App\Services\Ingestion\RiverDischargeForecastService;
 use App\Services\Ingestion\RiverDischargeIngestionService;
 use App\Services\Ingestion\SoilMoistureIngestionService;
 use App\Services\Ingestion\StandingWaterIngestionService;
+use App\Services\Ingestion\TemperatureEnsembleService;
 use App\Services\Ingestion\TemperatureForecastService;
 use App\Services\Ingestion\TemperatureIngestionService;
 use App\Services\Ingestion\VegetationIngestionService;
@@ -69,6 +72,31 @@ return [
         RiverDischargeForecastService::class,
         RainfallForecastService::class,
         TemperatureForecastService::class,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Ensemble forecast sources
+    |--------------------------------------------------------------------------
+    |
+    | Every class here must implement App\Services\Ingestion\EnsembleForecastIngestionService.
+    | signals:ingest-ensemble and its scheduler iterate this list. These write many member rows
+    | per (region, signal) into region_forecast_signals — the same lane as the deterministic
+    | forecast, tagged with a member id — and feed the probabilistic score (BUILD_PLAN.md T5).
+    |
+    */
+    'ensemble_sources' => [
+        RiverDischargeEnsembleService::class,
+        RainfallEnsembleService::class,
+        TemperatureEnsembleService::class,
+    ],
+
+    'ensemble' => [
+        // Weather models pooled for the rainfall / temperature member spread. Multiple
+        // independent models give a better-calibrated spread than one model's perturbations
+        // alone. ECMWF runs ~15 days (shorter members are fine — scoring tolerates a ragged
+        // tail); GFS and ICON cover the full horizon.
+        'weather_models' => ['gfs_seamless', 'ecmwf_ifs04', 'icon_seamless'],
     ],
 
 ];

@@ -24,6 +24,11 @@ Schedule::command('signals:ingest --source='.implode(',', IngestionCadence::WEEK
 // observed daily pull and before scoring, in its own lane — region_forecast_signals, never
 // region_signals — so a forecast can never leak into an observed-data query.
 Schedule::command('signals:ingest-forecast')->dailyAt('03:00');
+// The ensemble members behind the probabilistic score (BUILD_PLAN.md T5) — GloFAS's 50-member
+// discharge ensemble + a pooled multi-model rainfall/temperature ensemble. Same lane
+// (region_forecast_signals, tagged by member), just after the deterministic pull and before
+// scoring. A pooled 3-model pull is heavier, so it queues rather than running inline.
+Schedule::command('signals:ingest-ensemble')->dailyAt('03:20');
 // Elevation and Population aren't scheduled at all — see IngestionCadence::ONCE. They're pulled
 // once when a region is first activated and re-pulled only manually if the reference data itself
 // changes (a recurring pull for near-static data would just burn quota against rate-limited

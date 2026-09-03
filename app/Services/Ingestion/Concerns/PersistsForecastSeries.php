@@ -11,9 +11,12 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * The write half every ForecastIngestionService shares (BUILD_PLAN.md T4): take a fetched
- * date => value series and replace this region+signal's whole forecast series in one
+ * date => value series and replace this region+signal's whole *control* forecast series in one
  * transaction. Latest issuance wins, and the delete also prunes target dates that fell out of
  * the window (yesterday's "+14 days" is today's "+13"). Days before the issue date are dropped.
+ *
+ * Scoped to `member = 'control'` (T5): the deterministic series and the ensemble members
+ * (PersistsEnsembleForecastSeries) share the table but replace each other's rows independently.
  */
 trait PersistsForecastSeries
 {
@@ -39,6 +42,7 @@ trait PersistsForecastSeries
             $rows[] = [
                 'region_id' => $region->region_id,
                 'signal_type_id' => $signalType->signal_type_id,
+                'member' => 'control',
                 'forecast_issued_at' => $issuedAt->toDateString(),
                 'target_date' => $targetDate->toDateString(),
                 'lead_days' => (int) $issuedAt->diffInDays($targetDate),
@@ -57,6 +61,7 @@ trait PersistsForecastSeries
             RegionForecastSignal::query()
                 ->where('region_id', $region->region_id)
                 ->where('signal_type_id', $signalType->signal_type_id)
+                ->where('member', 'control')
                 ->delete();
 
             RegionForecastSignal::query()->insert($rows);
@@ -65,6 +70,7 @@ trait PersistsForecastSeries
         return RegionForecastSignal::query()
             ->where('region_id', $region->region_id)
             ->where('signal_type_id', $signalType->signal_type_id)
+            ->where('member', 'control')
             ->orderBy('target_date')
             ->get();
     }

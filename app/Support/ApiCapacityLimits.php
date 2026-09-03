@@ -30,12 +30,12 @@ class ApiCapacityLimits
             'RAINFALL' => [
                 'provider' => 'NASA POWER (primary), Open-Meteo (fallback + forecast)',
                 'dailyLimit' => 10000,
-                'recommendation' => 'Observed fallback traffic only hits Open-Meteo\'s 10,000/day limit when NASA POWER is down. The forecast lane (Open-Meteo Forecast API, 1 call/region/day, feeds the forward score of Flood/Malaria/Drought) shares that same quota — still a rounding error against 774 LGAs. Self-hosting Open-Meteo (AGPLv3) removes the ceiling once real usage justifies it — see docs/INGESTION_GUIDE.md.',
+                'recommendation' => 'Observed fallback traffic only hits Open-Meteo\'s 10,000/day limit when NASA POWER is down. The forecast lane (Open-Meteo Forecast API, 1 call/region/day, feeds the forward score of Flood/Malaria/Drought) plus the ensemble lane (Open-Meteo Ensemble API, one call per weather model per region/day — 3 models pooled — feeds the probabilistic score) share that same quota — still a rounding error against 774 LGAs. Self-hosting Open-Meteo (AGPLv3) removes the ceiling once real usage justifies it — see docs/INGESTION_GUIDE.md.',
             ],
             'TEMPERATURE' => [
                 'provider' => 'NASA POWER (primary), Open-Meteo (fallback + forecast)',
                 'dailyLimit' => 10000,
-                'recommendation' => 'Same fallback path as Rainfall, plus a 1 call/region/day forecast pull (Open-Meteo Forecast API) that feeds the forward score of Heat Stress and Composite — see that recommendation.',
+                'recommendation' => 'Same fallback path as Rainfall, plus a 1 call/region/day forecast pull (Open-Meteo Forecast API) and a pooled multi-model ensemble pull (Open-Meteo Ensemble API) that feed the forward and probabilistic scores of Heat Stress and Composite — see that recommendation.',
             ],
             'AIR_QUALITY_PM25' => [
                 'provider' => 'Open-Meteo Air Quality API',
@@ -90,7 +90,7 @@ class ApiCapacityLimits
             'RIVER_DISCHARGE' => [
                 'provider' => 'Open-Meteo Flood API (GloFAS)',
                 'dailyLimit' => 10000,
-                'recommendation' => 'Two calls/region/day at most — one observed (past week), one forecast (14-day horizon) — sharing Open-Meteo\'s 10,000/day free-tier quota with the archive and air-quality pulls. GloFAS only models mapped river reaches, so a large share of LGAs return no data; that is coverage, not a rate problem. Self-hosting Open-Meteo (AGPLv3) lifts the ceiling if ever needed.',
+                'recommendation' => 'Three calls/region/day at most — observed (past week), deterministic forecast (14-day horizon), and the 50-member GloFAS ensemble forecast (one call, &ensemble=true, feeds the probabilistic score) — sharing Open-Meteo\'s 10,000/day free-tier quota with the archive and air-quality pulls. GloFAS only models mapped river reaches, so a large share of LGAs return no data; that is coverage, not a rate problem. Self-hosting Open-Meteo (AGPLv3) lifts the ceiling if ever needed.',
             ],
             'STANDING_WATER' => [
                 'provider' => 'JRC Global Surface Water',

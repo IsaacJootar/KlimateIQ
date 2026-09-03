@@ -18,6 +18,7 @@ class RegionForecastSignal extends Model
     protected $fillable = [
         'region_id',
         'signal_type_id',
+        'member',
         'forecast_issued_at',
         'target_date',
         'lead_days',
