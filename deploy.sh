@@ -30,6 +30,7 @@ php artisan db:seed --class=AdditionalIndicesSeeder --force
 php artisan db:seed --class=SectorSeeder --force
 php artisan db:seed --class=CropCalendarSeeder --force
 php artisan db:seed --class=FacilitySeeder --force
+php artisan db:seed --class=RiverReachSeeder --force
 
 echo "==> Frontend build"
 npm ci --no-audit --no-fund
