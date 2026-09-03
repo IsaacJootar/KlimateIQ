@@ -21,7 +21,9 @@ class RiverReachSeederTest extends TestCase
 
         $this->assertGreaterThanOrEqual(15, $reaches->count());
         $this->assertTrue($reaches->every(fn (RiverReach $r) => $r->region_id !== null));
-        $this->assertTrue($reaches->every(fn (RiverReach $r) => in_array($r->river, ['Niger', 'Benue'], true)));
+        $this->assertTrue($reaches->every(fn (RiverReach $r) => strlen((string) $r->river) >= 4));
+        $this->assertContains('Niger', $reaches->pluck('river'));
+        $this->assertContains('Benue', $reaches->pluck('river'));
         $this->assertTrue($reaches->every(fn (RiverReach $r) => $r->source !== '' && str_contains($r->source, 'geoBoundaries')));
 
         // Every coordinate sits inside Nigeria's bounding box.

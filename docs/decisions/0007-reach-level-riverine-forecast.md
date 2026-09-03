@@ -1,7 +1,7 @@
-# 0007 — Reach-level riverine forecast (Niger–Benue corridor)
+# 0007 — Reach-level riverine forecast
 
 - **Date:** 2026-09
-- **Status:** accepted (pilot)
+- **Status:** accepted (Niger–Benue pilot, then extended to 8 rivers)
 
 ## Context
 
@@ -15,13 +15,19 @@ communities). "Lokoja: 74" can't carry that.
 
 Score the index **per named river reach** for the LGAs on the Niger and the Benue.
 
-- **`database/seeders/data/nigeria_river_reaches.json`** — a curated sample point per LGA per
-  river. Built at implementation time from OpenStreetMap channel geometry (the Niger relation
-  9110137) plus a waypoint polyline for the Benue anchored on the published confluence
-  (7.7533, 6.7567) and Makurdi gauge (7.7306, 8.5361), intersected with geoBoundaries NGA ADM2
-  (CC-BY 4.0), then **snapped to the GloFAS modelled channel** — GloFAS runs on a ~5 km network,
-  so each point is moved to the highest-discharge cell in a ±0.1° grid around it. ~25 entries,
-  23 LGAs; Lokoja and Bassa carry both rivers.
+- **`database/seeders/data/nigeria_river_reaches.json`** — a sample point per LGA per river.
+  Built at implementation time from OpenStreetMap `waterway=river` relation geometry (Niger,
+  Benue*, Kaduna, Katsina-Ala, Donga, Gongola, Yobe/Komadugu, Cross), intersected with
+  geoBoundaries NGA ADM2 (CC-BY 4.0), the representative on-channel point taken nearest each
+  LGA seat, then **snapped to the GloFAS modelled channel** — GloFAS runs on a ~5 km network, so
+  each point is moved to the highest-discharge cell in a ±0.07–0.1° grid, and dropped if the
+  channel there carries less than a per-river floor (~100–400 m³/s). **87 reaches, 79 LGAs**;
+  Lokoja, Bassa and other confluence/valley LGAs carry two rivers. (*Benue: a waypoint polyline
+  anchored on the published confluence 7.7533,6.7567 and Makurdi gauge 7.7306,8.5361 — OSM's
+  Benue tagging is fragmentary.)
+- **Sokoto–Rima was excluded**: GloFAS models it at ~20 m³/s (heavily dammed — Bakolori,
+  Goronyo — so the natural-flow model under-represents the regulated river). Revisit if a
+  reservoir-aware discharge source becomes available.
 - A `reach` dimension on `region_forecast_signals` and `scoring_calibration_parameters`
   (`'centroid'` / `null` = the pre-existing single-point behaviour). `river_reaches` table.
 - `calibrate:river-discharge`, the forecast + ensemble ingestion, and `ForecastScoringStrategy`
@@ -47,5 +53,6 @@ Score the index **per named river reach** for the LGAs on the Niger and the Benu
 
 - Demand appears for following a river across LGAs → the river-entity model (alternative 3).
 - LGA polygons + PostGIS land → automatic reach discovery, nationwide.
-- The corridor needs extending (Delta distributaries, Kaduna, Gongola, Hadejia, Cross,
-  Sokoto-Rima) → add JSON entries, re-run the snap step, calibrate.
+- More rivers are wanted (Sokoto–Rima with a dam-aware source, Anambra, Imo, Kwa Ibo, Ogun,
+  Osun, delta distributaries) → add the OSM relation, re-run the intersect + snap step,
+  calibrate.

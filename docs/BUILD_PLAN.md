@@ -259,7 +259,8 @@ Flood API `&ensemble=true` — both free.
   `scoring_calibration_parameters`. Ingestion, `calibrate:river-discharge` and
   `ForecastScoringStrategy` iterate reaches; the index score is the worst reach; the region page
   shows a "By river" panel and names the driving river; the forecast alert says "the Benue at
-  Lokoja". Niger–Benue corridor pilot (~23 LGAs); an LGA with no reaches is unchanged. Decision
+  Lokoja". 8 rivers, 87 reaches, 79 LGAs (Niger, Benue, Kaduna, Katsina-Ala, Donga, Gongola,
+  Yobe/Komadugu, Cross); an LGA with no reaches is unchanged. Decision
   [0007](decisions/0007-reach-level-riverine-forecast.md).
 
 ### T6 — Climate outlook module · Ready · size M–L
