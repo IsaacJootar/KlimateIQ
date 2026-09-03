@@ -24,6 +24,23 @@ class ThresholdBreachedNotification extends Notification
         return (int) round((float) $this->alert->score_at_trigger);
     }
 
+    /** "72%" — the realised ensemble probability for a probability-threshold alert. */
+    private function forecastProbabilityPct(): string
+    {
+        return round((float) $this->alert->forecast_probability * 100).'%';
+    }
+
+    private function isProbabilityAlert(): bool
+    {
+        return $this->alert->forecast_probability !== null;
+    }
+
+    /** The rule's index level, trimmed of trailing decimal zeros — "67", not "67.0000". */
+    private function level(): string
+    {
+        return rtrim(rtrim((string) $this->alert->threshold_value, '0'), '.');
+    }
+
     /** "in about 5 days (around Sep 9)" — the lead-time clause for a forecast alert. */
     private function forecastWhen(): string
     {
@@ -80,10 +97,29 @@ class ThresholdBreachedNotification extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        $this->alert->loadMissing(['region', 'index', 'signalType']);
+        $this->alert->loadMissing(['region', 'index', 'signalType', 'thresholdConfig']);
 
         $target = $this->alert->index?->name ?? $this->alert->signalType?->name ?? 'a signal';
         $region = $this->alert->region->name;
+
+        if ($this->isProbabilityAlert()) {
+            $mail = (new MailMessage)
+                ->subject("FORECAST — {$this->forecastProbabilityPct()} chance {$target} for {$region} crosses your level")
+                ->greeting('Hi '.$notifiable->name.',')
+                ->line('This is a probability from an ensemble forecast, not a certainty.')
+                ->line("The ensemble gives about a {$this->forecastProbabilityPct()} chance of {$target} for {$region} ".
+                    "reaching {$this->level()}+ within the forecast window — at or above the ".
+                    "{$this->alert->thresholdConfig?->probability_threshold}% you asked to be warned at.")
+                ->line("Most-likely peak: {$this->forecastPeak()} ".$this->forecastWhen().'.');
+
+            if ($action = $this->recommendedAction()) {
+                $mail->line("Recommended action: {$action}");
+            }
+
+            return $mail
+                ->action('View alert', route('alerts.index'))
+                ->line('The lead time is your window to prepare.');
+        }
 
         if ($this->alert->is_forecast) {
             $mail = (new MailMessage)
@@ -120,21 +156,31 @@ class ThresholdBreachedNotification extends Notification
 
     public function toDatabase(object $notifiable): array
     {
-        $this->alert->loadMissing(['region', 'index', 'signalType']);
+        $this->alert->loadMissing(['region', 'index', 'signalType', 'thresholdConfig']);
 
         $target = $this->alert->index?->name ?? $this->alert->signalType?->name ?? 'a signal';
 
-        $body = $this->alert->is_forecast
-            ? "FORECAST: {$target} for {$this->alert->region->name} is projected to reach {$this->forecastPeak()} ".$this->forecastWhen().'. This is a forecast, not a current reading.'
-            : "{$target} in {$this->alert->region->name} crossed a threshold you set.";
+        $body = match (true) {
+            $this->isProbabilityAlert() => "FORECAST: about a {$this->forecastProbabilityPct()} chance {$target} for {$this->alert->region->name} reaches {$this->level()}+ within the forecast window (most-likely peak {$this->forecastPeak()} ".$this->forecastWhen().'). A probability from an ensemble forecast, not a certainty.',
+            $this->alert->is_forecast => "FORECAST: {$target} for {$this->alert->region->name} is projected to reach {$this->forecastPeak()} ".$this->forecastWhen().'. This is a forecast, not a current reading.',
+            default => "{$target} in {$this->alert->region->name} crossed a threshold you set.",
+        };
 
         if ($action = $this->recommendedAction()) {
             $body .= " Recommended action: {$action}";
         }
 
         return [
-            'type' => $this->alert->is_forecast ? 'forecast_breach' : 'threshold_breached',
-            'title' => ($this->alert->is_forecast ? 'Forecast — ' : 'Threshold breached — ').$target,
+            'type' => match (true) {
+                $this->isProbabilityAlert() => 'forecast_probability',
+                $this->alert->is_forecast => 'forecast_breach',
+                default => 'threshold_breached',
+            },
+            'title' => match (true) {
+                $this->isProbabilityAlert() => "Forecast ({$this->forecastProbabilityPct()} chance) — ".$target,
+                $this->alert->is_forecast => 'Forecast — '.$target,
+                default => 'Threshold breached — '.$target,
+            },
             'body' => $body,
             'alert_id' => $this->alert->alert_id,
             'url' => route('alerts.index'),
@@ -143,13 +189,15 @@ class ThresholdBreachedNotification extends Notification
 
     public function toSms(object $notifiable): string
     {
-        $this->alert->loadMissing(['region', 'index', 'signalType']);
+        $this->alert->loadMissing(['region', 'index', 'signalType', 'thresholdConfig']);
 
         $target = $this->alert->index?->name ?? $this->alert->signalType?->name ?? 'a signal';
 
-        $message = $this->alert->is_forecast
-            ? "KlimateIQ FORECAST: {$target} for {$this->alert->region->name} projected to reach {$this->forecastPeak()} ".$this->forecastWhen().' (forecast, not current).'
-            : "KlimateIQ alert: {$target} in {$this->alert->region->name} crossed your threshold (value: {$this->alert->score_at_trigger}).";
+        $message = match (true) {
+            $this->isProbabilityAlert() => "KlimateIQ FORECAST: ~{$this->forecastProbabilityPct()} chance {$target} for {$this->alert->region->name} reaches {$this->level()}+ ".$this->forecastWhen().' (ensemble probability, not a certainty).',
+            $this->alert->is_forecast => "KlimateIQ FORECAST: {$target} for {$this->alert->region->name} projected to reach {$this->forecastPeak()} ".$this->forecastWhen().' (forecast, not current).',
+            default => "KlimateIQ alert: {$target} in {$this->alert->region->name} crossed your threshold (value: {$this->alert->score_at_trigger}).",
+        };
 
         if ($action = $this->recommendedAction()) {
             $message .= " Recommended: {$action}";

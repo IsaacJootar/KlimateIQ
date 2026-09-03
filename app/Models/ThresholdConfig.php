@@ -24,6 +24,7 @@ class ThresholdConfig extends Model
         'comparison_operator',
         'threshold_value',
         'anomaly_stddev_multiplier',
+        'probability_threshold',
         'active',
         'watch_forecast',
     ];
@@ -31,6 +32,7 @@ class ThresholdConfig extends Model
     protected $casts = [
         'threshold_value' => 'decimal:4',
         'anomaly_stddev_multiplier' => 'decimal:2',
+        'probability_threshold' => 'decimal:2',
         'active' => 'boolean',
         'watch_forecast' => 'boolean',
     ];
@@ -63,5 +65,15 @@ class ThresholdConfig extends Model
     public function isAnomalyType(): bool
     {
         return $this->alert_type === 'anomaly';
+    }
+
+    /**
+     * BUILD_PLAN.md T5 M3 — fire when the ensemble forecast gives at least
+     * `probability_threshold` percent chance of the index peak reaching `threshold_value`
+     * within the horizon. Always a forecast rule.
+     */
+    public function isProbabilityType(): bool
+    {
+        return $this->alert_type === 'forecast_probability';
     }
 }

@@ -22,7 +22,7 @@
                                     @if ($alert->is_forecast)
                                         <span class="inline-flex ms-1 items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-sky-100 text-sky-700 dark:bg-sky-900 dark:text-sky-200">
                                             <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-                                            Forecast
+                                            Forecast@if ($alert->forecast_probability !== null) &middot; {{ round((float) $alert->forecast_probability * 100) }}%@endif
                                         </span>
                                     @endif
                                     <span class="inline-flex ms-1 px-2 py-0.5 rounded-full text-xs font-semibold
@@ -33,7 +33,11 @@
                                     </span>
                                 </p>
                                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                    @if ($alert->is_forecast)
+                                    @if ($alert->forecast_probability !== null)
+                                        ≈{{ round((float) $alert->forecast_probability * 100) }}% chance of reaching {{ $alert->threshold_value }}+ within the forecast window
+                                        &middot; most-likely peak {{ $alert->score_at_trigger }}
+                                        @if ($alert->forecast_target_date) &middot; around {{ $alert->forecast_target_date->format('M j') }}@endif
+                                    @elseif ($alert->is_forecast)
                                         Forecast peak {{ $alert->score_at_trigger }}
                                         @if ($alert->threshold_value !== null) past your {{ $alert->threshold_value }} threshold @endif
                                         @if ($alert->forecast_target_date) &middot; projected for {{ $alert->forecast_target_date->format('M j') }}@if ($alert->forecast_lead_days !== null) ({{ $alert->forecast_lead_days }}d out)@endif @endif

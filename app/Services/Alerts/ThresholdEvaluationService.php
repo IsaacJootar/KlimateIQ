@@ -3,11 +3,13 @@
 namespace App\Services\Alerts;
 
 use App\Models\Alert;
+use App\Models\RegionForecastScore;
 use App\Models\RegionScore;
 use App\Models\RegionSignal;
 use App\Models\ThresholdConfig;
 use App\Models\UserRegionSubscription;
 use App\Notifications\ThresholdBreachedNotification;
+use App\Services\Scoring\EnsembleForecastScoringService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -46,18 +48,33 @@ class ThresholdEvaluationService
     }
 
     /**
-     * BUILD_PLAN.md T4 M4 — a fresh forecast peak for a forecast index. Fires a threshold on
-     * the forecast peak, clearly flagged as a forecast, and keeps just one open forecast alert
-     * per config: the alert follows the forecast (updated silently as the peak / date move) and
-     * auto-resolves when the forecast recedes below the threshold or its target date passes.
-     * Anomaly-type thresholds don't apply — there is no forecast baseline.
+     * BUILD_PLAN.md T4 M4 / T5 M3 — a fresh forecast for a forecast index. Two rule shapes:
+     *
+     *   - a fixed threshold fires on the forecast PEAK ("projected to reach 62");
+     *   - a probability threshold fires when the ensemble gives at least `probability_threshold`
+     *     percent chance of the peak reaching `threshold_value` ("≈72% chance of crossing 67").
+     *
+     * Either way, clearly flagged as a forecast, one open forecast alert per config that follows
+     * the forecast (updated silently as it moves) and auto-resolves when it recedes below the
+     * rule or its target date passes. Anomaly-type thresholds don't apply — no forecast baseline.
      */
     public function evaluateForForecast(int $indexId, int $regionId, ?float $peakScore, ?string $peakDate, ?int $leadDays): void
     {
         $configs = $this->applicableConfigs('index_id', $indexId, $regionId)
             ->load('index')
             ->filter(fn (ThresholdConfig $c) => ! $c->isAnomalyType()
-                && ($c->watch_forecast || $c->index?->is_forecast));
+                && ($c->watch_forecast || $c->isProbabilityType() || $c->index?->is_forecast));
+
+        if ($configs->isEmpty()) {
+            return;
+        }
+
+        $forecastRow = RegionForecastScore::query()
+            ->where('index_id', $indexId)->where('region_id', $regionId)->first();
+        $memberPeaks = array_map('floatval', $forecastRow?->breakdown['members'] ?? []);
+        $p50 = $forecastRow?->p50 !== null ? (float) $forecastRow->p50 : null;
+
+        $targetPassed = $peakDate !== null && Carbon::parse($peakDate)->isBefore(today());
 
         foreach ($configs as $config) {
             $openAlert = Alert::query()
@@ -66,10 +83,19 @@ class ThresholdEvaluationService
                 ->where('status', 'OPEN')
                 ->first();
 
-            $breached = $peakScore !== null
-                && $this->breachesFixedThreshold($peakScore, $config->comparison_operator, (float) $config->threshold_value);
-
-            $targetPassed = $peakDate !== null && Carbon::parse($peakDate)->isBefore(today());
+            if ($config->isProbabilityType()) {
+                $probability = $memberPeaks === []
+                    ? null
+                    : EnsembleForecastScoringService::exceedanceShare($memberPeaks, (float) $config->threshold_value);
+                $breached = $probability !== null
+                    && $probability >= ((float) $config->probability_threshold / 100);
+                $reportedScore = $p50 ?? $peakScore;
+            } else {
+                $probability = null;
+                $breached = $peakScore !== null
+                    && $this->breachesFixedThreshold($peakScore, $config->comparison_operator, (float) $config->threshold_value);
+                $reportedScore = $peakScore;
+            }
 
             if (! $breached || $targetPassed) {
                 $openAlert?->resolve();
@@ -80,9 +106,10 @@ class ThresholdEvaluationService
             if ($openAlert !== null) {
                 // The forecast still breaches — follow it, don't re-notify.
                 $openAlert->update([
-                    'score_at_trigger' => $peakScore,
+                    'score_at_trigger' => $reportedScore,
                     'forecast_target_date' => $peakDate,
                     'forecast_lead_days' => $leadDays,
+                    'forecast_probability' => $probability,
                 ]);
 
                 continue;
@@ -93,12 +120,13 @@ class ThresholdEvaluationService
                 'region_id' => $regionId,
                 'index_id' => $indexId,
                 'signal_type_id' => null,
-                'score_at_trigger' => $peakScore,
+                'score_at_trigger' => $reportedScore,
                 'threshold_value' => $config->threshold_value,
                 'status' => 'OPEN',
                 'is_forecast' => true,
                 'forecast_target_date' => $peakDate,
                 'forecast_lead_days' => $leadDays,
+                'forecast_probability' => $probability,
                 'triggered_at' => now(),
             ]);
 
