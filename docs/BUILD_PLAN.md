@@ -265,17 +265,17 @@ Flood API `&ensemble=true` — both free.
   Yobe/Komadugu, Cross); an LGA with no reaches is unchanged. Decision
   [0007](decisions/0007-reach-level-riverine-forecast.md).
 
-### T6 — Climate outlook module · Ready · size M–L
+### T6 — Climate outlook module · Paused · size M–L
 
 A multi-decade planning view — how malaria suitability, heat-days and drought frequency shift to
-2050 under different scenarios. CMIP6 data is decadal + scenario-based, so it does **not** fit the
-7-day grain:
+2050 under different scenarios. Its own `region_climate_projections` table, a `climate:project`
+command, and a standalone view outside the ingestion / scoring / alerting pipeline.
 
-- New `region_climate_projections` table (`region_id`, `scenario`, `decade`, `variable`, `value`).
-- A dedicated `climate:project` command, a read model, and a standalone view.
-- Sits *outside* the ingestion / scoring / alerting pipeline — no events, no thresholds.
-
-Data: Open-Meteo Climate Change API (CMIP6, ~10 km, multiple SSP scenarios) — free.
+**Paused (2026-09):** the free source (Open-Meteo Climate API, CMIP6 HighResMIP) has **no SSP
+selector** — it's a single "as close to RCP8.5 as CMIP6 allows" pathway, 7 models, ending 2050.
+The multi-scenario comparison the plan assumed ("multiple SSP scenarios") isn't buildable on
+free data; a single-pathway view with the 7-model spread as the range was considered and set
+aside. Revisit when a licensed multi-scenario CMIP6 feed is available.
 
 ### T7 — Coastal resilience · Needs data · size L
 
@@ -330,7 +330,7 @@ return numbers.
    probability, `P(index ≥ x) ≥ %` threshold rule.
 7. **Meningitis Risk index** — small, now unblocked (HUMIDITY + DUST live). Config rows,
    region-scoped to the meningitis-belt states, dry-season / harmattan weighting.
-8. **T6 climate outlook** — the next substantial piece; independent code path, CMIP6 free.
+8. ~~**T6 climate outlook**~~ — paused; the free CMIP6 source has no scenario selector.
 9. **T8 trained model + validation** — as soon as outcome data is in hand.
 10. **T9 country #2** — after at least one index is validated in Nigeria.
 11. **T7 coastal** — whenever the coastal DEM / tide sourcing lands.
