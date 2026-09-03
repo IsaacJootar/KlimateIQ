@@ -80,11 +80,16 @@ class RegionController extends Controller
             )
             ->orderBy('name')
             ->get()
-            ->map(function (Region $region) use ($latestByRegion, $priorByRegion, $historyByRegion) {
+            ->map(function (Region $region) use ($latestByRegion, $priorByRegion, $historyByRegion, $index) {
                 $score = $latestByRegion->get($region->region_id);
                 $prior = $priorByRegion->get($region->region_id);
                 $region->setAttribute('current_score', $score?->score);
                 $region->setAttribute('risk_band', RiskBand::forScore($score?->score));
+                // A forecast index row carries an ensemble exceedance probability (T5).
+                $region->setAttribute('forecast_probability',
+                    ($index->is_forecast && $score?->exceedance_probability !== null)
+                        ? (int) round((float) $score->exceedance_probability * 100)
+                        : null);
                 $region->setAttribute('trend', TrendSummary::describe(
                     $score?->score !== null ? (float) $score->score : null,
                     $prior?->score !== null ? (float) $prior->score : null,
@@ -220,6 +225,10 @@ class RegionController extends Controller
             'index' => $index,
             'forecast' => $forecast,
             'forecastDaily' => $daily,
+            'forecastProbabilityLine' => $forecast ? $this->probabilityLine($forecast, $index->name) : null,
+            'forecastFan' => collect($forecast?->breakdown['member_daily'] ?? [])
+                ->map(fn (array $d) => ['date' => $d['date'], 'p10' => (float) $d['p10'], 'p90' => (float) $d['p90']])
+                ->values()->all(),
             'calibrationNote' => IndexCalibration::note($index),
             'peakScore' => $peak,
             'recommendedAction' => IndexActionRecommendation::textFor($index->index_id, $peak),
@@ -376,7 +385,7 @@ class RegionController extends Controller
      * (region_forecast_scores, written by scores:forecast). Returns a plain sentence + the
      * daily 0–100 score series for a mini-chart, or null when there's no forecast on file.
      *
-     * @return array{line: string, daily: Collection<int, array{date: string, lead_days: int, score: float, band: string}>, peak_date: ?string, band: string}|null
+     * @return array{line: string, daily: Collection<int, array{date: string, lead_days: int, score: float, band: string}>, peak_date: ?string, band: string, probability_line: ?string, fan: list<array{date: string, p10: float, p90: float}>}|null
      */
     private function forecastTrajectory(ScoringIndex $index, Region $region, ?float $currentScore): ?array
     {
@@ -416,7 +425,38 @@ class RegionController extends Controller
             'daily' => $daily,
             'peak_date' => $forecast->peak_date?->toDateString(),
             'band' => $band,
+            'probability_line' => $this->probabilityLine($forecast, $index->name),
+            'fan' => collect($forecast->breakdown['member_daily'] ?? [])
+                ->map(fn (array $d) => ['date' => $d['date'], 'p10' => (float) $d['p10'], 'p90' => (float) $d['p90']])
+                ->values()->all(),
         ];
+    }
+
+    /**
+     * The one-line "how likely is a crossing" sentence from the ensemble distribution
+     * (BUILD_PLAN.md T5), or null when this forecast has no ensemble on file.
+     */
+    private function probabilityLine(RegionForecastScore $forecast, string $indexName): ?string
+    {
+        if ($forecast->exceedance_probability === null) {
+            return null;
+        }
+
+        $pct = (int) round((float) $forecast->exceedance_probability * 100);
+        $reference = (int) round((float) $forecast->exceedance_reference);
+        $horizon = (int) $forecast->horizon_days;
+        $members = (int) $forecast->member_count;
+
+        $phrase = match (true) {
+            $pct >= 80 => "Very likely ({$pct}%)",
+            $pct >= 45 => "About a {$pct}% chance",
+            $pct >= 15 => "A {$pct}% chance",
+            $pct >= 1 => "Only a {$pct}% chance",
+            default => 'Less than a 1% chance',
+        };
+
+        return "{$phrase} of crossing {$reference} at some point in the next {$horizon} days "
+            ."(across {$members} ensemble forecast members).";
     }
 
     public function generateSummary(Region $region, RegionScoreSummaryService $summarizer): RedirectResponse

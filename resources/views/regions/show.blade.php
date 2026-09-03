@@ -276,13 +276,28 @@
                         $fline = $fcoords->map(fn ($c) => "{$c['x']},{$c['y']}")->implode(' ');
                         $amberY = $fh - $fpad - (34 / 100) * ($fh - 2 * $fpad);
                         $redY = $fh - $fpad - (67 / 100) * ($fh - 2 * $fpad);
+
+                        // p10–p90 fan (T5), aligned to the score line by date.
+                        $ffanByDate = collect($forecastTrajectory['fan'] ?? [])->keyBy('date');
+                        $fyFor = fn ($v) => $fh - $fpad - (max(0, min(100, (float) $v)) / 100) * ($fh - 2 * $fpad);
+                        $ffanTop = $fcoords->filter(fn ($c) => $ffanByDate->has($c['d']['date']))
+                            ->map(fn ($c) => "{$c['x']},".round($fyFor($ffanByDate[$c['d']['date']]['p90']), 1));
+                        $ffanBottom = $fcoords->filter(fn ($c) => $ffanByDate->has($c['d']['date']))
+                            ->map(fn ($c) => "{$c['x']},".round($fyFor($ffanByDate[$c['d']['date']]['p10']), 1))->reverse();
+                        $ffanPolygon = $ffanTop->concat($ffanBottom)->implode(' ');
                     @endphp
                     <p class="text-sm leading-relaxed text-gray-800 dark:text-gray-200">
                         {{ $trend['label'] }}. <span class="font-semibold">{{ $forecastTrajectory['line'] }}</span>
                     </p>
+                    @if (! empty($forecastTrajectory['probability_line']))
+                        <p class="mt-1 text-sm text-gray-700 dark:text-gray-300">{{ $forecastTrajectory['probability_line'] }}</p>
+                    @endif
                     @if ($fc->count() > 1)
                         <div class="mt-3 overflow-x-auto">
                             <svg viewBox="0 0 {{ $fw }} {{ $fh }}" class="w-full" style="max-width: {{ $fw }}px;">
+                                @if ($ffanPolygon !== '')
+                                    <polygon points="{{ $ffanPolygon }}" fill="#0D9488" fill-opacity="0.14" />
+                                @endif
                                 <line x1="{{ $fpad }}" y1="{{ $redY }}" x2="{{ $fw - $fpad }}" y2="{{ $redY }}" stroke="#DC2626" stroke-width="1" stroke-dasharray="3 3" stroke-opacity="0.5" />
                                 <line x1="{{ $fpad }}" y1="{{ $amberY }}" x2="{{ $fw - $fpad }}" y2="{{ $amberY }}" stroke="#D97706" stroke-width="1" stroke-dasharray="3 3" stroke-opacity="0.5" />
                                 <polyline points="{{ $fline }}" fill="none" stroke="#0D9488" stroke-width="2.5" stroke-linejoin="round" />
@@ -299,7 +314,9 @@
                         </div>
                     @endif
                     <p class="mt-2 text-xs text-slate-400">
-                        Forecast from the Open-Meteo model — dashed lines mark the amber (34) and red (67) bands. This is a forecast, not a current reading.
+                        Forecast from the Open-Meteo model — dashed lines mark the amber (34) and red (67) bands.
+                        @if ($ffanPolygon !== '') The shaded band is the ensemble's 10th–90th percentile range. @endif
+                        This is a forecast, not a current reading.
                     </p>
                 @else
                 <p class="text-sm leading-relaxed text-gray-800 dark:text-gray-200">

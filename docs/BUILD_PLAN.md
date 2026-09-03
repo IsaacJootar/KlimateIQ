@@ -210,18 +210,38 @@ Shipped in four milestones, forecast and observed data in **fully separate table
 Data: Open-Meteo Flood API (GloFAS discharge forecast + reanalysis) and Open-Meteo Forecast API
 (rainfall / temperature forward series) — both free.
 
-### T5 — Probabilistic scoring · Ready · size L
+### T5 — Probabilistic scoring · Shipped · size L
 
-"68% chance Malaria Risk crosses your threshold within 3 weeks" instead of a single number.
+"≈62% chance of crossing 67 in the next 14 days" alongside the point forecast, from a forecast
+ensemble. Shipped in four milestones, all in the forecast lane (the original "writes to
+`region_scores`" line above predated T4's separate-lane decision — corrected here).
 
-- Ingest ensemble members (Open-Meteo Ensemble API, up to 51 members, 35-day horizon) as multiple
-  forecast rows per period.
-- `WeightedFormulaScoringStrategy` runs unchanged per member; a new aggregation step writes
-  `p10` / `p50` / `p90` and an `exceedance_probability` to `region_scores` (schema addition).
-- `ThresholdConfig` gains a rule type: `P(index ≥ value) ≥ percent`.
-- Dashboard renders a band + probability where present, falls back to the point score where not.
+- **M1 — ensemble signal lane.** `region_forecast_signals.member` (`'control'` = the T4
+  deterministic run, `'glofas-NN'` / `'gfs-NN'` / `'ecmwf-NN'` / `'icon-NN'`). `OpenMeteoEnsembleClient`
+  (Ensemble API, one call per weather model), `OpenMeteoFloodClient::ensembleDailyDischarge`
+  (Flood API `&ensemble=true`, 50 GloFAS members). `EnsembleForecastIngestionService` +
+  RiverDischarge / Rainfall / Temperature impls (`PersistsEnsembleForecastSeries` replaces only
+  member rows; `PoolsWeatherEnsemble` pools GFS+ECMWF+ICON). `signals:ingest-ensemble`, scheduled
+  03:20.
+- **M2 — probabilistic scoring.** `region_forecast_scores` gains nullable `p10` / `p50` / `p90`,
+  `exceedance_probability`, `exceedance_reference` (default 67), `member_count`.
+  `EnsembleForecastScoringService` scores each member through the shared
+  `ForecastScoringStrategy::scoreDailySeries` (pairs members by model+number for a multi-signal
+  index, falls back to latest-observed-held-flat for a signal a member lacks), reduces the
+  per-member peaks to percentiles + P(peak ≥ 67). < 5 members → no distribution, control score
+  stands. Sorted member peaks + a per-day fan live in `breakdown`. One row, one event; `score`
+  untouched.
+- **M3 — probability-threshold alerts.** `alert_type` `forecast_probability`,
+  `threshold_configs.probability_threshold`, `alerts.forecast_probability`.
+  `ThresholdEvaluationService::evaluateForForecast` reads the member array and fires when
+  `P(peak ≥ level) ≥ percent`; reuses the T4 one-open-alert / follows / auto-resolves machinery.
+  Notification: "≈72% chance … an ensemble probability, not a certainty".
+- **M4 — the payoff.** Region page (forecast index and observed step 5): the probability line +
+  a p10-p90 fan band. Dashboard + region list: an "≈NN%" chip on forecast-index rows. Decision
+  [0006](decisions/0006-probabilistic-scoring-ensemble.md).
 
-Depends on T4.
+Horizon stays 14 days (ensemble skill past two weeks is poor). Data: Open-Meteo Ensemble API +
+Flood API `&ensemble=true` — both free.
 
 ### T6 — Climate outlook module · Ready · size M–L
 

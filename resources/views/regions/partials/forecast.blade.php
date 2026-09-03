@@ -20,6 +20,16 @@
     $firstDischarge = $forecastDaily->first()['discharge'] ?? null;
     $peakDischarge = $forecastDaily->sortByDesc('score')->first()['discharge'] ?? null;
     $num = fn ($v) => $v === null ? '—' : number_format((float) $v, 0);
+
+    // p10–p90 fan band (T5), aligned to the same x-axis as the score line by lead-day index.
+    $fanByDate = collect($forecastFan ?? [])->keyBy('date');
+    $yFor = fn ($v) => $h - $pad - (max(0, min(100, (float) $v)) / 100) * ($h - 2 * $pad);
+    $fanTop = $coords->filter(fn ($c) => $fanByDate->has($c['d']['date']))
+        ->map(fn ($c) => "{$c['x']},".round($yFor($fanByDate[$c['d']['date']]['p90']), 1));
+    $fanBottom = $coords->filter(fn ($c) => $fanByDate->has($c['d']['date']))
+        ->map(fn ($c) => "{$c['x']},".round($yFor($fanByDate[$c['d']['date']]['p10']), 1))
+        ->reverse();
+    $fanPolygon = $fanTop->concat($fanBottom)->implode(' ');
 @endphp
 
 @if ($peakScore === null)
@@ -73,6 +83,9 @@
                 @endif
             </span>
         </div>
+        @if (! empty($forecastProbabilityLine))
+            <p class="mt-3 text-sm text-white/90"><strong>{{ $forecastProbabilityLine }}</strong></p>
+        @endif
         <p class="mt-3 text-xs text-white/70">
             0&ndash;100 scale. Green below 34, amber 34&ndash;66, red 67 and above.
             @if ($region->population !== null) &middot; Population {{ number_format($region->population) }}. @endif
@@ -91,6 +104,9 @@
         </div>
         <div class="overflow-x-auto">
             <svg viewBox="0 0 {{ $w }} {{ $h }}" class="w-full" style="max-width: {{ $w }}px;">
+                @if ($fanPolygon !== '')
+                    <polygon points="{{ $fanPolygon }}" fill="#0D9488" fill-opacity="0.14" />
+                @endif
                 <line x1="{{ $pad }}" y1="{{ $h - $pad - (67 / 100) * ($h - 2 * $pad) }}" x2="{{ $w - $pad }}" y2="{{ $h - $pad - (67 / 100) * ($h - 2 * $pad) }}" stroke="#DC2626" stroke-width="1" stroke-dasharray="3 3" stroke-opacity="0.5" />
                 <line x1="{{ $pad }}" y1="{{ $h - $pad - (34 / 100) * ($h - 2 * $pad) }}" x2="{{ $w - $pad }}" y2="{{ $h - $pad - (34 / 100) * ($h - 2 * $pad) }}" stroke="#D97706" stroke-width="1" stroke-dasharray="3 3" stroke-opacity="0.5" />
                 <polyline points="{{ $line }}" fill="none" stroke="#0D9488" stroke-width="2.5" stroke-linejoin="round" />
@@ -104,7 +120,10 @@
                 <span>{{ Carbon::parse($pts->last()['date'])->format('M j') }}</span>
             </div>
         </div>
-        <p class="mt-2 text-xs text-slate-400">Dashed lines mark the amber (34) and red (67) bands.</p>
+        <p class="mt-2 text-xs text-slate-400">
+            Dashed lines mark the amber (34) and red (67) bands.
+            @if ($fanPolygon !== '') The shaded band is the ensemble's 10th–90th percentile range. @endif
+        </p>
     </section>
 
     {{-- 4 — What to do --}}

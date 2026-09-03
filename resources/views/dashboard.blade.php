@@ -90,6 +90,9 @@
                             <a href="{{ route('regions.show', ['region' => $row['region']->region_id, 'index' => $defaultIndex->code]) }}" class="flex-1 min-w-0">
                                 <p class="text-sm font-medium text-slate-900 dark:text-white truncate">{{ $row['region']->name }}, {{ $row['region']->state }}</p>
                             </a>
+                            @if (! empty($row['probability']))
+                                <span class="text-xs font-semibold text-sky-700 dark:text-sky-300" title="Ensemble forecast: chance of crossing into red (67+) within the horizon">≈{{ $row['probability'] }}%</span>
+                            @endif
                             <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ $row['score'] }}</span>
                             <span class="risk-badge risk-badge-{{ $row['band'] }}">{{ $row['band'] }}</span>
                         </li>

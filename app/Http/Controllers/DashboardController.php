@@ -60,6 +60,10 @@ class DashboardController extends Controller
                 'region' => $regions->firstWhere('region_id', $score->region_id),
                 'score' => $score->score,
                 'band' => RiskBand::forScore($score->score),
+                // A forecast index carries an ensemble exceedance probability (T5) — show the odds.
+                'probability' => ($activeIndex->is_forecast && $score->exceedance_probability !== null)
+                    ? (int) round((float) $score->exceedance_probability * 100)
+                    : null,
             ])
             ->filter(fn (array $row) => $row['region'] !== null)
             ->values();

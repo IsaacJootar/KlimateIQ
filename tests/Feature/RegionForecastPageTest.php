@@ -60,6 +60,48 @@ class RegionForecastPageTest extends TestCase
             ->assertDontSee('This week in');   // the observed step 1 heading
     }
 
+    public function test_the_probability_line_and_fan_render_when_the_ensemble_distribution_is_present(): void
+    {
+        $user = User::factory()->create();
+        $region = $this->region();
+        $this->seedForecast($region, peak: 74.0, leadToPeak: 5);
+
+        RegionForecastScore::query()->where('index_id', $this->forecastIndex()->index_id)
+            ->where('region_id', $region->region_id)
+            ->update([
+                'p10' => 55, 'p50' => 70, 'p90' => 88,
+                'exceedance_probability' => 0.62, 'exceedance_reference' => 67, 'member_count' => 50,
+                'breakdown' => json_encode([
+                    'daily' => [
+                        ['date' => now()->toDateString(), 'lead_days' => 0, 'score' => 40, 'signals' => ['RIVER_DISCHARGE' => ['raw_value' => 1600, 'normalized_score' => 40]]],
+                        ['date' => now()->addDays(5)->toDateString(), 'lead_days' => 5, 'score' => 74, 'signals' => ['RIVER_DISCHARGE' => ['raw_value' => 2960, 'normalized_score' => 74]]],
+                    ],
+                    'member_daily' => [
+                        ['date' => now()->toDateString(), 'lead_days' => 0, 'p10' => 35, 'p50' => 40, 'p90' => 48],
+                        ['date' => now()->addDays(5)->toDateString(), 'lead_days' => 5, 'p10' => 55, 'p50' => 70, 'p90' => 88],
+                    ],
+                ]),
+            ]);
+
+        $this->actingAs($user)->get(route('regions.show', ['region' => $region, 'index' => 'RIVERINE_FLOOD_FORECAST']))
+            ->assertOk()
+            ->assertSee('62% chance')
+            ->assertSee('50 ensemble forecast members')
+            ->assertSee('10th–90th percentile', false);
+    }
+
+    public function test_the_probability_line_is_absent_when_there_is_no_ensemble(): void
+    {
+        $user = User::factory()->create();
+        $region = $this->region();
+        $this->seedForecast($region, peak: 74.0); // no percentile columns set
+
+        $this->actingAs($user)->get(route('regions.show', ['region' => $region, 'index' => 'RIVERINE_FLOOD_FORECAST']))
+            ->assertOk()
+            ->assertDontSee('ensemble forecast members')
+            ->assertDontSee('percentile range');
+    }
+
     public function test_it_shows_an_honest_empty_state_when_there_is_no_forecast(): void
     {
         $user = User::factory()->create();

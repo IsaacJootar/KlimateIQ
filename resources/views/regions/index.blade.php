@@ -100,7 +100,12 @@
                                     <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ $region->name }}</td>
                                     <td class="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{{ $region->state }}</td>
                                     <td class="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{{ $region->population !== null ? number_format($region->population) : '—' }}</td>
-                                    <td class="px-4 py-3 text-sm font-semibold whitespace-nowrap">{{ $region->current_score ?? '—' }}</td>
+                                    <td class="px-4 py-3 text-sm font-semibold whitespace-nowrap">
+                                        {{ $region->current_score ?? '—' }}
+                                        @if (! empty($region->forecast_probability))
+                                            <span class="ms-1 text-xs font-semibold text-sky-700 dark:text-sky-300" title="Ensemble forecast: chance of crossing into red (67+) within the horizon">≈{{ $region->forecast_probability }}%</span>
+                                        @endif
+                                    </td>
                                     <td class="px-4 py-3 text-sm whitespace-nowrap">
                                         <span class="risk-badge risk-badge-{{ $region->risk_band }}">{{ $region->risk_band === 'none' ? 'no data' : $region->risk_band }}</span>
                                     </td>

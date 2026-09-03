@@ -232,8 +232,33 @@ owns them.
 
 **Forecast data sources:** Open-Meteo Flood API (GloFAS river discharge) and Open-Meteo Forecast
 API (rainfall, temperature) — both free. Forecast issuance history (needed to backtest forecast
-skill) is **not** kept in v1 — only the latest forecast per region/signal. That is a T5
-addition.
+skill) is **not** kept — only the latest forecast per region/signal — and remains out of scope.
+
+### How confident is the forecast (T5 — the ensemble)
+
+The point forecast above is one deterministic model run. Alongside it the platform ingests an
+**ensemble** — the same forecast re-run 30-50 times from perturbed starting conditions — and
+scores every member through the *identical* formula. GloFAS supplies its own 50-member discharge
+ensemble; rainfall and temperature pool three weather models (GFS + ECMWF + ICON). Members live
+in `region_forecast_signals` tagged with a `member` column (`'control'` is the deterministic run,
+untouched).
+
+`EnsembleForecastScoringService` reduces the per-member peak scores to `p10 / p50 / p90` and an
+**exceedance probability** — the share of members whose peak reaches 67 (the red cutoff) — folded
+into the same `region_forecast_scores` row. The headline `score` stays the control peak. Fewer
+than 5 members resolving → no distribution, the point forecast stands alone.
+
+This shows up as "≈62% chance of crossing 67 in the next 14 days" on the score, a p10-p90 fan
+band on the daily chart, an "≈NN%" chip in the dashboard and region list, and a new threshold
+rule — `P(index ≥ level within 14 days) ≥ percent`.
+
+**What the probability is and isn't:** it is a real, calibrated estimate of *forecast*
+uncertainty — the models genuinely disagree this much. It is **not** validated against observed
+outcomes: whether "70%" verifies 70% of the time needs the same historical outcome data as the
+trained-model study (T8). Until then it carries the same caveat as the score itself. The
+band-mapping (which discharge = score 67) is still the T4 calibration — decisions
+[0003](decisions/0003-calibration-bounds-are-placeholders.md),
+[0006](decisions/0006-probabilistic-scoring-ensemble.md).
 
 ## Data sources
 
