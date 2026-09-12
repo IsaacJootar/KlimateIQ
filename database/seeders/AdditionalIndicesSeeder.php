@@ -3,11 +3,13 @@
 namespace Database\Seeders;
 
 use App\Models\IndexActionRecommendation;
+use App\Models\Region;
 use App\Models\RegionScoringConfig;
 use App\Models\ScoringCalibrationParameter;
 use App\Models\ScoringIndex;
 use App\Models\SignalType;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Collection;
 
 /**
  * Indices added after the original six (docs/BUILD_PLAN.md). Kept out of ReferenceDataSeeder
@@ -20,15 +22,24 @@ use Illuminate\Database\Seeder;
  * never overwrites tuning done from the admin UI.
  *
  * Indices here may depend on signals beyond the original eight — the agriculture bundle needs
- * SOIL_MOISTURE and EVAPOTRANSPIRATION; Wildfire and Dust Storm Risk need HUMIDITY, WIND_SPEED
- * and DUST; Wildfire also carries a weight-0 ACTIVE_FIRE confirmation series (NASA FIRMS, needs
- * a map key — no-op without one); the Respiratory Risk depth pass adds OZONE and NO2. Their
- * ingestion services are registered in config/ingestion.php and pull on the daily cadence / on
- * region activation — the score simply stays partial (renormalized over the signals present)
- * until those readings land.
+ * SOIL_MOISTURE, SOIL_TEMPERATURE and EVAPOTRANSPIRATION; Wildfire and Dust Storm Risk need
+ * HUMIDITY, WIND_SPEED and DUST; Wildfire also carries a weight-0 ACTIVE_FIRE confirmation
+ * series (NASA FIRMS, needs a map key — no-op without one); the Respiratory Risk depth passes
+ * add OZONE, NO2, SO2 and CO; Heat Stress Risk's depth pass adds UV_INDEX; Meningitis Risk
+ * reuses HUMIDITY, DUST and TEMPERATURE but region_id-scopes them to the belt states rather
+ * than seeding a system default (see meningitisRisk()). Their ingestion services are registered
+ * in config/ingestion.php and pull on the daily cadence / on region activation — the score
+ * simply stays partial (renormalized over the signals present) until those readings land.
  *
- * This seeder also runs one in-place edit — rebalancing the Respiratory Risk PM weights — and
- * does it only when they're still at the original default (see deepenRespiratoryRisk()).
+ * This seeder also runs several in-place edits — rebalancing the Respiratory Risk PM weights
+ * (twice, once for the original ozone/NO2/dust depth pass and again for SO2/CO) and the Heat
+ * Stress Risk temperature/vegetation weights (for UV) — each one only touching a weight that's
+ * still at its exact prior default, so an admin-tuned value is never overwritten either way.
+ *
+ * Called TWICE from ReferenceDataSeeder::run() — once in its normal position (everything here
+ * except meningitisRisk()'s region attachment only needs indices/signal types, not actual
+ * Region rows) and once after seedRegions() (meningitisRisk() needs real regions to scope its
+ * per-LGA weights to). Fully idempotent either way.
  *
  * Every index here ships UNCALIBRATED — the weights and bounds are transparent engineering
  * defaults, not validated against outcome data. Same honest caveat as the original six
@@ -48,6 +59,10 @@ class AdditionalIndicesSeeder extends Seeder
         $this->drySeasonWaterStress();
         $this->riverineFloodForecast();
         $this->deepenRespiratoryRisk();
+        $this->meningitisRisk();
+        $this->deepenRespiratoryRiskWithSo2AndCo();
+        $this->deepenHeatStressWithUv();
+        $this->plantingWindowRisk();
     }
 
     /**
@@ -72,6 +87,10 @@ class AdditionalIndicesSeeder extends Seeder
             // Respiratory Risk depth — gaseous pollutants alongside the PM series.
             ['code' => 'OZONE', 'name' => 'Ground-Level Ozone', 'unit' => 'µg/m³', 'source' => 'Open-Meteo Air Quality API (CAMS)', 'higher_is_worse' => true],
             ['code' => 'NO2', 'name' => 'Nitrogen Dioxide', 'unit' => 'µg/m³', 'source' => 'Open-Meteo Air Quality API (CAMS)', 'higher_is_worse' => true],
+            ['code' => 'SO2', 'name' => 'Sulphur Dioxide', 'unit' => 'µg/m³', 'source' => 'Open-Meteo Air Quality API (CAMS)', 'higher_is_worse' => true],
+            ['code' => 'CO', 'name' => 'Carbon Monoxide', 'unit' => 'µg/m³', 'source' => 'Open-Meteo Air Quality API (CAMS)', 'higher_is_worse' => true],
+            ['code' => 'UV_INDEX', 'name' => 'UV Index', 'unit' => 'index', 'source' => 'Open-Meteo Archive API (ERA5, daily max)', 'higher_is_worse' => true],
+            ['code' => 'SOIL_TEMPERATURE', 'name' => 'Soil Temperature (Surface)', 'unit' => '°C', 'source' => 'Open-Meteo Archive API (ERA5-Land, 0–7 cm)', 'higher_is_worse' => true],
             // Forecast lane (BUILD_PLAN.md T4) — the Riverine Flood Forecast index measures the
             // GloFAS forecast against this signal's own observed history per LGA.
             ['code' => 'RIVER_DISCHARGE', 'name' => 'River Discharge', 'unit' => 'm³/s', 'source' => 'Open-Meteo Flood API (GloFAS)', 'higher_is_worse' => true],
@@ -429,6 +448,218 @@ class AdditionalIndicesSeeder extends Seeder
     }
 
     /**
+     * Deepens Respiratory Risk a second time with SO2 and CO — traffic/generator-exhaust
+     * markers, same Open-Meteo Air Quality pull as the rest of the pollutant series. Rebalances
+     * the PM weights down again to make room (0.4/0.2 -> 0.35/0.15), the same "only touch it if
+     * it's still at the exact prior default" guard as deepenRespiratoryRisk() above, so an
+     * admin-tuned value is left alone either way.
+     *
+     * Deliberately weighted lower than the other pollutants: ambient SO2 and CO in this
+     * platform's data are annual/reanalysis averages, and both are more a near-source /
+     * indoor-exposure hazard than a broad-area one at that resolution — a real signal, not the
+     * dominant one. Bounds are an engineering placeholder (unlike OZONE/NO2/DUST's cited WHO/EPA
+     * points above) — converting the EPA AQI's SO2/CO breakpoints (ppb / ppm) to this API's
+     * µg/m³ output needs a temperature/pressure assumption not worth guessing at here.
+     */
+    private function deepenRespiratoryRiskWithSo2AndCo(): void
+    {
+        $index = ScoringIndex::query()->where('code', 'RESPIRATORY_RISK')->first();
+
+        if (! $index) {
+            return;
+        }
+
+        foreach (['AIR_QUALITY_PM25' => [0.4, 0.35], 'AIR_QUALITY_PM10' => [0.2, 0.15]] as $signalCode => [$oldDefault, $rebalanced]) {
+            $signalTypeId = SignalType::query()->where('code', $signalCode)->value('signal_type_id');
+
+            RegionScoringConfig::query()
+                ->where('index_id', $index->index_id)
+                ->whereNull('region_id')
+                ->where('signal_type_id', $signalTypeId)
+                ->where('weight', $oldDefault)
+                ->update(['weight' => $rebalanced]);
+        }
+
+        $this->seedWeights($index, [
+            'SO2' => 0.05,
+            'CO' => 0.05,
+        ]);
+
+        $this->seedBounds($index, [
+            'SO2' => [0, 350],
+            'CO' => [0, 10000],
+        ]);
+    }
+
+    /**
+     * Deepens Heat Stress Risk with UV index — the "occupational / skin-eye advisories" use
+     * case BUILD_PLAN.md flags for this signal fits Heat Stress better than a standalone index:
+     * both are about outdoor exposure timing, and UV and temperature peak together in Nigeria's
+     * dry season. Same rebalance-only-if-still-at-the-prior-default guard as the respiratory
+     * deepenings, so an admin-tuned weight is left alone.
+     */
+    private function deepenHeatStressWithUv(): void
+    {
+        $index = ScoringIndex::query()->where('code', 'HEAT_STRESS_RISK')->first();
+
+        if (! $index) {
+            return;
+        }
+
+        foreach (['TEMPERATURE' => [0.7, 0.6], 'VEGETATION' => [0.3, 0.25]] as $signalCode => [$oldDefault, $rebalanced]) {
+            $signalTypeId = SignalType::query()->where('code', $signalCode)->value('signal_type_id');
+
+            RegionScoringConfig::query()
+                ->where('index_id', $index->index_id)
+                ->whereNull('region_id')
+                ->where('signal_type_id', $signalTypeId)
+                ->where('weight', $oldDefault)
+                ->update(['weight' => $rebalanced]);
+        }
+
+        $this->seedWeights($index, [
+            'UV_INDEX' => 0.15,
+        ]);
+
+        $this->seedBounds($index, [
+            'UV_INDEX' => [0, 11],
+        ]);
+    }
+
+    /**
+     * BUILD_PLAN.md T3 — "a possible later add" once SOIL_TEMPERATURE existed. Distinct from
+     * Agriculture Stress (ongoing crop water-balance stress): this one is about *timing* —
+     * whether conditions right now favour germination and seedling survival if a farmer plants
+     * this week.
+     *
+     * Soil temperature is genuinely U-shaped for germination (too cold OR too hot both hurt),
+     * but the scoring engine only supports a monotonic higher/lower-is-worse normalisation. In
+     * Nigeria's tropical/Sahel climate the cold side of that curve essentially never binds —
+     * the real risk is excess heat desiccating a seedling before it establishes — so this
+     * deliberately scores hotter soil as worse rather than modelling the full curve. A
+     * documented simplification, not an oversight; worth revisiting if this expands to a
+     * climate zone where cold-limited germination is a real constraint.
+     *
+     * Attached to the Agriculture sector in SectorSeeder.
+     */
+    private function plantingWindowRisk(): void
+    {
+        $index = ScoringIndex::query()->updateOrCreate(
+            ['code' => 'PLANTING_WINDOW_RISK'],
+            [
+                'name' => 'Planting Window Risk Index',
+                'description' => 'Surface soil temperature against rainfall and soil moisture — whether conditions this week favour germination and seedling survival, for extension officers advising on planting timing.',
+            ]
+        );
+
+        $this->seedWeights($index, [
+            'SOIL_TEMPERATURE' => 0.4,                                        // hotter surface soil, more germination/seedling risk (signal default)
+            'RAINFALL' => ['weight' => 0.3, 'higher_is_worse' => false],      // less rain, worse for germination
+            'SOIL_MOISTURE' => ['weight' => 0.3, 'higher_is_worse' => false], // drier soil, worse for germination
+        ]);
+
+        // ERA5-Land surface (0-7cm) soil temperature in Nigeria's growing season plausibly
+        // ranges ~20-45°C. Uncalibrated placeholder, like every other bound in this file.
+        $this->seedBounds($index, [
+            'SOIL_TEMPERATURE' => [20, 45],
+            'RAINFALL' => [0, 200],
+            'SOIL_MOISTURE' => [0.05, 0.40],
+        ]);
+
+        $this->seedActions($index, [
+            'green' => 'Conditions favour planting this week. No action needed beyond routine advisory.',
+            'amber' => 'Marginal planting conditions in this LGA: advise farmers to monitor soil moisture and consider a short delay if rain is forecast soon.',
+            'red' => 'Poor planting conditions: advise farmers to hold off planting in this LGA until soil temperature eases and moisture improves — early planting now risks poor germination and seedling loss.',
+        ]);
+    }
+
+    /**
+     * BUILD_PLAN.md T2 — the last item on the "Ready" list, and the last new index this
+     * platform needs before the roadmap moves to workstreams that need outside data
+     * (validation, a licensed climate feed, coastal inputs). HUMIDITY and DUST were already
+     * live for Wildfire/Dust Storm Risk, TEMPERATURE from day one — no new ingestion.
+     *
+     * Deliberately region_id-scoped, not a system default: meningitis risk in Nigeria tracks
+     * the Sahel dry-season belt, not the whole country, so a region_id=null row here would
+     * light this index up nationwide. No config rows for a region means
+     * WeightedFormulaScoringStrategy's totalWeight stays at 0 and the index simply doesn't
+     * score there — the same "doesn't apply here" behaviour GloFAS-less LGAs already show for
+     * Riverine Flood Forecast, not a special case.
+     *
+     * The belt-state list itself is a placeholder, same honesty caveat as every weight and
+     * bound in this file: narrowed to the Sudano-Sahelian core states most consistently cited
+     * in WHO's African meningitis belt / NCDC's Nigeria meningitis surveillance classification,
+     * rather than the wider set some broader definitions include. Worth a public-health
+     * reviewer's sign-off before this is treated as more than an engineering starting point.
+     */
+    private function meningitisRisk(): void
+    {
+        $index = ScoringIndex::query()->updateOrCreate(
+            ['code' => 'MENINGITIS_RISK'],
+            [
+                'name' => 'Meningitis Risk Index',
+                'description' => 'Dry air, airborne dust and heat across the Sahel dry season — a bacterial-meningitis risk score for the belt states, for timing reactive vaccination campaigns and case-detection readiness.',
+            ]
+        );
+
+        // Global (region_id null) bounds — resolved for every belt LGA via the same
+        // system-wide fallback every other index uses (NormalisesSignals::calibrationBounds).
+        $this->seedBounds($index, [
+            'HUMIDITY' => [0, 100],
+            'DUST' => [0, 500],
+            'TEMPERATURE' => [15, 45],
+        ]);
+
+        $this->seedActions($index, [
+            'green' => 'No action needed. Continue routine dry-season surveillance.',
+            'amber' => 'Alert the state epidemiologist and meningitis focal point for this LGA: dry-season conditions favouring meningococcal spread are building. Review reactive-vaccine stock and cold-chain readiness.',
+            'red' => 'High meningitis-risk conditions: activate enhanced case-based surveillance in this LGA, confirm reactive-vaccination readiness with the state and NCDC, and brief health facilities to lower their suspicion threshold for meningitis-like presentations.',
+        ]);
+
+        $beltStates = [
+            'Sokoto', 'Zamfara', 'Katsina', 'Kebbi', 'Jigawa', 'Yobe', 'Borno',
+            'Bauchi', 'Gombe', 'Kano', 'Kaduna', 'Niger', 'Plateau', 'Adamawa', 'Taraba', 'FCT',
+        ];
+
+        $regionIds = Region::query()->whereIn('state', $beltStates)->pluck('region_id');
+
+        $this->seedRegionWeights($index, $regionIds, [
+            'HUMIDITY' => ['weight' => 0.4, 'higher_is_worse' => false], // drier air, higher risk
+            'DUST' => 0.4,                                               // signal default: more dust, higher risk
+            'TEMPERATURE' => 0.2,                                       // signal default: hotter, higher risk
+        ]);
+    }
+
+    /**
+     * Same contract as seedWeights() — firstOrCreate so a re-run never overwrites an
+     * admin-tuned weight — but scoped to a specific list of regions rather than the system
+     * default (region_id null). Used where an index deliberately shouldn't score everywhere
+     * (see meningitisRisk()).
+     *
+     * @param  Collection<int, int>  $regionIds
+     * @param  array<string, float|array{weight: float, higher_is_worse: ?bool}>  $weights
+     */
+    private function seedRegionWeights(ScoringIndex $index, Collection $regionIds, array $weights): void
+    {
+        foreach ($weights as $signalCode => $config) {
+            $signalType = SignalType::query()->where('code', $signalCode)->firstOrFail();
+            $weight = is_array($config) ? $config['weight'] : $config;
+            $higherIsWorse = is_array($config) ? ($config['higher_is_worse'] ?? null) : null;
+
+            foreach ($regionIds as $regionId) {
+                RegionScoringConfig::query()->firstOrCreate(
+                    [
+                        'index_id' => $index->index_id,
+                        'region_id' => $regionId,
+                        'signal_type_id' => $signalType->signal_type_id,
+                    ],
+                    ['weight' => $weight, 'higher_is_worse' => $higherIsWorse, 'enabled' => true]
+                );
+            }
+        }
+    }
+
+    /**
      * @param  array<string, float|array{weight: float, higher_is_worse: ?bool}>  $weights
      */
     private function seedWeights(ScoringIndex $index, array $weights): void
@@ -454,6 +685,7 @@ class AdditionalIndicesSeeder extends Seeder
         'OZONE' => 'WHO / US EPA "very unhealthy" ozone reference point.',
         'NO2' => 'WHO / US EPA "very unhealthy" NO₂ reference point.',
         'DUST' => 'WHO / US EPA "very unhealthy" particulate reference point.',
+        'UV_INDEX' => 'WHO/WMO Global Solar UV Index scale (0–11+, "Extreme" category).',
     ];
 
     /**

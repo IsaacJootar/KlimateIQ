@@ -86,7 +86,7 @@ class AirQualityIngestionTest extends TestCase
         $index = ScoringIndex::where('code', 'RESPIRATORY_RISK')->first();
         $this->assertNotNull($index);
 
-        // PM2.5 + PM10 + the depth pass (ozone, NO2, dust) — see AdditionalIndicesSeeder.
+        // PM2.5 + PM10 + the depth passes (ozone, NO2, dust, SO2, CO) — see AdditionalIndicesSeeder.
         $configs = RegionScoringConfig::where('index_id', $index->index_id)
             ->whereNull('region_id')
             ->with('signalType')
@@ -94,11 +94,11 @@ class AirQualityIngestionTest extends TestCase
             ->keyBy('signalType.code');
 
         $this->assertEqualsCanonicalizing(
-            ['AIR_QUALITY_PM25', 'AIR_QUALITY_PM10', 'OZONE', 'NO2', 'DUST'],
+            ['AIR_QUALITY_PM25', 'AIR_QUALITY_PM10', 'OZONE', 'NO2', 'DUST', 'SO2', 'CO'],
             $configs->keys()->all(),
         );
-        $this->assertEquals(0.4, $configs['AIR_QUALITY_PM25']->weight);
-        $this->assertEquals(0.2, $configs['AIR_QUALITY_PM10']->weight);
+        $this->assertEquals(0.35, $configs['AIR_QUALITY_PM25']->weight);
+        $this->assertEquals(0.15, $configs['AIR_QUALITY_PM10']->weight);
         $this->assertEqualsWithDelta(1.0, $configs->sum('weight'), 0.0001);
     }
 }

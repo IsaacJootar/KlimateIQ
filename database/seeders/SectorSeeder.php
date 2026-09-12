@@ -31,14 +31,14 @@ class SectorSeeder extends Seeder
             [
                 'code' => 'PUBLIC_HEALTH',
                 'name' => 'Public Health & Epidemiology',
-                'description' => 'Climate-linked disease risk — malaria, waterborne disease, respiratory illness, heat-health.',
-                'indices' => ['MALARIA_RISK', 'WATERBORNE_DISEASE_RISK', 'RESPIRATORY_RISK', 'HEAT_STRESS_RISK'],
+                'description' => 'Climate-linked disease risk — malaria, waterborne disease, respiratory illness, heat-health, meningitis in the belt states.',
+                'indices' => ['MALARIA_RISK', 'WATERBORNE_DISEASE_RISK', 'RESPIRATORY_RISK', 'HEAT_STRESS_RISK', 'MENINGITIS_RISK'],
             ],
             [
                 'code' => 'AGRICULTURE',
                 'name' => 'Agriculture & Food Security',
-                'description' => 'Rainfall deficit, soil-water stress and vegetation stress ahead of a bad season.',
-                'indices' => ['DROUGHT_RISK', 'AGRICULTURE_STRESS', 'IRRIGATION_NEED', 'RANGELAND_STRESS'],
+                'description' => 'Rainfall deficit, soil-water stress and vegetation stress ahead of a bad season, plus planting-window timing.',
+                'indices' => ['DROUGHT_RISK', 'AGRICULTURE_STRESS', 'IRRIGATION_NEED', 'RANGELAND_STRESS', 'PLANTING_WINDOW_RISK'],
             ],
             [
                 'code' => 'EMERGENCY_RESPONSE',

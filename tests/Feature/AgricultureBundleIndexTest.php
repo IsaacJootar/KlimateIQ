@@ -52,7 +52,7 @@ class AgricultureBundleIndexTest extends TestCase
 
         $agriculture = Sector::query()->where('code', 'AGRICULTURE')->firstOrFail();
         $this->assertEqualsCanonicalizing(
-            ['DROUGHT_RISK', 'AGRICULTURE_STRESS', 'IRRIGATION_NEED', 'RANGELAND_STRESS'],
+            ['DROUGHT_RISK', 'AGRICULTURE_STRESS', 'IRRIGATION_NEED', 'RANGELAND_STRESS', 'PLANTING_WINDOW_RISK'],
             $agriculture->indices->pluck('code')->all(),
         );
     }

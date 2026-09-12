@@ -49,7 +49,7 @@ class RespiratoryRiskDepthTest extends TestCase
         }
     }
 
-    public function test_the_index_now_blends_five_pollutants_summing_to_one(): void
+    public function test_the_index_now_blends_seven_pollutants_summing_to_one(): void
     {
         $configs = RegionScoringConfig::query()
             ->where('index_id', $this->index()->index_id)
@@ -59,14 +59,16 @@ class RespiratoryRiskDepthTest extends TestCase
             ->keyBy('signalType.code');
 
         $this->assertEqualsCanonicalizing(
-            ['AIR_QUALITY_PM25', 'AIR_QUALITY_PM10', 'OZONE', 'NO2', 'DUST'],
+            ['AIR_QUALITY_PM25', 'AIR_QUALITY_PM10', 'OZONE', 'NO2', 'DUST', 'SO2', 'CO'],
             $configs->keys()->all(),
         );
-        $this->assertEquals(0.4, $configs['AIR_QUALITY_PM25']->weight);
-        $this->assertEquals(0.2, $configs['AIR_QUALITY_PM10']->weight);
+        $this->assertEquals(0.35, $configs['AIR_QUALITY_PM25']->weight);
+        $this->assertEquals(0.15, $configs['AIR_QUALITY_PM10']->weight);
         $this->assertEquals(0.15, $configs['OZONE']->weight);
         $this->assertEquals(0.1, $configs['NO2']->weight);
         $this->assertEquals(0.15, $configs['DUST']->weight);
+        $this->assertEquals(0.05, $configs['SO2']->weight);
+        $this->assertEquals(0.05, $configs['CO']->weight);
         $this->assertEqualsWithDelta(1.0, $configs->sum('weight'), 0.0001);
     }
 
@@ -90,19 +92,22 @@ class RespiratoryRiskDepthTest extends TestCase
         $this->assertSame('NO2', $no2->signalType->code);
     }
 
-    public function test_the_scoring_engine_blends_all_five(): void
+    public function test_the_scoring_engine_blends_all_seven(): void
     {
         $region = Region::query()->firstOrFail();
         [$start, $end] = IngestionWindow::lastComplete();
 
-        // PM2.5 200.16/500.4 -> 40 ; PM10 302/604 -> 50 ; OZONE 150/300 -> 50 ; NO2 50/200 -> 25 ; DUST 100/500 -> 20
-        // .4*40 + .2*50 + .15*50 + .1*25 + .15*20 = 39
+        // PM2.5 200.16/500.4 -> 40 ; PM10 302/604 -> 50 ; OZONE 150/300 -> 50 ; NO2 50/200 -> 25
+        // DUST 100/500 -> 20 ; SO2 175/350 -> 50 ; CO 5000/10000 -> 50
+        // .35*40 + .15*50 + .15*50 + .1*25 + .15*20 + .05*50 + .05*50 = 39.5
         $values = [
             'AIR_QUALITY_PM25' => 200.16,
             'AIR_QUALITY_PM10' => 302,
             'OZONE' => 150,
             'NO2' => 50,
             'DUST' => 100,
+            'SO2' => 175,
+            'CO' => 5000,
         ];
 
         foreach ($values as $code => $value) {
@@ -119,23 +124,23 @@ class RespiratoryRiskDepthTest extends TestCase
 
         $result = app(RegionScoringService::class)->calculate($this->index(), $region, $start, $end);
 
-        $this->assertSame(39.0, $result->score);
+        $this->assertSame(39.5, $result->score);
     }
 
     public function test_the_seeder_is_idempotent(): void
     {
         $this->seed(AdditionalIndicesSeeder::class);
 
-        $this->assertSame(0.4, (float) $this->config('AIR_QUALITY_PM25')->weight);
+        $this->assertSame(0.35, (float) $this->config('AIR_QUALITY_PM25')->weight);
         $this->assertSame(
-            5,
+            7,
             RegionScoringConfig::query()->where('index_id', $this->index()->index_id)->whereNull('region_id')->count(),
         );
     }
 
     public function test_it_never_overrides_an_admin_tuned_pm_weight(): void
     {
-        // Admin sets PM2.5 to something other than the rebalanced 0.4.
+        // Admin sets PM2.5 to something other than either rebalanced default (0.4 or 0.35).
         $this->config('AIR_QUALITY_PM25')->update(['weight' => 0.55]);
 
         $this->seed(AdditionalIndicesSeeder::class);

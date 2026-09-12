@@ -67,14 +67,14 @@ Keep the primary + fallback pattern `RainfallIngestionService` already uses, and
 | `signal_types` code | Source / API | Cadence | Feeds | Status |
 |---|---|---|---|---|
 | `SOIL_MOISTURE` | Open-Meteo Archive (ERA5-Land, 7–28 cm) | `DAILY` | agriculture, irrigation, drought depth | **Live** — `SoilMoistureIngestionService` |
-| `SOIL_TEMPERATURE` | Open-Meteo (0–54 cm) | `DAILY` | planting window | Ready |
+| `SOIL_TEMPERATURE` | Open-Meteo Archive (ERA5-Land, 0–7 cm) | `DAILY` | planting window | **Live** — `SoilTemperatureIngestionService` |
 | `EVAPOTRANSPIRATION` | Open-Meteo ET₀ (FAO-56 Penman-Monteith) | `DAILY` | irrigation demand, crop water stress | **Live** — `EvapotranspirationIngestionService` |
 | `HUMIDITY` | Open-Meteo relative humidity 2 m | `DAILY` | meningitis, fire, heat index, VPD | **Live** — `HumidityIngestionService` |
 | `WIND_SPEED` | Open-Meteo wind 10 m daily max (NASA POWER fallback: not wired yet) | `DAILY` | fire spread, dust transport | **Live** — `WindIngestionService` |
 | `DUST` | Open-Meteo Air Quality (CAMS dust) | `DAILY` | respiratory, meningitis, dust-storm | **Live** — `DustIngestionService` |
 | `OZONE` / `NO2` | Open-Meteo Air Quality (CAMS) | `DAILY` | Respiratory Risk depth | **Live** — `AirQuality{Ozone,No2}IngestionService` |
-| `SO2` / `CO` | Open-Meteo Air Quality (CAMS) | `DAILY` | Respiratory Risk depth (further) | Ready — same API call |
-| `UV_INDEX` | Open-Meteo (daily max + clear-sky max) | `DAILY` | occupational / skin-eye advisories | Ready |
+| `SO2` / `CO` | Open-Meteo Air Quality (CAMS) | `DAILY` | Respiratory Risk depth (further) | **Live** — `AirQuality{So2,Co}IngestionService` |
+| `UV_INDEX` | Open-Meteo Archive (ERA5, daily max) | `DAILY` | Heat Stress Risk depth (occupational / skin-eye) | **Live** — `UvIndexIngestionService` |
 | `RIVER_DISCHARGE` | Open-Meteo Flood API (GloFAS) | `DAILY` + forecast | riverine flood forecasting | **Live** — RiverDischargeIngestionService + RiverDischargeForecastService |
 | `ACTIVE_FIRE` | NASA FIRMS area API (VIIRS NOAA-20) | `DAILY` | bush-fire confirmation / backtest | **Live** — `ActiveFireIngestionService` (needs `FIRMS_MAP_KEY`; no-op without) |
 | `SEA_STATE` | Open-Meteo Marine (wave height, SST) | `DAILY` | coastal (partial) | Needs data (+ elevation/tide) |
@@ -91,7 +91,8 @@ calibration against outcome data. Bounds go in `scoring_calibration_parameters`;
 | Index code | Proposed signals & weights | Sector | Notes |
 |---|---|---|---|
 | `WATERBORNE_DISEASE_RISK` | `STANDING_WATER` 0.5 · `RAINFALL` 0.5 | Health / Water | **Live** — `AdditionalIndicesSeeder`. Future: a recent-flood boost term. |
-| `MENINGITIS_RISK` | `HUMIDITY` 0.4 (inv) · `DUST` 0.4 · `TEMPERATURE` 0.2 | Health | `region_id`-scoped to the Sahel belt, not system-wide |
+| `MENINGITIS_RISK` | `HUMIDITY` 0.4 (inv) · `DUST` 0.4 · `TEMPERATURE` 0.2 | Health | **Live** — `AdditionalIndicesSeeder`. `region_id`-scoped to the Sahel belt states, not system-wide — see decision-worthy note in `meningitisRisk()`. |
+| `PLANTING_WINDOW_RISK` | `SOIL_TEMPERATURE` 0.4 · `RAINFALL` 0.3 (inv) · `SOIL_MOISTURE` 0.3 (inv) | Agriculture | **Live** — `AdditionalIndicesSeeder`. Distinct from Agriculture Stress — about planting *timing*, not ongoing stress. Soil temperature scored monotonically (hotter = worse), a documented simplification for a tropical climate where cold-limited germination doesn't bind. |
 | `AGRICULTURE_STRESS` | `SOIL_MOISTURE` 0.5 (inv) · `RAINFALL` 0.3 (deficit) · `EVAPOTRANSPIRATION` 0.2 | Agriculture | **Live** — `AdditionalIndicesSeeder`. Distinct from Drought Risk — soil-water focused. Uncalibrated. |
 | `IRRIGATION_NEED` | `EVAPOTRANSPIRATION` 0.5 · `SOIL_MOISTURE` 0.3 (inv) · `RAINFALL` 0.2 (inv) | Agriculture | **Live** — `AdditionalIndicesSeeder`. 0–100 targeting score; mm-of-water output still future. |
 | `RANGELAND_STRESS` | `VEGETATION` 0.6 (inv NDVI) · `RAINFALL` 0.4 (deficit) | Agriculture | **Live** — `AdditionalIndicesSeeder`. Also an emergency-planning input (pastoralist movement / herder-conflict early warning). |
@@ -124,8 +125,16 @@ warning); **Air & Environment** → Respiratory, (Dust Storm).
 same caveat as the original six. `scores:calculate` picks it up automatically for any active
 region with those two signals.
 
-**`MENINGITIS_RISK` · Ready · size S–M.** Needs `HUMIDITY` and `DUST` first (T3). Then config rows,
-`region_id`-scoped to the meningitis-belt states so it doesn't render nationwide.
+**`MENINGITIS_RISK` · Live · size S–M.** `HUMIDITY` 0.4 (inv) · `DUST` 0.4 · `TEMPERATURE` 0.2,
+`region_id`-scoped to 16 Sudano-Sahelian belt states (Sokoto, Zamfara, Katsina, Kebbi, Jigawa,
+Yobe, Borno, Bauchi, Gombe, Kano, Kaduna, Niger, Plateau, Adamawa, Taraba, FCT) rather than a
+system default — no config rows for a non-belt LGA means the index simply doesn't score there,
+the same "doesn't apply here" behaviour GloFAS-less LGAs already show for Riverine Flood
+Forecast. The belt-state list itself is a placeholder pending public-health sign-off, same
+honesty caveat as every weight and bound in `AdditionalIndicesSeeder`. `ReferenceDataSeeder`
+calls `AdditionalIndicesSeeder` twice — once in its usual early position, once again after
+`seedRegions()` — because this is the one index in that seeder that needs real `Region` rows to
+exist before it can attach its per-LGA weights.
 
 ### T3 — New free signals and their indices
 
@@ -135,8 +144,15 @@ registered, on `IngestionCadence::DAILY`, with `ApiCapacityLimits` entries. All 
 seeded via `AdditionalIndicesSeeder` and attached to the Agriculture sector: Agriculture Stress
 (soil-water deficit), Irrigation Need (ET₀ demand vs. supply), Rangeland Stress (inverse NDVI +
 rainfall deficit, reusing the existing weekly `VEGETATION` signal). This was the widest
-value-per-effort jump — it opened a whole sector. A `SoilTemperatureIngestionService` for a
-planting-window index is a possible later add.
+value-per-effort jump — it opened a whole sector.
+
+**`PLANTING_WINDOW_RISK` · Live · size S.** `SoilTemperatureIngestionService` (Open-Meteo
+Archive, ERA5-Land 0–7 cm, same pattern as soil moisture) plus the already-live `RAINFALL` and
+`SOIL_MOISTURE`. Distinct from Agriculture Stress: this one is about planting *timing* — whether
+conditions this week favour germination — not ongoing crop water-balance stress. Soil
+temperature is genuinely U-shaped for germination, but the scoring engine only supports a
+monotonic normalisation; scored as hotter-is-worse since Nigeria's climate rarely binds on the
+cold side. Attached to the Agriculture sector.
 
 **Fire + dust (`WILDFIRE_RISK`, `DUST_STORM_RISK`) · Live · size M.** `WindIngestionService`,
 `DustIngestionService`, `HumidityIngestionService` and `ActiveFireIngestionService` are all
@@ -152,8 +168,25 @@ window, ~2-month NRT history — a confirmation source, not a backfill one).
 Quality API as the PM series; `DUST` (already live for Dust Storm Risk) is folded in too.
 `AdditionalIndicesSeeder::deepenRespiratoryRisk()` rebalances the index to PM2.5 0.4 · PM10 0.2 ·
 OZONE 0.15 · NO2 0.1 · DUST 0.15 — and only touches the PM weights when they're still at the
-original default, so an admin-tuned value survives. `SO2` / `CO` are the same API call if wanted
-later.
+original default, so an admin-tuned value survives.
+
+**Deepen `RESPIRATORY_RISK` again, with `SO2` / `CO` · Live · size S.**
+`AirQualitySo2IngestionService` / `AirQualityCoIngestionService` — the same Open-Meteo Air
+Quality call, two more fields. `deepenRespiratoryRiskWithSo2AndCo()` rebalances a second time to
+PM2.5 0.35 · PM10 0.15 · OZONE 0.15 · NO2 0.1 · DUST 0.15 · SO2 0.05 · CO 0.05, same
+only-if-still-at-the-prior-default guard. Weighted low relative to the others: both are more a
+near-source/indoor-exposure hazard than a broad-area one at this resolution. Bounds are an
+engineering placeholder rather than a cited WHO/EPA point — converting the AQI's ppb/ppm
+breakpoints to this API's µg/m³ output needs a temperature/pressure assumption not worth
+guessing at.
+
+**Deepen `HEAT_STRESS_RISK` with `UV_INDEX` · Live · size S.** `UvIndexIngestionService`
+(Open-Meteo Archive, daily UV index max, same `daily`-array pattern as wind speed). BUILD_PLAN
+originally scoped UV as a standalone "occupational / skin-eye advisories" index, but that use
+case tracks the same outdoor-exposure timing temperature already does — folding it into Heat
+Stress avoided a thin third index. `deepenHeatStressWithUv()` rebalances TEMPERATURE 0.7→0.6,
+VEGETATION 0.3→0.25, adds UV_INDEX 0.15. Bounds cite the WHO/WMO Global Solar UV Index scale
+(0–11+) — a real reference point, not a guess.
 
 ### T4 — Forecast ingestion · Shipped · size L
 
@@ -328,9 +361,12 @@ return numbers.
    Riverine Flood Forecast index on top (now reach-level, 8 rivers), forecast-breach alerts.
 6. ~~**T5 probabilistic scoring**~~ — done. Ensemble members → p10/p50/p90 + exceedance
    probability, `P(index ≥ x) ≥ %` threshold rule.
-7. **Meningitis Risk index** — small, now unblocked (HUMIDITY + DUST live). Config rows,
-   region-scoped to the meningitis-belt states, dry-season / harmattan weighting.
+7. ~~**Meningitis Risk index**~~ — done. Region-scoped to the Sahel belt states, not system-wide.
 8. ~~**T6 climate outlook**~~ — paused; the free CMIP6 source has no scenario selector.
-9. **T8 trained model + validation** — as soon as outcome data is in hand.
-10. **T9 country #2** — after at least one index is validated in Nigeria.
-11. **T7 coastal** — whenever the coastal DEM / tide sourcing lands.
+9. ~~**Respiratory Risk, SO2 + CO**~~ — done. Second depth pass, same Open-Meteo Air Quality call.
+10. ~~**Heat Stress Risk, UV_INDEX**~~ — done. Folded into Heat Stress rather than a standalone index.
+11. ~~**Planting Window Risk index**~~ — done. New `SOIL_TEMPERATURE` signal + a new Agriculture index.
+12. **T8 trained model + validation** — as soon as outcome data is in hand. The next real gate —
+    everything free-data-and-config-only on the roadmap is now shipped.
+13. **T9 country #2** — after at least one index is validated in Nigeria.
+14. **T7 coastal** — whenever the coastal DEM / tide sourcing lands.

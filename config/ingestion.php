@@ -1,10 +1,12 @@
 <?php
 
 use App\Services\Ingestion\ActiveFireIngestionService;
+use App\Services\Ingestion\AirQualityCoIngestionService;
 use App\Services\Ingestion\AirQualityNo2IngestionService;
 use App\Services\Ingestion\AirQualityOzoneIngestionService;
 use App\Services\Ingestion\AirQualityPm10IngestionService;
 use App\Services\Ingestion\AirQualityPm25IngestionService;
+use App\Services\Ingestion\AirQualitySo2IngestionService;
 use App\Services\Ingestion\DustIngestionService;
 use App\Services\Ingestion\ElevationIngestionService;
 use App\Services\Ingestion\EvapotranspirationIngestionService;
@@ -17,10 +19,12 @@ use App\Services\Ingestion\RiverDischargeEnsembleService;
 use App\Services\Ingestion\RiverDischargeForecastService;
 use App\Services\Ingestion\RiverDischargeIngestionService;
 use App\Services\Ingestion\SoilMoistureIngestionService;
+use App\Services\Ingestion\SoilTemperatureIngestionService;
 use App\Services\Ingestion\StandingWaterIngestionService;
 use App\Services\Ingestion\TemperatureEnsembleService;
 use App\Services\Ingestion\TemperatureForecastService;
 use App\Services\Ingestion\TemperatureIngestionService;
+use App\Services\Ingestion\UvIndexIngestionService;
 use App\Services\Ingestion\VegetationIngestionService;
 use App\Services\Ingestion\WindIngestionService;
 
@@ -48,11 +52,15 @@ return [
         AirQualityPm10IngestionService::class,
         AirQualityOzoneIngestionService::class,
         AirQualityNo2IngestionService::class,
+        AirQualitySo2IngestionService::class,
+        AirQualityCoIngestionService::class,
         SoilMoistureIngestionService::class,
+        SoilTemperatureIngestionService::class,
         EvapotranspirationIngestionService::class,
         HumidityIngestionService::class,
         WindIngestionService::class,
         DustIngestionService::class,
+        UvIndexIngestionService::class,
         ActiveFireIngestionService::class,
         RiverDischargeIngestionService::class,
     ],

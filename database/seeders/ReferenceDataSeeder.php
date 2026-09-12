@@ -28,6 +28,14 @@ class ReferenceDataSeeder extends Seeder
         $this->seedCalibrationParameters();
         $this->seedScoringConfigs();
         $this->seedAgencies();
+
+        // Re-run: AdditionalIndicesSeeder::meningitisRisk() attaches per-region scoring
+        // configs (deliberately region_id-scoped to the belt states, not a system default —
+        // see that method), so it needs actual Region rows to exist. The first call above runs
+        // before seedRegions() for everything else in that seeder, which only ever writes
+        // region_id=null system defaults and doesn't care. Fully idempotent — every other
+        // method in that seeder just no-ops the second time through.
+        $this->call(AdditionalIndicesSeeder::class);
     }
 
     private function seedSignalTypes(): void
@@ -319,19 +327,22 @@ class ReferenceDataSeeder extends Seeder
                 'VEGETATION' => 0.15,
                 'POPULATION_EXPOSURE' => 0.15,
             ],
+            // UV_INDEX folded in by AdditionalIndicesSeeder::deepenHeatStressWithUv() — these two
+            // weights leave room for it (0.6 + 0.25 + 0.15 = 1.0).
             'HEAT_STRESS_RISK' => [
-                'TEMPERATURE' => 0.7,
-                'VEGETATION' => ['weight' => 0.3, 'higher_is_worse' => false], // less vegetation, less shade/cooling
+                'TEMPERATURE' => 0.6,
+                'VEGETATION' => ['weight' => 0.25, 'higher_is_worse' => false], // less vegetation, less shade/cooling
             ],
             'DROUGHT_RISK' => [
                 'RAINFALL' => ['weight' => 0.5, 'higher_is_worse' => false], // less rain, more drought
                 'VEGETATION' => ['weight' => 0.5, 'higher_is_worse' => false], // lower NDVI, more vegetation stress
             ],
             // PM2.5 weighted higher — finer particulate, the more health-critical per WHO
-            // guidance. The gaseous pollutants (OZONE, NO2) and CAMS dust are folded in by
-            // AdditionalIndicesSeeder::deepenRespiratoryRisk(); these two PM weights leave room
-            // for them (0.4 + 0.2 + 0.15 + 0.1 + 0.15 = 1.0).
-            'RESPIRATORY_RISK' => ['AIR_QUALITY_PM25' => 0.4, 'AIR_QUALITY_PM10' => 0.2],
+            // guidance. The gaseous pollutants (OZONE, NO2, SO2, CO) and CAMS dust are folded in
+            // by AdditionalIndicesSeeder::deepenRespiratoryRisk() and
+            // ::deepenRespiratoryRiskWithSo2AndCo(); these two PM weights leave room for them
+            // (0.35 + 0.15 + 0.15 + 0.1 + 0.15 + 0.05 + 0.05 = 1.0).
+            'RESPIRATORY_RISK' => ['AIR_QUALITY_PM25' => 0.35, 'AIR_QUALITY_PM10' => 0.15],
         ];
 
         foreach ($weights as $indexCode => $signalWeights) {
