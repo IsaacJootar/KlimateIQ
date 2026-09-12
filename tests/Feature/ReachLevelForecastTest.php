@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Region;
-use App\Models\RegionForecastScore;
 use App\Models\RegionForecastSignal;
 use App\Models\RegionScoringConfig;
 use App\Models\RiverReach;
@@ -149,7 +148,9 @@ class ReachLevelForecastTest extends TestCase
             $this->forecastDay('benue-x', 7600, $lead);
         }
 
-        app(RegionForecastScoringService::class)->calculate($this->index, $this->region, Carbon::parse(now()->toDateString()), withEnsemble: false);
+        // Fixed date, matching forecastDay()'s hardcoded issued_at above — not now(), which
+        // drifts past the seeded issuance as real time advances and finds no forecast to score.
+        app(RegionForecastScoringService::class)->calculate($this->index, $this->region, Carbon::parse('2026-09-01'), withEnsemble: false);
 
         $this->actingAs(User::factory()->create())
             ->get(route('regions.show', ['region' => $this->region, 'index' => 'RIVERINE_FLOOD_FORECAST']))

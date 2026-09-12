@@ -51,8 +51,15 @@ class ForecastAlertTest extends TestCase
         ]);
     }
 
-    private function evaluate(?float $peak, string $peakDate = '2026-09-08', int $lead = 5): void
+    // Relative to today(), not a fixed calendar date: ThresholdEvaluationService::
+    // evaluateForForecast() resolves an alert once its target date is before today() (see
+    // "auto_resolves_once_its_target_date_has_passed" below) — a hardcoded past date here would
+    // make every "opens an alert" test look like an already-expired forecast as real time
+    // advances past it, and no alert would ever open.
+    private function evaluate(?float $peak, ?string $peakDate = null, int $lead = 5): void
     {
+        $peakDate ??= today()->addDays($lead)->toDateString();
+
         app(ThresholdEvaluationService::class)->evaluateForForecast(
             $this->index->index_id, $this->region->region_id, $peak, $peakDate, $lead,
         );
@@ -69,7 +76,7 @@ class ForecastAlertTest extends TestCase
         $this->assertNotNull($alert);
         $this->assertTrue($alert->is_forecast);
         $this->assertSame(5, $alert->forecast_lead_days);
-        $this->assertSame('2026-09-08', $alert->forecast_target_date->toDateString());
+        $this->assertSame(today()->addDays(5)->toDateString(), $alert->forecast_target_date->toDateString());
 
         Notification::assertSentTo($this->user, ThresholdBreachedNotification::class, function ($n) {
             $db = $n->toDatabase($this->user);
@@ -95,8 +102,8 @@ class ForecastAlertTest extends TestCase
         Notification::fake();
         $config = $this->threshold(value: 70);
 
-        $this->evaluate(peak: 82, lead: 6, peakDate: '2026-09-09');
-        $this->evaluate(peak: 88, lead: 3, peakDate: '2026-09-06');
+        $this->evaluate(peak: 82, lead: 6, peakDate: today()->addDays(6)->toDateString());
+        $this->evaluate(peak: 88, lead: 3, peakDate: today()->addDays(3)->toDateString());
 
         $this->assertSame(1, Alert::query()->where('threshold_config_id', $config->threshold_config_id)->count());
         $alert = Alert::query()->first();
@@ -150,7 +157,7 @@ class ForecastAlertTest extends TestCase
             'alert_type' => 'fixed_threshold', 'comparison_operator' => '>=', 'threshold_value' => 10, 'active' => true,
         ]);
 
-        app(ThresholdEvaluationService::class)->evaluateForForecast($flood->index_id, $this->region->region_id, 99, '2026-09-08', 5);
+        app(ThresholdEvaluationService::class)->evaluateForForecast($flood->index_id, $this->region->region_id, 99, today()->addDays(5)->toDateString(), 5);
 
         $this->assertSame(0, Alert::query()->count());
     }
