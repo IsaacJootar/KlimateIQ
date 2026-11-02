@@ -5,11 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Portfolio;
 use App\Models\PortfolioLocation;
 use App\Models\Region;
+use App\Models\User;
 use App\Services\Portfolio\PortfolioRollupService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use Laravel\Sanctum\PersonalAccessToken;
 
 /**
  * Enterprise pivot, Module 2 (docs/ENTERPRISE_BUILD_PLAN.md) — portfolio definition and the
@@ -64,6 +67,7 @@ class PortfolioController extends Controller
             'portfolio' => $portfolio,
             'rows' => $rollup->rollup($portfolio),
             'regions' => Region::query()->orderBy('name')->get(['region_id', 'name', 'state']),
+            'apiTokens' => $this->tokensForPortfolio($portfolio),
         ]);
     }
 
@@ -110,6 +114,55 @@ class PortfolioController extends Controller
         $location->delete();
 
         return back()->with('status', 'Location removed.');
+    }
+
+    /**
+     * Enterprise pivot, Module 5 (docs/ENTERPRISE_BUILD_PLAN.md) — Sector #1's "licensed read-only
+     * feed." The token is scoped to exactly this Portfolio via a single Sanctum ability, not a
+     * new token table — PortfolioFeedApiController checks the same ability string before handing
+     * back any data.
+     */
+    public function issueToken(Request $request, Portfolio $portfolio): RedirectResponse
+    {
+        $this->authorizeAgency($portfolio);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+        ]);
+
+        $token = Auth::user()->createToken($validated['name'], [$portfolio->feedAbility()]);
+
+        return back()
+            ->with('status', "Token \"{$validated['name']}\" issued — it can only read this portfolio's feed.")
+            ->with('plainTextToken', $token->plainTextToken);
+    }
+
+    public function revokeToken(Portfolio $portfolio, PersonalAccessToken $token): RedirectResponse
+    {
+        $this->authorizeAgency($portfolio);
+        abort_unless(in_array($portfolio->feedAbility(), $token->abilities ?? [], true), 404);
+
+        $name = $token->name;
+        $token->delete();
+
+        return back()->with('status', "Revoked token \"{$name}\".");
+    }
+
+    /**
+     * @return Collection<int, PersonalAccessToken>
+     */
+    private function tokensForPortfolio(Portfolio $portfolio): Collection
+    {
+        $agencyUserIds = $portfolio->agency->users()->pluck('id');
+
+        return PersonalAccessToken::query()
+            ->where('tokenable_type', User::class)
+            ->whereIn('tokenable_id', $agencyUserIds)
+            ->with('tokenable')
+            ->orderByDesc('created_at')
+            ->get()
+            ->filter(fn (PersonalAccessToken $token) => in_array($portfolio->feedAbility(), $token->abilities ?? [], true))
+            ->values();
     }
 
     private function authorizeAgency(Portfolio $portfolio): void

@@ -1,3 +1,6 @@
+@php
+    $isEnterprise = Auth::user()->agency?->portfolio_type !== null;
+@endphp
 <nav x-data="{ open: false }" class="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -9,40 +12,59 @@
                         <x-application-logo class="block h-8 w-auto text-gano-600 dark:text-gano-400 flex-shrink-0" />
                         <span class="flex flex-col leading-none">
                             <span class="text-lg font-bold text-gray-800 dark:text-gray-200">KlimateIQ</span>
-                            <span class="text-[7px] font-semibold uppercase tracking-wide text-gano-600 dark:text-gano-400 mt-0.5 whitespace-nowrap">Climate Intelligence</span>
+                            <span class="text-[7px] font-semibold uppercase tracking-wide text-gano-600 dark:text-gano-400 mt-0.5 whitespace-nowrap">Climate Risk Intelligence</span>
                         </span>
                     </a>
                 </div>
 
-                <!-- Sector switcher (Clarity Pass B4) — the workspace-context selector, kept
-                     next to the logo and away from the page nav links. -->
-                <div class="hidden sm:flex sm:items-center sm:ms-4">
-                    <x-sector-switcher />
-                </div>
+                @unless ($isEnterprise)
+                    {{-- Sector switcher (Clarity Pass B4) — the legacy self-serve workspace
+                         context selector. Enterprise pivot (docs/ENTERPRISE_PIVOT_PLAN.md §6a):
+                         an agency provisioned with a Portfolio Type has this decided at
+                         onboarding, not picked per session, so it has no place in that nav. --}}
+                    <div class="hidden sm:flex sm:items-center sm:ms-4">
+                        <x-sector-switcher />
+                    </div>
+                @endunless
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-6 sm:-my-px sm:ms-8 sm:flex">
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
-                    <x-nav-link :href="route('regions.index')" :active="request()->routeIs('regions.*')">
-                        {{ __('Regions') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('coverage.edit')" :active="request()->routeIs('coverage.*')">
-                        {{ __('Workspace') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('alerts.index')" :active="request()->routeIs('alerts.*')">
-                        {{ __('Alerts') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('thresholds.index')" :active="request()->routeIs('thresholds.*')">
-                        {{ __('Thresholds') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('saved-views.index')" :active="request()->routeIs('saved-views.*')">
-                        {{ __('Saved Views') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('reports.index')" :active="request()->routeIs('reports.*')">
-                        {{ __('Reports') }}
-                    </x-nav-link>
+                    @if ($isEnterprise)
+                        <x-nav-link :href="route('portfolios.index')" :active="request()->routeIs('portfolios.*')">
+                            {{ __('Portfolios') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('alerts.index')" :active="request()->routeIs('alerts.*')">
+                            {{ __('Alerts') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('reports.index')" :active="request()->routeIs('reports.*')">
+                            {{ __('Reports') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('thresholds.index')" :active="request()->routeIs('thresholds.*')">
+                            {{ __('Thresholds') }}
+                        </x-nav-link>
+                    @else
+                        <x-nav-link :href="route('regions.index')" :active="request()->routeIs('regions.*')">
+                            {{ __('Regions') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('coverage.edit')" :active="request()->routeIs('coverage.*')">
+                            {{ __('Workspace') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('alerts.index')" :active="request()->routeIs('alerts.*')">
+                            {{ __('Alerts') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('thresholds.index')" :active="request()->routeIs('thresholds.*')">
+                            {{ __('Thresholds') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('saved-views.index')" :active="request()->routeIs('saved-views.*')">
+                            {{ __('Saved Views') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('reports.index')" :active="request()->routeIs('reports.*')">
+                            {{ __('Reports') }}
+                        </x-nav-link>
+                    @endif
                     @if (Auth::user()->hasFederalOversight())
                         <x-nav-link :href="route('overview.index')" :active="request()->routeIs('overview.*')">
                             {{ __('Platform Overview') }}
@@ -144,24 +166,39 @@
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('regions.index')" :active="request()->routeIs('regions.*')">
-                {{ __('Regions') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('coverage.edit')" :active="request()->routeIs('coverage.*')">
-                {{ __('Workspace') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('alerts.index')" :active="request()->routeIs('alerts.*')">
-                {{ __('Alerts') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('thresholds.index')" :active="request()->routeIs('thresholds.*')">
-                {{ __('Thresholds') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('saved-views.index')" :active="request()->routeIs('saved-views.*')">
-                {{ __('Saved Views') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('reports.index')" :active="request()->routeIs('reports.*')">
-                {{ __('Reports') }}
-            </x-responsive-nav-link>
+            @if ($isEnterprise)
+                <x-responsive-nav-link :href="route('portfolios.index')" :active="request()->routeIs('portfolios.*')">
+                    {{ __('Portfolios') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('alerts.index')" :active="request()->routeIs('alerts.*')">
+                    {{ __('Alerts') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('reports.index')" :active="request()->routeIs('reports.*')">
+                    {{ __('Reports') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('thresholds.index')" :active="request()->routeIs('thresholds.*')">
+                    {{ __('Thresholds') }}
+                </x-responsive-nav-link>
+            @else
+                <x-responsive-nav-link :href="route('regions.index')" :active="request()->routeIs('regions.*')">
+                    {{ __('Regions') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('coverage.edit')" :active="request()->routeIs('coverage.*')">
+                    {{ __('Workspace') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('alerts.index')" :active="request()->routeIs('alerts.*')">
+                    {{ __('Alerts') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('thresholds.index')" :active="request()->routeIs('thresholds.*')">
+                    {{ __('Thresholds') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('saved-views.index')" :active="request()->routeIs('saved-views.*')">
+                    {{ __('Saved Views') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('reports.index')" :active="request()->routeIs('reports.*')">
+                    {{ __('Reports') }}
+                </x-responsive-nav-link>
+            @endif
             @if (Auth::user()->hasFederalOversight())
                 <x-responsive-nav-link :href="route('overview.index')" :active="request()->routeIs('overview.*')">
                     {{ __('Platform Overview') }}
@@ -172,7 +209,9 @@
             </x-responsive-nav-link>
         </div>
 
-        <x-sector-switcher responsive />
+        @unless ($isEnterprise)
+            <x-sector-switcher responsive />
+        @endunless
 
         <!-- Responsive Settings Options -->
         <div class="pt-4 pb-1 border-t border-gray-200 dark:border-gray-600">

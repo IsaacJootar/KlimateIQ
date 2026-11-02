@@ -61,6 +61,8 @@ Route::middleware(['auth', 'onboarded'])->group(function () {
     Route::delete('/portfolios/{portfolio}', [PortfolioController::class, 'destroy'])->name('portfolios.destroy');
     Route::post('/portfolios/{portfolio}/locations', [PortfolioController::class, 'addLocation'])->name('portfolios.locations.store');
     Route::delete('/portfolios/{portfolio}/locations/{location}', [PortfolioController::class, 'removeLocation'])->name('portfolios.locations.destroy');
+    Route::post('/portfolios/{portfolio}/tokens', [PortfolioController::class, 'issueToken'])->name('portfolios.tokens.store');
+    Route::delete('/portfolios/{portfolio}/tokens/{token}', [PortfolioController::class, 'revokeToken'])->name('portfolios.tokens.destroy');
 
     Route::get('/thresholds', [ThresholdConfigController::class, 'index'])->name('thresholds.index');
     Route::post('/thresholds', [ThresholdConfigController::class, 'store'])->name('thresholds.store');

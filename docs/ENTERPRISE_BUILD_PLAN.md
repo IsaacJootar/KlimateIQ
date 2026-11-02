@@ -4,8 +4,19 @@ Companion to [`docs/ENTERPRISE_PIVOT_PLAN.md`](ENTERPRISE_PIVOT_PLAN.md) (the wh
 the how, in the same format as [`docs/BUILD_PLAN.md`](BUILD_PLAN.md): one module at a time, build,
 test, commit, push, mark done, move to the next.
 
-Status tags: **Not started** · **In progress** · **Done**. This file is the source of truth for
-that status — update it at the end of each module, not just in chat.
+Status tags: **Not started** · **In progress** · **Done** · **Deferred**. This file is the source
+of truth for that status — update it at the end of each module, not just in chat.
+
+**2026-11-02 — demo-driven re-scope.** With a demo presentation coming up and limited time before
+it, the live focus narrows to the two sectors already fully supported end-to-end — **Insurance &
+Reinsurance (#1)** and **Banking & Lending / agri-lending (#2)** — rather than building toward all
+seven. Modules 6–10 (ESG disclosure, Telecom webhooks, Logistics corridors, the financial layer,
+the validation dossier) are **deferred**, not dropped: nothing built so far is sector-specific, so
+revisiting them later costs nothing extra now. See `ENTERPRISE_PIVOT_PLAN.md` §5 — both focus
+sectors' MVP scope ("a ranked report... delivered as PDF and/or API" for lending; "a licensed
+read-only feed... packaging + a contract" for insurance) is already covered by Modules 1–5: the
+portfolio dashboard (Module 4) and the licensed API feed (Module 5) are sector-agnostic, driven
+entirely by `PortfolioType`.
 
 ## Build order
 
@@ -14,13 +25,13 @@ that status — update it at the end of each module, not just in chat.
 | 1 | Portfolio Type | M | **Done** | Everything below |
 | 2 | Entity Modeling (portfolios of locations) | L | **Done** | Sectors #1, #2, #4 |
 | 3 | Point / coordinate scoring | M–L | **Done** | Sectors #2, #4 (scoring an exact site, not just an LGA) |
-| 4 | Enterprise dashboard rebuild | M | Not started | The actual product surface |
-| 5 | Parametric Insurance data-feed packaging (Sector #1) | S | Not started | First sellable product |
-| 6 | Compliance / ESG report generator (Sector #3) | M | Not started | Second sellable product |
-| 7 | Webhook delivery + site feed (Sector #4, Telecom) | M | Not started | Third sellable product |
-| 8 | Corridor / route scoring (Sector #5, Logistics) | M | Not started | Fourth sellable product |
-| 9 | "Bring your own model" financial layer | M | Not started | The Jupiter-parity endpoint — see note below |
-| 10 | Validation dossier (MRM-equivalent) | ongoing | Not started | Credibility with regulated buyers |
+| 4 | Enterprise dashboard rebuild | M | **Done** | The actual product surface |
+| 5 | Parametric Insurance data-feed packaging (Sector #1) | S | **Done** | First sellable product |
+| 6 | Compliance / ESG report generator (Sector #3) | M | Deferred (post-demo) | Second sellable product |
+| 7 | Webhook delivery + site feed (Sector #4, Telecom) | M | Deferred (post-demo) | Third sellable product |
+| 8 | Corridor / route scoring (Sector #5, Logistics) | M | Deferred (post-demo) | Fourth sellable product |
+| 9 | "Bring your own model" financial layer | M | Deferred (post-demo) | The Jupiter-parity endpoint — see note below |
+| 10 | Validation dossier (MRM-equivalent) | ongoing | Deferred (post-demo) | Credibility with regulated buyers |
 | — | Sectors #6/#7 (Public Finance, Pharma) | — | Deliberately unscheduled | Revisit after 1–9 |
 
 ---
@@ -149,17 +160,39 @@ still holds. Full suite: 460/460 green.
 
 ---
 
-### Module 5 — Parametric Insurance data-feed packaging (Sector #1)
+### Module 5 — Parametric Insurance data-feed packaging (Sector #1) · Done
 
 **What it is:** The first sellable enterprise product — mostly packaging, per
 `ENTERPRISE_PIVOT_PLAN.md` §5.
 
-**Touches:**
-- A scoped API token/contract concept tying a client's token to their specific Portfolio.
-- Documentation/licensing template (business artifact, not code).
+**Shipped:** `GET /api/v1/portfolios/{id}/feed` — a token scoped to exactly one Portfolio via a
+single Sanctum ability (`Portfolio::feedAbility()`), issued and revoked by the client themselves
+from their own portfolio page's new "API access" panel (not `/admin/api-tokens`, which stays the
+platform-wide tool). No new scoring — the feed is `PortfolioRollupService`'s existing output,
+reshaped into a stable JSON contract. `docs/INGESTION_GUIDE.md` documents the endpoint;
+`docs/PARAMETRIC_INSURANCE_DATA_LICENSE_TEMPLATE.md` is the business-side licensing agreement
+template a real contract would be drafted from. **Found along the way:** Sanctum's `auth:sanctum`
+guard checks the web session before a bearer token, and a session hit gets a full-access
+`TransientToken` — harmless for the platform's other read endpoints, but it would have let a
+logged-in agency user bypass this feed's per-portfolio scoping entirely by just browsing to
+another agency's URL. Fixed by having the controller explicitly reject session auth and require a
+real scoped token. 13 new tests (`PortfolioFeedApiTest`, `PortfolioApiTokenTest`). Full suite:
+474/474 green.
 
 **Depends on:** Modules 1–2. The smallest, fastest module after the foundation — deliberately
 sequenced right after Entity Modeling for a fast first "real product" milestone.
+
+**Also shipped alongside this module (demo-critical, not its own numbered module):** the main nav
+(`resources/views/layouts/navigation.blade.php`) had never been touched by Modules 1–4 — it still
+showed the legacy "Regions · Workspace · Saved Views" links and a "Climate Intelligence" tagline,
+with no "Portfolios" link at all, for every user including enterprise ones. Fixed: an agency with
+a Portfolio Type now gets a dedicated nav (Dashboard · Portfolios · Alerts · Reports · Thresholds,
+no legacy sector-switcher), and the tagline is now "Climate Risk Intelligence." **Found along the
+way:** Blade's `@php(expr)` parenthesized shorthand mis-parses an expression that itself contains
+parentheses (e.g. `Auth::user()->agency?->portfolio_type`) — it matches only up to the first
+closing paren, leaving the `<?php` tag unclosed and corrupting the rest of the compiled view. Not
+specific to this codebase; a real Blade compiler limitation. Fixed by using the block
+`@php ... @endphp` form instead.
 
 ---
 

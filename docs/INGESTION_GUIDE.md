@@ -239,3 +239,25 @@ curl -H "Authorization: Bearer <token>" \
 Every score in the response carries the same `breakdown` the dashboard drill-down shows — which
 signal, its raw value, its normalized contribution, and its weight — so a third party gets the
 same auditability a KlimateIQ user gets, not a black-box number.
+
+### Portfolio feed (Sector #1 — Parametric Insurance & Reinsurance)
+
+A second, narrower kind of token: issued by a client themselves, from their own portfolio page
+(`portfolios/{id}`, "API access" section — not `/admin/api-tokens`), scoped to read **only that
+one Portfolio's** feed. This is the licensed data feed `docs/ENTERPRISE_PIVOT_PLAN.md` §5
+describes — the thing a signed data-licensing agreement (see
+`docs/PARAMETRIC_INSURANCE_DATA_LICENSE_TEMPLATE.md`) can point at by name.
+
+| Endpoint | Returns |
+|---|---|
+| `GET /api/v1/portfolios/{id}/feed` | Every location in that portfolio, ranked worst-to-best, with the same scores/bands `PortfolioRollupService` computes for the portfolio's own dashboard — including the honest `approximated`/`not scorable` markers for coordinate-only locations. |
+
+```bash
+curl -H "Authorization: Bearer <portfolio-scoped token>" \
+     https://your-domain/api/v1/portfolios/42/feed
+```
+
+A token issued this way carries a single Sanctum ability, `portfolio:{id}` — it cannot read any
+other portfolio, including another one belonging to the same agency, and a logged-in browser
+session cannot stand in for it (the endpoint explicitly rejects session auth; see
+`PortfolioFeedApiController`). Revoking it is immediate, from the same "API access" panel.

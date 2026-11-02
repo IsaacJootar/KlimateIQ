@@ -41,4 +41,14 @@ class Portfolio extends Model
     {
         return $this->type === 'corridor';
     }
+
+    /**
+     * The Sanctum ability string a token must carry to read this portfolio's API feed —
+     * Module 5 (docs/ENTERPRISE_BUILD_PLAN.md). One shared source of truth for the ability
+     * PortfolioController issues and PortfolioFeedApiController checks.
+     */
+    public function feedAbility(): string
+    {
+        return "portfolio:{$this->portfolio_id}";
+    }
 }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\PortfolioFeedApiController;
 use App\Http\Controllers\Api\RegionScoreApiController;
 use Illuminate\Support\Facades\Route;
 
@@ -22,4 +23,9 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->prefix('v1')->group(functio
     Route::get('/regions', [RegionScoreApiController::class, 'regions']);
     Route::get('/indices/{indexCode}/scores', [RegionScoreApiController::class, 'latestByIndex']);
     Route::get('/regions/{region}/scores', [RegionScoreApiController::class, 'history']);
+
+    // Enterprise pivot, Module 5 (docs/ENTERPRISE_BUILD_PLAN.md) — a token scoped to exactly one
+    // Portfolio (issued from that portfolio's own page, not /admin/api-tokens) rather than the
+    // whole-platform read access every token above grants.
+    Route::get('/portfolios/{portfolio}/feed', [PortfolioFeedApiController::class, 'show']);
 });
