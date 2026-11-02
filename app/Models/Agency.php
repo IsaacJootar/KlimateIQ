@@ -39,4 +39,12 @@ class Agency extends Model
     {
         return $this->hasMany(AgencyIndexOverride::class, 'agency_id', 'agency_id');
     }
+
+    /**
+     * Enterprise pivot, Module 2 — this agency's portfolios (docs/ENTERPRISE_BUILD_PLAN.md).
+     */
+    public function portfolios(): HasMany
+    {
+        return $this->hasMany(Portfolio::class, 'agency_id', 'agency_id');
+    }
 }

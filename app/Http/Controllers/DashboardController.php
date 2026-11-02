@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Agency;
 use App\Models\Alert;
+use App\Models\Portfolio;
 use App\Models\Region;
 use App\Models\RegionForecastScore;
 use App\Models\RegionScore;
 use App\Models\RegionSignal;
 use App\Models\ThresholdConfig;
+use App\Models\User;
+use App\Services\Portfolio\PortfolioRollupService;
 use App\Support\IndexCoverage;
 use App\Support\RiskBand;
 use Illuminate\Support\Facades\Auth;
@@ -15,10 +19,46 @@ use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
+    /**
+     * Enterprise pivot, Module 4 (docs/ENTERPRISE_BUILD_PLAN.md) — the fork point. An agency
+     * with at least one Portfolio (Module 2) gets the new "your portfolio, ranked by risk" view;
+     * everyone else — every agency and individual user from before this pivot — gets the
+     * unchanged legacy dashboard below. Nothing about the old path is touched; see
+     * docs/ENTERPRISE_PIVOT_PLAN.md §7 for why it stays rather than being deleted outright.
+     */
     public function index(): View
     {
         $user = Auth::user();
+        $agency = $user->agency;
+        $portfolio = $agency?->portfolios()->orderByDesc('created_at')->first();
 
+        return $portfolio !== null
+            ? $this->portfolioDashboard($user, $agency, $portfolio)
+            : $this->legacyDashboard($user);
+    }
+
+    private function portfolioDashboard(User $user, Agency $agency, Portfolio $portfolio): View
+    {
+        $rows = app(PortfolioRollupService::class)->rollup($portfolio);
+
+        $openAlertsCount = Alert::query()
+            ->whereHas('thresholdConfig', fn ($q) => $q->where('user_id', $user->id))
+            ->where('status', 'OPEN')
+            ->count();
+
+        return view('dashboard-portfolio', [
+            'portfolio' => $portfolio,
+            'rows' => $rows,
+            'redCount' => $rows->where('worst_band', 'red')->count(),
+            'amberCount' => $rows->where('worst_band', 'amber')->count(),
+            'unscoredCount' => $rows->whereNull('worst_score')->count(),
+            'openAlertsCount' => $openAlertsCount,
+            'otherPortfoliosCount' => $agency->portfolios()->count() - 1,
+        ]);
+    }
+
+    private function legacyDashboard(User $user): View
+    {
         $regionIds = $user->regionSubscriptions()->pluck('region_id');
 
         // "All regions" (no explicit coverage) means "everything currently active," not

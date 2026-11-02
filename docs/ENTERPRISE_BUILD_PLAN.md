@@ -127,16 +127,23 @@ matters).
 
 ---
 
-### Module 4 — Enterprise dashboard rebuild
+### Module 4 — Enterprise dashboard rebuild · Done
 
 **What it is:** The actual screen change from `ENTERPRISE_PIVOT_PLAN.md` §6a — `dashboard` becomes
 "your portfolio, ranked by risk" instead of "regions you follow."
 
-**Touches:**
-- `DashboardController` — rebuilt around the Module 2 roll-up instead of `UserIndexSubscription`.
-- `dashboard.blade.php` — new primary view.
-- The old sector/index-follow UI steps back to a secondary/credibility-tier path (§7), not
-  deleted outright.
+**Shipped:** `DashboardController::index()` is now a dispatcher — a user whose agency has at least
+one Portfolio gets `portfolioDashboard()` (new `dashboard-portfolio.blade.php`, built on Module
+2/3's `PortfolioRollupService::rollup()`: red/amber/unscored counts, open alerts, and the
+portfolio's locations ranked worst-to-best with the same approximated/not-scorable honesty as the
+portfolio management page). Everyone else — any agency or individual user without a Portfolio yet
+— falls through unchanged into `legacyDashboard()`, the exact pre-Module-4 logic moved verbatim
+into its own method; nothing about it was touched, per §7's "steps back to a secondary path, not
+deleted" framing. 5 new tests (`DashboardPortfolioTest`: portfolio users see the new view,
+agency-less and portfolio-less users see the legacy view unchanged, red/amber/unscored counts are
+correct, the most recently created portfolio is the one shown) plus the pre-existing
+`DashboardDefaultIndexTest` re-run unmodified to confirm the legacy path's regression coverage
+still holds. Full suite: 460/460 green.
 
 **Depends on:** Modules 1–2.
 
