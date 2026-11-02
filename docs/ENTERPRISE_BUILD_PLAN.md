@@ -13,7 +13,7 @@ that status — update it at the end of each module, not just in chat.
 |---|---|---|---|---|
 | 1 | Portfolio Type | M | **Done** | Everything below |
 | 2 | Entity Modeling (portfolios of locations) | L | **Done** | Sectors #1, #2, #4 |
-| 3 | Point / coordinate scoring | M–L | Not started | Sectors #2, #4 (scoring an exact site, not just an LGA) |
+| 3 | Point / coordinate scoring | M–L | **Done** | Sectors #2, #4 (scoring an exact site, not just an LGA) |
 | 4 | Enterprise dashboard rebuild | M | Not started | The actual product surface |
 | 5 | Parametric Insurance data-feed packaging (Sector #1) | S | Not started | First sellable product |
 | 6 | Compliance / ESG report generator (Sector #3) | M | Not started | Second sellable product |
@@ -98,21 +98,29 @@ which indices the roll-up shows by default).
 
 ---
 
-### Module 3 — Point / coordinate scoring
+### Module 3 — Point / coordinate scoring · Done
 
 **What it is:** Score an arbitrary lat/long, not just a seeded `Region` row — needed for "this
 specific bank branch" or "this specific tower," not just "this LGA."
 
-**Touches:**
-- Investigation first, before writing code: every `SignalIngestionService::ingestForRegion()`
-  already takes a `Region` with lat/long — the real question is whether ingestion/scoring can run
-  against an ad-hoc coordinate without a seeded `Region` row, or whether the simplest honest MVP
-  is "snap to nearest LGA and say so explicitly" rather than true point-level ingestion. **Don't
-  guess the answer before investigating** — this is the one module in the list where the scope
-  could genuinely shrink or grow once the architecture is actually read closely.
-- Whichever path: a documented, explicit behaviour (never silently substitute the nearest LGA's
-  score without labelling it as such — same honesty discipline as everywhere else in this
-  platform).
+**Investigation finding (scope shrank, as flagged it might):** `region_signals` and
+`region_scores` both require a real, persisted `region_id` — not nullable, foreign-key
+constrained. True point-level ingestion for an ad-hoc coordinate would mean creating synthetic
+`Region` rows mixed into the same table that backs "774 real Nigerian LGAs" everywhere else in
+the app (the public API, sector rollups, the README's own claims) — too invasive for what this
+needs to do. Went with nearest-LGA snapping instead: reuses the entire existing scoring pipeline
+with zero new ingestion, as long as the result is never presented as an exact point score.
+
+**Shipped:** `App\Support\NearestRegion::find()` — plain-PHP Haversine distance over the 774
+seeded regions (no PostGIS or DB-side geospatial function anywhere else in this codebase to
+build on), returning the closest region and its distance, or `null` beyond
+`MAX_USEFUL_DISTANCE_KM` (50 km, an engineering judgement call, documented as such) rather than
+approximating against something irrelevant. `PortfolioRollupService` now scores a
+coordinate-only location against its nearest match, marked `approximated => true` with the
+distance shown — in the UI, "≈ nearest LGA: X (12.3 km away)" rather than a bare number. Beyond
+the threshold, a location is honestly `scorable => false` with a clear reason, same discipline as
+Module 2's original fail-safe. 10 tests (28 assertions) across `NearestRegionTest` and updated
+`PortfolioRollupTest`/`PortfolioControllerTest` cases. Full suite: 455/455 green.
 
 **Depends on:** Module 2 (a `PortfolioLocation` needs somewhere to put a coordinate before this
 matters).

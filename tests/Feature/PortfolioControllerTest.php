@@ -7,6 +7,7 @@ use App\Models\Portfolio;
 use App\Models\PortfolioLocation;
 use App\Models\Region;
 use App\Models\User;
+use App\Services\Portfolio\PortfolioRollupService;
 use App\Support\PortfolioType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -36,14 +37,19 @@ class PortfolioControllerTest extends TestCase
         $region = Region::query()->firstOrFail();
 
         PortfolioLocation::query()->create(['portfolio_id' => $portfolio->portfolio_id, 'region_id' => $region->region_id]);
-        PortfolioLocation::query()->create(['portfolio_id' => $portfolio->portfolio_id, 'latitude' => 6.5, 'longitude' => 3.3, 'label' => 'Site X']);
+        // A coordinate near the seeded region approximates successfully (Module 3)...
+        PortfolioLocation::query()->create(['portfolio_id' => $portfolio->portfolio_id, 'latitude' => $region->latitude, 'longitude' => $region->longitude, 'label' => 'Site X']);
+        // ...while one far from anything seeded is honestly marked not scorable, not guessed.
+        PortfolioLocation::query()->create(['portfolio_id' => $portfolio->portfolio_id, 'latitude' => 0.0, 'longitude' => 0.0, 'label' => 'Out of range']);
 
         $this->actingAs($user)->get(route('portfolios.show', $portfolio))
             ->assertOk()
             ->assertSee('Mixed book')
             ->assertSee($region->name)
             ->assertSee('Site X')
-            ->assertSee('Module 3'); // the coordinate-only row's honest "not scorable yet" reason
+            ->assertSee('nearest LGA') // Site X's approximation note
+            ->assertSee('Out of range')
+            ->assertSee(PortfolioRollupService::TOO_FAR_REASON);
     }
 
     public function test_the_index_page_renders_with_no_portfolios(): void

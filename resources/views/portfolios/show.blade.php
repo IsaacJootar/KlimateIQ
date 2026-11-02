@@ -57,7 +57,7 @@
                             <x-text-input id="label" name="label" type="text" class="block mt-1 w-full" placeholder="Tower #42, Ikeja axis" />
                         </div>
                         <p class="sm:col-span-3 text-xs text-amber-600 dark:text-amber-400">
-                            A raw coordinate is stored, but can't be scored yet — point-level scoring is a separate, not-yet-built step (Module 3). It shows up below as "not scorable yet," not a guessed number.
+                            There's no scoring data for this exact point — a raw coordinate is scored against the nearest LGA instead, clearly marked below with the distance. If nothing seeded is within {{ \App\Support\NearestRegion::MAX_USEFUL_DISTANCE_KM }} km, it shows "not scorable" rather than guessing from something too far away.
                         </p>
                     </div>
 
@@ -84,6 +84,11 @@
                                 <tr>
                                     <td class="px-4 py-3 font-medium text-gray-800 dark:text-gray-200">
                                         {{ $row['display_name'] }}
+                                        @if ($row['approximated'])
+                                            <div class="text-xs font-normal text-amber-600 dark:text-amber-400 mt-0.5">
+                                                &asymp; nearest LGA: {{ $row['nearest_region_name'] }} ({{ $row['distance_km'] }} km away)
+                                            </div>
+                                        @endif
                                     </td>
                                     @if ($row['scorable'])
                                         <td class="px-4 py-3 text-sm text-gray-500">

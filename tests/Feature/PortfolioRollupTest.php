@@ -15,9 +15,10 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Enterprise pivot, Module 2 (docs/ENTERPRISE_BUILD_PLAN.md) — the roll-up is pure aggregation
- * over App\Support\LatestScore and App\Support\AgencyIndexCoverage; no new scoring logic, so
- * these tests are about ranking, coverage gaps, and the coordinate-only fail-safe, not scoring
+ * Enterprise pivot, Modules 2 & 3 (docs/ENTERPRISE_BUILD_PLAN.md) — the roll-up is pure
+ * aggregation over App\Support\LatestScore, App\Support\AgencyIndexCoverage, and (for a
+ * coordinate-only location) App\Support\NearestRegion; no new scoring logic, so these tests are
+ * about ranking, coverage gaps, and the nearest-LGA-approximation fail-safe, not scoring
  * correctness (already covered elsewhere).
  */
 class PortfolioRollupTest extends TestCase
@@ -105,24 +106,52 @@ class PortfolioRollupTest extends TestCase
         $this->assertTrue($rows->last()['scorable']); // a real LGA, just nothing scored yet — different from coordinate-only
     }
 
-    public function test_a_coordinate_only_location_is_marked_not_scorable_not_guessed(): void
+    public function test_a_coordinate_near_a_seeded_lga_is_scored_against_it_and_marked_approximated(): void
     {
         $agency = Agency::factory()->create(['portfolio_type' => PortfolioType::TelecomInfrastructure]);
         $portfolio = Portfolio::query()->create(['agency_id' => $agency->agency_id, 'name' => 'Tower network', 'type' => 'point_list']);
 
+        // Using a seeded region's own coordinates makes it deterministically the nearest match
+        // (distance ~0) without depending on real-world geography knowledge in the test itself.
+        $nearby = Region::query()->whereNotNull('latitude')->firstOrFail();
+        $this->score($nearby, 'FLOOD_RISK', 72);
+
         PortfolioLocation::query()->create([
             'portfolio_id' => $portfolio->portfolio_id,
-            'latitude' => 6.5244,
-            'longitude' => 3.3792,
+            'latitude' => $nearby->latitude,
+            'longitude' => $nearby->longitude,
             'label' => 'Tower #42',
         ]);
 
         $row = app(PortfolioRollupService::class)->rollup($portfolio)->first();
 
+        $this->assertTrue($row['scorable']);
+        $this->assertTrue($row['approximated']);
+        $this->assertSame($nearby->name, $row['nearest_region_name']);
+        $this->assertLessThan(1.0, $row['distance_km']); // same point, allowing for float rounding
+        $this->assertSame(72.0, $row['worst_score']);
+        $this->assertSame('Tower #42', $row['display_name']); // the location's own label, not the nearest region's name
+    }
+
+    public function test_a_coordinate_too_far_from_any_seeded_lga_is_marked_not_scorable(): void
+    {
+        $agency = Agency::factory()->create(['portfolio_type' => PortfolioType::TelecomInfrastructure]);
+        $portfolio = Portfolio::query()->create(['agency_id' => $agency->agency_id, 'name' => 'Tower network', 'type' => 'point_list']);
+
+        // The Gulf of Guinea — well outside Nigeria, hundreds of km from the nearest seeded LGA.
+        PortfolioLocation::query()->create([
+            'portfolio_id' => $portfolio->portfolio_id,
+            'latitude' => 0.0,
+            'longitude' => 0.0,
+            'label' => 'Out of range',
+        ]);
+
+        $row = app(PortfolioRollupService::class)->rollup($portfolio)->first();
+
         $this->assertFalse($row['scorable']);
-        $this->assertSame(PortfolioRollupService::UNSCORABLE_REASON, $row['reason']);
+        $this->assertFalse($row['approximated']);
+        $this->assertSame(PortfolioRollupService::TOO_FAR_REASON, $row['reason']);
         $this->assertNull($row['worst_score']);
-        $this->assertSame('Tower #42', $row['display_name']);
     }
 
     public function test_an_empty_portfolio_rolls_up_to_an_empty_collection(): void
