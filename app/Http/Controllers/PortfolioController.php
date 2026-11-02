@@ -1,0 +1,122 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Portfolio;
+use App\Models\PortfolioLocation;
+use App\Models\Region;
+use App\Services\Portfolio\PortfolioRollupService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
+
+/**
+ * Enterprise pivot, Module 2 (docs/ENTERPRISE_BUILD_PLAN.md) — portfolio definition and the
+ * rolled-up view. Scoped to the logged-in user's own agency throughout: a portfolio belongs to
+ * the agency, any user under that agency can see and manage it (no finer-grained permission yet
+ * — matches how saved views / reports are already shared at the agency level, not per-user).
+ */
+class PortfolioController extends Controller
+{
+    public function index(): View
+    {
+        $agencyId = Auth::user()->agency_id;
+
+        return view('portfolios.index', [
+            'portfolios' => $agencyId
+                ? Portfolio::query()->where('agency_id', $agencyId)->withCount('locations')->orderByDesc('created_at')->get()
+                : collect(),
+            'hasAgency' => $agencyId !== null,
+        ]);
+    }
+
+    public function create(): View
+    {
+        abort_unless(Auth::user()->agency_id, 403, 'Your account isn\'t part of an organization yet.');
+
+        return view('portfolios.create');
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        abort_unless(Auth::user()->agency_id, 403);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:200'],
+            'type' => ['required', 'in:point_list,corridor'],
+        ]);
+
+        $portfolio = Portfolio::query()->create([
+            'agency_id' => Auth::user()->agency_id,
+            'name' => $validated['name'],
+            'type' => $validated['type'],
+        ]);
+
+        return redirect()->route('portfolios.show', $portfolio)->with('status', 'Portfolio created — add locations below.');
+    }
+
+    public function show(Portfolio $portfolio, PortfolioRollupService $rollup): View
+    {
+        $this->authorizeAgency($portfolio);
+
+        return view('portfolios.show', [
+            'portfolio' => $portfolio,
+            'rows' => $rollup->rollup($portfolio),
+            'regions' => Region::query()->orderBy('name')->get(['region_id', 'name', 'state']),
+        ]);
+    }
+
+    public function destroy(Portfolio $portfolio): RedirectResponse
+    {
+        $this->authorizeAgency($portfolio);
+        $portfolio->delete();
+
+        return redirect()->route('portfolios.index')->with('status', "\"{$portfolio->name}\" deleted.");
+    }
+
+    public function addLocation(Request $request, Portfolio $portfolio): RedirectResponse
+    {
+        $this->authorizeAgency($portfolio);
+
+        $validated = $request->validate([
+            'region_id' => ['nullable', 'required_without:latitude', 'exists:regions,region_id'],
+            'latitude' => ['nullable', 'required_without:region_id', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'required_with:latitude', 'numeric', 'between:-180,180'],
+            'label' => ['nullable', 'string', 'max:200'],
+        ]);
+
+        $nextOrder = $portfolio->isCorridor()
+            ? (int) ($portfolio->locations()->max('order') ?? -1) + 1
+            : null;
+
+        PortfolioLocation::query()->create([
+            'portfolio_id' => $portfolio->portfolio_id,
+            'region_id' => $validated['region_id'] ?? null,
+            'latitude' => $validated['latitude'] ?? null,
+            'longitude' => $validated['longitude'] ?? null,
+            'label' => $validated['label'] ?? null,
+            'order' => $nextOrder,
+        ]);
+
+        return back()->with('status', 'Location added.');
+    }
+
+    public function removeLocation(Portfolio $portfolio, PortfolioLocation $location): RedirectResponse
+    {
+        $this->authorizeAgency($portfolio);
+        abort_unless($location->portfolio_id === $portfolio->portfolio_id, 404);
+
+        $location->delete();
+
+        return back()->with('status', 'Location removed.');
+    }
+
+    private function authorizeAgency(Portfolio $portfolio): void
+    {
+        abort_unless(
+            Auth::user()->agency_id !== null && $portfolio->agency_id === Auth::user()->agency_id,
+            403,
+        );
+    }
+}

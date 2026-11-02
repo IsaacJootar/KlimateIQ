@@ -14,6 +14,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InAppNotificationController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\PlatformOverviewController;
+use App\Http\Controllers\PortfolioController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegionController;
 use App\Http\Controllers\ReportRequestController;
@@ -51,6 +52,15 @@ Route::middleware(['auth', 'onboarded'])->group(function () {
     Route::get('/regions/{region}', [RegionController::class, 'show'])->name('regions.show');
     Route::get('/regions/{region}/facilities', [RegionController::class, 'facilities'])->name('regions.facilities');
     Route::post('/regions/{region}/summary', [RegionController::class, 'generateSummary'])->name('regions.summary');
+
+    // Enterprise pivot, Module 2 (docs/ENTERPRISE_BUILD_PLAN.md) — portfolio definition + rollup.
+    Route::get('/portfolios', [PortfolioController::class, 'index'])->name('portfolios.index');
+    Route::get('/portfolios/create', [PortfolioController::class, 'create'])->name('portfolios.create');
+    Route::post('/portfolios', [PortfolioController::class, 'store'])->name('portfolios.store');
+    Route::get('/portfolios/{portfolio}', [PortfolioController::class, 'show'])->name('portfolios.show');
+    Route::delete('/portfolios/{portfolio}', [PortfolioController::class, 'destroy'])->name('portfolios.destroy');
+    Route::post('/portfolios/{portfolio}/locations', [PortfolioController::class, 'addLocation'])->name('portfolios.locations.store');
+    Route::delete('/portfolios/{portfolio}/locations/{location}', [PortfolioController::class, 'removeLocation'])->name('portfolios.locations.destroy');
 
     Route::get('/thresholds', [ThresholdConfigController::class, 'index'])->name('thresholds.index');
     Route::post('/thresholds', [ThresholdConfigController::class, 'store'])->name('thresholds.store');

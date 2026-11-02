@@ -12,7 +12,7 @@ that status — update it at the end of each module, not just in chat.
 | # | Module | Size | Status | Unlocks |
 |---|---|---|---|---|
 | 1 | Portfolio Type | M | **Done** | Everything below |
-| 2 | Entity Modeling (portfolios of locations) | L | Not started | Sectors #1, #2, #4 |
+| 2 | Entity Modeling (portfolios of locations) | L | **Done** | Sectors #1, #2, #4 |
 | 3 | Point / coordinate scoring | M–L | Not started | Sectors #2, #4 (scoring an exact site, not just an LGA) |
 | 4 | Enterprise dashboard rebuild | M | Not started | The actual product surface |
 | 5 | Parametric Insurance data-feed packaging (Sector #1) | S | Not started | First sellable product |
@@ -62,10 +62,24 @@ infrastructure only.
 
 ---
 
-### Module 2 — Entity Modeling (portfolios of locations)
+### Module 2 — Entity Modeling (portfolios of locations) · Done
 
 **What it is:** The core new concept — a named list of locations belonging to an Agency, scored
 and rolled up as one view. This is the single highest-leverage module; #1, #2, #4 all need it.
+
+**Shipped:** `portfolios` + `portfolio_locations` tables (a location is either a seeded Region or
+a raw coordinate — a DB check constraint enforces it's never neither) · `Portfolio` /
+`PortfolioLocation` models · `App\Services\Portfolio\PortfolioRollupService` — pure aggregation
+over the existing `App\Support\LatestScore` and `App\Support\AgencyIndexCoverage` readers, no new
+scoring logic, ranks worst-to-best, sinks (never drops) locations with no score yet · full
+CRUD UI at `/portfolios` (list, create, the rollup view, add/remove locations by LGA or raw
+coordinate) scoped to the logged-in user's own agency. A coordinate-only location is honestly
+marked "not scorable yet" rather than silently guessing a nearby LGA's score — that's Module 3.
+31 tests (79 assertions) across `PortfolioRollupTest` and `PortfolioControllerTest`, including
+real page renders (not just redirect/403 checks) to catch Blade errors a status-code assertion
+alone would miss. Full suite: 450/450 green.
+
+Not wired into the dashboard yet — that's Module 4.
 
 **Touches:**
 - New `Portfolio` model + migration (`agency_id`, name, type: point-list or corridor).
