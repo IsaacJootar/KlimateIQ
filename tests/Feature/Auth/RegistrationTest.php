@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Support\PortfolioType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -26,6 +27,7 @@ class RegistrationTest extends TestCase
             'designation' => 'RESEARCHER',
             'state' => 'Lagos',
             'new_agency_name' => 'Test Health Agency',
+            'portfolio_type' => PortfolioType::PublicHealth->value,
         ]);
 
         $this->assertAuthenticated();
@@ -63,6 +65,22 @@ class RegistrationTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_registering_a_new_organization_requires_a_portfolio_type(): void
+    {
+        $response = $this->post('/register', [
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'designation' => 'RESEARCHER',
+            'state' => 'Lagos',
+            'new_agency_name' => 'Test Health Agency',
+        ]);
+
+        $response->assertSessionHasErrors(['portfolio_type']);
+        $this->assertGuest();
+    }
+
     public function test_registration_with_other_role_requires_a_description(): void
     {
         $response = $this->post('/register', [
@@ -89,6 +107,7 @@ class RegistrationTest extends TestCase
             'other_designation' => 'Community Health Volunteer',
             'state' => 'Lagos',
             'new_agency_name' => 'Test Health Agency',
+            'portfolio_type' => PortfolioType::PublicHealth->value,
         ]);
 
         $this->assertAuthenticated();

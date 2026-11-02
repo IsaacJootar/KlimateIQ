@@ -90,6 +90,7 @@ Route::middleware(['auth', 'onboarded', 'platform.admin'])->prefix('admin')->nam
     Route::get('agencies', [AgencyManagementController::class, 'index'])->name('agencies.index');
     Route::patch('agencies/{agency}', [AgencyManagementController::class, 'update'])->name('agencies.update');
     Route::patch('agencies/{agency}/toggle-oversight', [AgencyManagementController::class, 'toggleOversight'])->name('agencies.toggle-oversight');
+    Route::patch('agencies/{agency}/toggle-index', [AgencyManagementController::class, 'toggleIndexOverride'])->name('agencies.toggle-index');
     Route::post('agencies/merge', [AgencyManagementController::class, 'merge'])->name('agencies.merge');
 
     Route::get('pipeline', [PipelineHealthController::class, 'index'])->name('pipeline.index');

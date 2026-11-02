@@ -40,8 +40,13 @@ class ProbabilityThresholdAlertTest extends TestCase
     }
 
     /** @param  list<float>  $memberPeaks */
-    private function forecastRow(array $memberPeaks, float $control = 50, string $peakDate = '2026-09-12'): void
+    private function forecastRow(array $memberPeaks, float $control = 50, ?string $peakDate = null): void
     {
+        // Relative to today(), not a fixed calendar date — see the identical fix in
+        // ForecastAlertTest/ProbabilityThresholdAlertTest's sibling evaluate(): a hardcoded past
+        // date makes ThresholdEvaluationService::evaluateForForecast() treat the forecast as
+        // already-expired once real time drifts past it.
+        $peakDate ??= today()->addDays(9)->toDateString();
         sort($memberPeaks);
         $n = count($memberPeaks);
         $exceed = count(array_filter($memberPeaks, fn ($p) => $p >= 67)) / $n;
@@ -66,8 +71,10 @@ class ProbabilityThresholdAlertTest extends TestCase
         ]);
     }
 
-    private function evaluate(float $peak = 80, string $peakDate = '2026-09-12', int $lead = 9): void
+    private function evaluate(float $peak = 80, ?string $peakDate = null, int $lead = 9): void
     {
+        $peakDate ??= today()->addDays($lead)->toDateString();
+
         app(ThresholdEvaluationService::class)->evaluateForForecast(
             $this->index->index_id, $this->region->region_id, $peak, $peakDate, $lead,
         );

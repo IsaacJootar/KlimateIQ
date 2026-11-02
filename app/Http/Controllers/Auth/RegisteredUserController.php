@@ -6,12 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Mail\WelcomeCredentialsMail;
 use App\Models\Agency;
 use App\Models\User;
+use App\Support\PortfolioType;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -27,6 +29,7 @@ class RegisteredUserController extends Controller
             'agencies' => Agency::query()->orderBy('name')->get(),
             'designations' => config('nigeria.designations'),
             'states' => config('nigeria.states'),
+            'portfolioTypes' => PortfolioType::cases(),
         ]);
     }
 
@@ -46,13 +49,21 @@ class RegisteredUserController extends Controller
             'state' => ['required', 'in:'.implode(',', config('nigeria.states'))],
             'agency_id' => ['required_without:new_agency_name', 'nullable', 'uuid', 'exists:agencies,agency_id'],
             'new_agency_name' => ['required_without:agency_id', 'nullable', 'string', 'max:200'],
+            'portfolio_type' => ['nullable', 'required_with:new_agency_name', Rule::enum(PortfolioType::class)],
         ], [
             'agency_id.required_without' => 'Select your organization, or add it if it isn\'t listed.',
             'new_agency_name.required_without' => 'Enter your organization\'s name.',
+            'portfolio_type.required_with' => 'Select what kind of organization this is.',
         ]);
 
+        // portfolio_type only applies when creating a brand-new agency — an existing agency's
+        // type was set when it was first created (or by an admin since), so a later registrant
+        // joining it doesn't get to silently change what the whole organization sees.
         $agencyId = $request->filled('new_agency_name')
-            ? Agency::query()->firstOrCreate(['name' => trim($request->string('new_agency_name'))])->agency_id
+            ? Agency::query()->firstOrCreate(
+                ['name' => trim($request->string('new_agency_name'))],
+                ['portfolio_type' => $request->input('portfolio_type')],
+            )->agency_id
             : $request->input('agency_id');
 
         $designation = $request->input('designation') === 'OTHER'

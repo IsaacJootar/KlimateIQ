@@ -73,9 +73,20 @@
                         @endforeach
                     </x-select-input>
                 </div>
-                <div x-show="newAgency" x-cloak>
+                <div x-show="newAgency" x-cloak class="space-y-3">
                     <x-text-input class="block mt-1 w-full" type="text" name="new_agency_name"
                         :value="old('new_agency_name')" placeholder="Your organization's name" />
+                    <div>
+                        <x-input-label for="portfolio_type" :value="__('What kind of organization is this?')" />
+                        <p class="text-xs text-slate-400 mb-1">Sets which risk indices you see by default — an admin can adjust this later.</p>
+                        <x-select-input id="portfolio_type" name="portfolio_type" class="block mt-1 w-full">
+                            <option value="">Select one</option>
+                            @foreach ($portfolioTypes as $type)
+                                <option value="{{ $type->value }}" @selected(old('portfolio_type') === $type->value)>{{ $type->label() }}</option>
+                            @endforeach
+                        </x-select-input>
+                        <x-input-error :messages="$errors->get('portfolio_type')" class="mt-2" />
+                    </div>
                 </div>
                 <button type="button" class="mt-1 text-xs link-nav" @click="newAgency = !newAgency">
                     <span x-show="!newAgency">My organization isn't listed</span>

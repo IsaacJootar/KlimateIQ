@@ -3,6 +3,7 @@
 namespace Tests\Feature\Onboarding;
 
 use App\Models\User;
+use App\Support\PortfolioType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -70,6 +71,7 @@ class OnboardingGateTest extends TestCase
             'designation' => 'LGA_OFFICER',
             'state' => 'Kano',
             'new_agency_name' => 'Kano State Ministry of Health',
+            'portfolio_type' => PortfolioType::PublicHealth->value,
         ]);
 
         $response->assertRedirect(route('onboarding.show'));
