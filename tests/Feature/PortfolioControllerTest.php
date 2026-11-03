@@ -6,8 +6,11 @@ use App\Models\Agency;
 use App\Models\Portfolio;
 use App\Models\PortfolioLocation;
 use App\Models\Region;
+use App\Models\RegionScore;
+use App\Models\ScoringIndex;
 use App\Models\User;
 use App\Services\Portfolio\PortfolioRollupService;
+use App\Support\IngestionWindow;
 use App\Support\PortfolioType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -50,6 +53,41 @@ class PortfolioControllerTest extends TestCase
             ->assertSee('nearest LGA') // Site X's approximation note
             ->assertSee('Out of range')
             ->assertSee(PortfolioRollupService::TOO_FAR_REASON);
+    }
+
+    public function test_the_show_page_offers_the_map_a_point_per_asset(): void
+    {
+        $user = $this->userWithAgency();
+        $portfolio = Portfolio::query()->create(['agency_id' => $user->agency_id, 'name' => 'Mapped book', 'type' => 'point_list']);
+        $region = Region::query()->whereNotNull('latitude')->firstOrFail();
+
+        PortfolioLocation::query()->create(['portfolio_id' => $portfolio->portfolio_id, 'region_id' => $region->region_id]);
+        // A coordinate-only asset plots at its own raw point, not the region's centroid.
+        PortfolioLocation::query()->create(['portfolio_id' => $portfolio->portfolio_id, 'latitude' => 6.1, 'longitude' => 3.1, 'label' => 'Raw site']);
+
+        $response = $this->actingAs($user)->get(route('portfolios.show', $portfolio))->assertOk();
+
+        $mapAssets = $response->viewData('mapAssets');
+        $this->assertCount(2, $mapAssets);
+
+        $regionBacked = $mapAssets->firstWhere('name', $region->name);
+        $this->assertEquals((float) $region->latitude, $regionBacked['latitude']);
+        $this->assertEquals((float) $region->longitude, $regionBacked['longitude']);
+
+        $rawSite = $mapAssets->firstWhere('name', 'Raw site');
+        $this->assertSame(6.1, $rawSite['latitude']);
+        $this->assertSame(3.1, $rawSite['longitude']);
+    }
+
+    public function test_the_show_page_hides_the_map_and_shows_a_nudge_when_theres_nothing_to_plot(): void
+    {
+        $user = $this->userWithAgency();
+        $portfolio = Portfolio::query()->create(['agency_id' => $user->agency_id, 'name' => 'Empty book', 'type' => 'point_list']);
+
+        $this->actingAs($user)->get(route('portfolios.show', $portfolio))
+            ->assertOk()
+            ->assertDontSee('id="portfolio-map"', false)
+            ->assertSee("it'll appear here", false);
     }
 
     public function test_the_index_page_renders_with_no_portfolios(): void
@@ -117,6 +155,68 @@ class PortfolioControllerTest extends TestCase
             'region_id' => null,
             'label' => 'Tower #1',
         ]);
+    }
+
+    public function test_a_user_can_record_a_locations_value_and_currency(): void
+    {
+        $user = $this->userWithAgency();
+        $portfolio = Portfolio::query()->create(['agency_id' => $user->agency_id, 'name' => 'Loan book', 'type' => 'point_list']);
+        $region = Region::query()->firstOrFail();
+
+        $this->actingAs($user)->post(route('portfolios.locations.store', $portfolio), [
+            'region_id' => $region->region_id,
+            'value' => 2000000,
+            'currency' => 'NGN',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('portfolio_locations', [
+            'portfolio_id' => $portfolio->portfolio_id,
+            'region_id' => $region->region_id,
+            'value' => 2000000,
+            'currency' => 'NGN',
+        ]);
+    }
+
+    public function test_a_value_without_a_currency_fails_validation(): void
+    {
+        $user = $this->userWithAgency();
+        $portfolio = Portfolio::query()->create(['agency_id' => $user->agency_id, 'name' => 'Loan book', 'type' => 'point_list']);
+        $region = Region::query()->firstOrFail();
+
+        $this->actingAs($user)->post(route('portfolios.locations.store', $portfolio), [
+            'region_id' => $region->region_id,
+            'value' => 2000000,
+        ])->assertSessionHasErrors(['currency']);
+    }
+
+    public function test_the_value_summary_totals_protected_and_at_risk_value_per_currency(): void
+    {
+        $user = $this->userWithAgency();
+        $portfolio = Portfolio::query()->create(['agency_id' => $user->agency_id, 'name' => 'Loan book', 'type' => 'point_list']);
+        $regions = Region::query()->orderBy('region_id')->take(3)->get();
+
+        $index = ScoringIndex::query()->where('code', 'FLOOD_RISK')->firstOrFail();
+        [$start, $end] = IngestionWindow::lastComplete();
+        RegionScore::query()->create([
+            'index_id' => $index->index_id, 'region_id' => $regions[0]->region_id,
+            'period_start' => $start, 'period_end' => $end, 'score' => 85, 'scoring_strategy' => 'formula',
+        ]);
+        RegionScore::query()->create([
+            'index_id' => $index->index_id, 'region_id' => $regions[1]->region_id,
+            'period_start' => $start, 'period_end' => $end, 'score' => 10, 'scoring_strategy' => 'formula',
+        ]);
+
+        PortfolioLocation::query()->create(['portfolio_id' => $portfolio->portfolio_id, 'region_id' => $regions[0]->region_id, 'value' => 2000000, 'currency' => 'NGN']);
+        PortfolioLocation::query()->create(['portfolio_id' => $portfolio->portfolio_id, 'region_id' => $regions[1]->region_id, 'value' => 1000000, 'currency' => 'NGN']);
+        // No value entered — must not be silently counted as zero or inflate either total.
+        PortfolioLocation::query()->create(['portfolio_id' => $portfolio->portfolio_id, 'region_id' => $regions[2]->region_id]);
+
+        $response = $this->actingAs($user)->get(route('portfolios.show', $portfolio))->assertOk();
+
+        $summary = $response->viewData('valueSummary')->firstWhere('currency', 'NGN');
+        $this->assertSame(3000000.0, $summary['total']);
+        $this->assertSame(2000000.0, $summary['atRisk']); // only the red-band location
+        $this->assertSame('₦', $summary['symbol']);
     }
 
     public function test_adding_a_location_with_neither_region_nor_coordinate_fails_validation(): void

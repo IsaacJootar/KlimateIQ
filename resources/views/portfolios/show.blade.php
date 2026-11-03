@@ -25,6 +25,35 @@
     <div class="py-12">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
+            @if ($valueSummary->isNotEmpty())
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    @foreach ($valueSummary as $summary)
+                        <div class="metric-card metric-teal">
+                            <div class="metric-card-label">Protected{{ $valueSummary->count() > 1 ? " ({$summary['currency']})" : '' }}</div>
+                            <div class="metric-card-value">{{ $summary['symbol'] }}{{ number_format($summary['total']) }}</div>
+                            <div class="metric-card-sub">total value under watch</div>
+                        </div>
+                        <div class="metric-card metric-red">
+                            <div class="metric-card-label">At Risk{{ $valueSummary->count() > 1 ? " ({$summary['currency']})" : '' }}</div>
+                            <div class="metric-card-value">{{ $summary['symbol'] }}{{ number_format($summary['atRisk']) }}</div>
+                            <div class="metric-card-sub">in red or amber locations</div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+
+            <div class="section-card overflow-hidden">
+                <div class="section-card-header">
+                    <h3 class="font-semibold text-gray-800 dark:text-gray-200">Risk Map</h3>
+                    <span class="text-xs text-slate-500 dark:text-slate-400">Live &mdash; pulses on anything in the red band</span>
+                </div>
+                @if ($mapAssets->isNotEmpty())
+                    <div id="portfolio-map" style="height: 360px;"></div>
+                @else
+                    <p class="px-5 py-10 text-center text-sm text-gray-500">Add an asset below and it'll appear here, checked against live climate signals.</p>
+                @endif
+            </div>
+
             <x-form-section title="Add an asset to this portfolio"
                 description="Every asset you add is immediately checked against live climate signals for its exact location.">
                 <form method="POST" action="{{ route('portfolios.locations.store', $portfolio) }}"
@@ -97,6 +126,21 @@
                         </p>
                     </div>
 
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div class="sm:col-span-2">
+                            <x-input-label for="value" value="Value at this location (optional)" />
+                            <x-text-input id="value" name="value" type="number" step="0.01" min="0" class="block mt-1 w-full" placeholder="e.g. 2000000" />
+                        </div>
+                        <div>
+                            <x-input-label for="currency" value="Currency" />
+                            <x-select-input id="currency" name="currency" class="block mt-1 w-full">
+                                <option value="NGN">NGN (₦)</option>
+                                <option value="USD">USD ($)</option>
+                            </x-select-input>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-400 -mt-2">What's exposed at this point — a loan amount, sum insured, asset value. Shown next to its risk score so exposure and risk read together.</p>
+
                     <x-input-error :messages="$errors->get('region_id')" class="mt-2" />
                     <x-input-error :messages="$errors->get('latitude')" class="mt-2" />
 
@@ -110,6 +154,7 @@
                         <thead>
                             <tr class="text-left text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
                                 <th class="px-4 py-3">Location</th>
+                                <th class="px-4 py-3">Value</th>
                                 <th class="px-4 py-3">Worst index</th>
                                 <th class="px-4 py-3">Score</th>
                                 <th class="px-4 py-3"></th>
@@ -125,6 +170,9 @@
                                                 &asymp; nearest LGA: {{ $row['nearest_region_name'] }} ({{ $row['distance_km'] }} km away)
                                             </div>
                                         @endif
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                                        {{ $row['location']->formattedValue() ?? '—' }}
                                     </td>
                                     @if ($row['scorable'])
                                         <td class="px-4 py-3 text-sm text-gray-500">
@@ -151,7 +199,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="px-4 py-8 text-center text-sm text-gray-500">
+                                    <td colspan="5" class="px-4 py-8 text-center text-sm text-gray-500">
                                         No locations yet — add one above.
                                     </td>
                                 </tr>
@@ -232,4 +280,14 @@
 
         </div>
     </div>
+
+    @if ($mapAssets->isNotEmpty())
+        @push('scripts')
+            <script>
+                document.addEventListener('DOMContentLoaded', () => {
+                    window.initRegionMap('portfolio-map', @json($mapAssets));
+                });
+            </script>
+        @endpush
+    @endif
 </x-app-layout>

@@ -39,7 +39,8 @@ class DashboardController extends Controller
 
     private function portfolioDashboard(User $user, Agency $agency, Portfolio $portfolio): View
     {
-        $rows = app(PortfolioRollupService::class)->rollup($portfolio);
+        $rollup = app(PortfolioRollupService::class);
+        $rows = $rollup->rollup($portfolio);
 
         $openAlertsCount = Alert::query()
             ->whereHas('thresholdConfig', fn ($q) => $q->where('user_id', $user->id))
@@ -54,6 +55,7 @@ class DashboardController extends Controller
             'unscoredCount' => $rows->whereNull('worst_score')->count(),
             'openAlertsCount' => $openAlertsCount,
             'otherPortfoliosCount' => $agency->portfolios()->count() - 1,
+            'valueSummary' => $rollup->valueSummary($rows),
         ]);
     }
 

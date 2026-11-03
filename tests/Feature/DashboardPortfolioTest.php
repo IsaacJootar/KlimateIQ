@@ -97,6 +97,24 @@ class DashboardPortfolioTest extends TestCase
         $response->assertViewHas('unscoredCount', 1);
     }
 
+    public function test_the_dashboard_shows_protected_and_at_risk_value_when_assets_are_priced(): void
+    {
+        $agency = Agency::factory()->create(['portfolio_type' => PortfolioType::InsuranceReinsurance]);
+        $user = User::factory()->create(['agency_id' => $agency->agency_id]);
+        $portfolio = Portfolio::query()->create(['agency_id' => $agency->agency_id, 'name' => 'Loan book', 'type' => 'point_list']);
+
+        $red = Region::query()->orderBy('region_id')->firstOrFail();
+        $this->score($red, 'FLOOD_RISK', 85);
+        PortfolioLocation::query()->create(['portfolio_id' => $portfolio->portfolio_id, 'region_id' => $red->region_id, 'value' => 2000000, 'currency' => 'NGN']);
+
+        $response = $this->actingAs($user)->get(route('dashboard'))->assertOk();
+
+        $summary = $response->viewData('valueSummary')->firstWhere('currency', 'NGN');
+        $this->assertSame(2000000.0, $summary['total']);
+        $this->assertSame(2000000.0, $summary['atRisk']);
+        $response->assertSee('₦2,000,000', false);
+    }
+
     public function test_the_most_recently_created_portfolio_is_shown_when_an_agency_has_several(): void
     {
         $agency = Agency::factory()->create(['portfolio_type' => PortfolioType::InsuranceReinsurance]);

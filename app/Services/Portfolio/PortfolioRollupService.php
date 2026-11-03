@@ -62,6 +62,36 @@ class PortfolioRollupService
     }
 
     /**
+     * One row per currency actually in use across a rollup's priced locations — most portfolios
+     * only ever have one, but a mixed book (naira loans and dollar contracts in the same
+     * portfolio) must never have its totals silently summed across currencies into a meaningless
+     * number. A location with no value entered contributes to neither total; "no figure given"
+     * and "worth zero" are different things.
+     *
+     * @param  Collection<int, array>  $rows  rollup() output
+     * @return Collection<int, array{currency: string, symbol: string, total: float, atRisk: float}>
+     */
+    public function valueSummary(Collection $rows): Collection
+    {
+        $symbols = ['NGN' => '₦', 'USD' => '$'];
+
+        return $rows
+            ->filter(fn (array $row) => $row['location']->value !== null && $row['location']->currency !== null)
+            ->groupBy(fn (array $row) => $row['location']->currency)
+            ->map(function (Collection $group, string $currency) use ($symbols) {
+                $atRisk = $group->filter(fn (array $row) => in_array($row['worst_band'], ['red', 'amber'], true));
+
+                return [
+                    'currency' => $currency,
+                    'symbol' => $symbols[$currency] ?? $currency.' ',
+                    'total' => (float) $group->sum(fn (array $row) => (float) $row['location']->value),
+                    'atRisk' => (float) $atRisk->sum(fn (array $row) => (float) $row['location']->value),
+                ];
+            })
+            ->values();
+    }
+
+    /**
      * @param  Collection<int, ScoringIndex>  $indices
      * @return array{location: PortfolioLocation, display_name: string, scorable: bool, approximated: bool, nearest_region_name: ?string, distance_km: ?float, reason: ?string, scores: Collection, worst_index_code: ?string, worst_index_name: ?string, worst_score: ?float, worst_band: ?string}
      */

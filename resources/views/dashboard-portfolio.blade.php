@@ -16,6 +16,23 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
+            @if ($valueSummary->isNotEmpty())
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    @foreach ($valueSummary as $summary)
+                        <a href="{{ route('portfolios.show', $portfolio) }}" class="metric-card metric-teal">
+                            <div class="metric-card-label">Protected{{ $valueSummary->count() > 1 ? " ({$summary['currency']})" : '' }}</div>
+                            <div class="metric-card-value">{{ $summary['symbol'] }}{{ number_format($summary['total']) }}</div>
+                            <div class="metric-card-sub">total value under watch</div>
+                        </a>
+                        <a href="{{ route('portfolios.show', $portfolio) }}" class="metric-card metric-red">
+                            <div class="metric-card-label">At Risk{{ $valueSummary->count() > 1 ? " ({$summary['currency']})" : '' }}</div>
+                            <div class="metric-card-value">{{ $summary['symbol'] }}{{ number_format($summary['atRisk']) }}</div>
+                            <div class="metric-card-sub">in red or amber locations</div>
+                        </a>
+                    @endforeach
+                </div>
+            @endif
+
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <a href="{{ route('portfolios.show', $portfolio) }}" class="metric-card metric-red">
                     <div class="metric-card-label">Red</div>

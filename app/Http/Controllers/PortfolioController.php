@@ -65,9 +65,13 @@ class PortfolioController extends Controller
     {
         $this->authorizeAgency($portfolio);
 
+        $rows = $rollup->rollup($portfolio);
+
         return view('portfolios.show', [
             'portfolio' => $portfolio,
-            'rows' => $rollup->rollup($portfolio),
+            'rows' => $rows,
+            'mapAssets' => $this->mapAssets($portfolio, $rows),
+            'valueSummary' => $rollup->valueSummary($rows),
             'regions' => Region::query()->orderBy('name')->get(['region_id', 'name', 'state']),
             'apiTokens' => $this->tokensForPortfolio($portfolio),
         ]);
@@ -90,6 +94,8 @@ class PortfolioController extends Controller
             'latitude' => ['nullable', 'required_without:region_id', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'required_with:latitude', 'numeric', 'between:-180,180'],
             'label' => ['nullable', 'string', 'max:200'],
+            'value' => ['nullable', 'numeric', 'min:0'],
+            'currency' => ['nullable', 'required_with:value', 'in:NGN,USD'],
         ]);
 
         $nextOrder = $portfolio->isCorridor()
@@ -102,6 +108,8 @@ class PortfolioController extends Controller
             'latitude' => $validated['latitude'] ?? null,
             'longitude' => $validated['longitude'] ?? null,
             'label' => $validated['label'] ?? null,
+            'value' => $validated['value'] ?? null,
+            'currency' => isset($validated['value']) ? $validated['currency'] : null,
             'order' => $nextOrder,
         ]);
 
@@ -148,6 +156,36 @@ class PortfolioController extends Controller
         $token->delete();
 
         return back()->with('status', "Revoked token \"{$name}\".");
+    }
+
+    /**
+     * The same window.initRegionMap() JS that draws the all-774-LGA map on /regions, fed only
+     * this portfolio's own assets — a coordinate-only location plots at its raw lat/lng (where
+     * the asset actually is), a region-backed one at its LGA centroid; a location with neither
+     * a region nor a coordinate can't happen (DB constraint), so every row here has a point.
+     *
+     * @param  Collection<int, array>  $rows  PortfolioRollupService::rollup() output
+     * @return Collection<int, array{name: string, latitude: ?float, longitude: ?float, score: ?float, riskBand: string, url: string}>
+     */
+    private function mapAssets(Portfolio $portfolio, Collection $rows): Collection
+    {
+        return $rows->map(function (array $row) use ($portfolio) {
+            $location = $row['location'];
+            $region = $location->region;
+            $lat = $region?->latitude ?? $location->latitude;
+            $lng = $region?->longitude ?? $location->longitude;
+
+            return [
+                'name' => $row['display_name'],
+                'latitude' => $lat !== null ? (float) $lat : null,
+                'longitude' => $lng !== null ? (float) $lng : null,
+                'score' => $row['worst_score'],
+                'riskBand' => $row['worst_band'] ?? 'none',
+                'url' => $region
+                    ? route('regions.show', array_filter(['region' => $region->region_id, 'index' => $row['worst_index_code']]))
+                    : route('portfolios.show', $portfolio),
+            ];
+        })->values();
     }
 
     /**

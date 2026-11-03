@@ -24,13 +24,31 @@ class PortfolioLocation extends Model
         'latitude',
         'longitude',
         'label',
+        'value',
+        'currency',
         'order',
     ];
 
     protected $casts = [
         'latitude' => 'decimal:6',
         'longitude' => 'decimal:6',
+        'value' => 'decimal:2',
     ];
+
+    /**
+     * A short "$15,000" / "₦2,000,000" label — null when no value was entered, since "no figure
+     * given" and "worth zero" are different things and must never be conflated.
+     */
+    public function formattedValue(): ?string
+    {
+        if ($this->value === null) {
+            return null;
+        }
+
+        $symbol = ['NGN' => '₦', 'USD' => '$'][$this->currency] ?? $this->currency.' ';
+
+        return $symbol.number_format((float) $this->value, 0);
+    }
 
     public function portfolio(): BelongsTo
     {
