@@ -2,12 +2,16 @@
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <div>
+                <p class="text-xs font-semibold uppercase tracking-widest text-primary">Your Portfolio</p>
                 <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
                     {{ $portfolio->name }}
                 </h2>
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    @if ($portfolio->agency->portfolio_type)
+                        {{ $portfolio->agency->portfolio_type->label() }} &middot;
+                    @endif
                     {{ $portfolio->isCorridor() ? 'Corridor — read in order' : 'Point list — ranked worst to best' }}
-                    &middot; {{ $rows->count() }} location{{ $rows->count() === 1 ? '' : 's' }}
+                    &middot; {{ $rows->count() }} asset{{ $rows->count() === 1 ? '' : 's' }} under watch
                 </p>
             </div>
             <form method="POST" action="{{ route('portfolios.destroy', $portfolio) }}"
@@ -21,20 +25,52 @@
     <div class="py-12">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-6">
 
-            <x-form-section title="Add a location">
-                <form method="POST" action="{{ route('portfolios.locations.store', $portfolio) }}" x-data="{ mode: 'region' }" class="space-y-4">
+            <x-form-section title="Add an asset to this portfolio"
+                description="Every asset you add is immediately checked against live climate signals for its exact location.">
+                <form method="POST" action="{{ route('portfolios.locations.store', $portfolio) }}"
+                      x-data="{
+                          mode: 'region',
+                          scanning: false,
+                          scanStep: 0,
+                          scanSteps: [
+                              'Locating this asset…',
+                              'Pulling live climate signals for this point…',
+                              'Cross-referencing the nearest monitored LGA…',
+                              'Calculating risk exposure…',
+                          ],
+                          async runScan() {
+                              this.scanning = true;
+                              for (let i = 0; i < this.scanSteps.length; i++) {
+                                  this.scanStep = i;
+                                  await new Promise(r => setTimeout(r, 600));
+                              }
+                              this.$el.submit();
+                          },
+                      }"
+                      @submit.prevent="runScan()"
+                      class="relative space-y-4">
                     @csrf
+
+                    <div x-show="scanning" x-cloak
+                         class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm">
+                        <div class="relative h-10 w-10">
+                            <span class="absolute inset-0 rounded-full bg-primary/30 animate-ping"></span>
+                            <span class="absolute inset-2.5 rounded-full bg-primary"></span>
+                        </div>
+                        <p class="text-sm font-medium text-slate-700 dark:text-slate-200" x-text="scanSteps[scanStep]"></p>
+                    </div>
+
                     <div class="flex gap-4 text-sm">
                         <label class="flex items-center gap-1.5">
-                            <input type="radio" x-model="mode" value="region"> From the LGA list
+                            <input type="radio" x-model="mode" value="region"> From the monitored LGA list
                         </label>
                         <label class="flex items-center gap-1.5">
-                            <input type="radio" x-model="mode" value="coordinate"> Raw coordinate
+                            <input type="radio" x-model="mode" value="coordinate"> Exact coordinates (GPS pin)
                         </label>
                     </div>
 
                     <div x-show="mode === 'region'">
-                        <x-input-label for="region_id" value="LGA" />
+                        <x-input-label for="region_id" value="Asset location" />
                         <x-select-input id="region_id" name="region_id" class="block mt-1 w-full">
                             <option value="">Select an LGA</option>
                             @foreach ($regions as $region)
@@ -53,7 +89,7 @@
                             <x-text-input id="longitude" name="longitude" type="text" class="block mt-1 w-full" placeholder="3.3792" />
                         </div>
                         <div>
-                            <x-input-label for="label" value="Label" />
+                            <x-input-label for="label" value="Asset name" />
                             <x-text-input id="label" name="label" type="text" class="block mt-1 w-full" placeholder="Tower #42, Ikeja axis" />
                         </div>
                         <p class="sm:col-span-3 text-xs text-amber-600 dark:text-amber-400">
@@ -64,7 +100,7 @@
                     <x-input-error :messages="$errors->get('region_id')" class="mt-2" />
                     <x-input-error :messages="$errors->get('latitude')" class="mt-2" />
 
-                    <x-loading-button class="btn-secondary" loading-text="Adding…">Add location</x-loading-button>
+                    <x-loading-button class="btn-secondary" loading-text="Adding…">Add to portfolio</x-loading-button>
                 </form>
             </x-form-section>
 

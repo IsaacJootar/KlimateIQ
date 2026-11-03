@@ -38,7 +38,9 @@ class PortfolioController extends Controller
     {
         abort_unless(Auth::user()->agency_id, 403, 'Your account isn\'t part of an organization yet.');
 
-        return view('portfolios.create');
+        return view('portfolios.create', [
+            'agency' => Auth::user()->agency,
+        ]);
     }
 
     public function store(Request $request): RedirectResponse

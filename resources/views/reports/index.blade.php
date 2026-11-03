@@ -1,10 +1,11 @@
 <x-app-layout title="Reports">
     <x-slot name="header">
+        <p class="text-xs font-semibold uppercase tracking-widest text-primary">Your Portfolio</p>
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            {{ __('Reports') }}
+            {{ __('Portfolio Reports') }}
         </h2>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Export scores for an index and date range as CSV or PDF — for a meeting, a briefing, or a record.
+            Turn what you're protecting into a document — CSV or PDF, for a meeting, a briefing, or a record.
         </p>
     </x-slot>
 
@@ -43,7 +44,20 @@
                         </div>
                     </div>
                     <div>
-                        <x-input-label for="region_ids">Regions</x-input-label>
+                        <div class="flex items-center justify-between">
+                            <x-input-label for="region_ids">Regions</x-input-label>
+                            @if ($portfolio && $portfolioRegionIds->isNotEmpty())
+                                <button type="button" class="text-xs font-semibold text-primary hover:underline"
+                                        onclick="
+                                            const ids = {{ \Illuminate\Support\Js::from($portfolioRegionIds->map('strval')->values()) }};
+                                            for (const opt of document.getElementById('region_ids').options) {
+                                                opt.selected = ids.includes(opt.value);
+                                            }
+                                        ">
+                                    Use "{{ $portfolio->name }}" &rarr;
+                                </button>
+                            @endif
+                        </div>
                         <x-select-input id="region_ids" name="region_ids[]" multiple required size="6">
                             @foreach ($regions as $region)
                                 <option value="{{ $region->region_id }}">{{ $region->name }}</option>

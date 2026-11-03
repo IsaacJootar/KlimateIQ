@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Portfolio;
 use App\Models\Region;
 use App\Models\ReportRequest;
 use App\Models\ScoringIndex;
 use App\Services\Reporting\ReportGenerationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportRequestController extends Controller
@@ -18,6 +19,9 @@ class ReportRequestController extends Controller
     public function index(): View
     {
         $agencyId = Auth::user()->agency_id;
+        $portfolio = $agencyId
+            ? Portfolio::query()->where('agency_id', $agencyId)->orderByDesc('created_at')->first()
+            : null;
 
         return view('reports.index', [
             'reportRequests' => ReportRequest::query()->where('user_id', Auth::id())->with('index')->orderByDesc('created_at')->get(),
@@ -27,6 +31,10 @@ class ReportRequestController extends Controller
             'regions' => Region::query()->orderBy('name')->get(),
             'indices' => ScoringIndex::all(),
             'hasAgency' => $agencyId !== null,
+            'portfolio' => $portfolio,
+            // Only the LGA-backed locations carry a region_id this report form can select —
+            // a coordinate-only location isn't a seeded Region, so it has nothing to check here.
+            'portfolioRegionIds' => $portfolio?->locations()->whereNotNull('region_id')->pluck('region_id') ?? collect(),
         ]);
     }
 

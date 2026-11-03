@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Portfolio;
 use App\Models\Region;
 use App\Models\ScoringIndex;
 use App\Models\SignalType;
@@ -22,10 +23,19 @@ class ThresholdConfigController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        // The region picker is scoped to the user's own coverage — thresholds only make sense on
-        // regions they watch. With no coverage set, fall back to every active region (the ones
-        // that actually have data to threshold on), not all 774 seeded LGAs.
-        $regionIds = Auth::user()->regionSubscriptions()->pluck('region_id');
+        // Enterprise pivot (docs/ENTERPRISE_BUILD_PLAN.md) — an agency's own Portfolio is the
+        // first place to scope "regions worth watching" from, so a threshold picker shows the
+        // assets this account is actually protecting, not every active LGA on the platform.
+        $portfolio = Auth::user()->agency_id
+            ? Portfolio::query()->where('agency_id', Auth::user()->agency_id)->orderByDesc('created_at')->first()
+            : null;
+        $portfolioRegionIds = $portfolio?->locations()->whereNotNull('region_id')->pluck('region_id') ?? collect();
+
+        // Without a Portfolio, fall back to the legacy per-user coverage — regions they watch via
+        // the old sector-follow model — then to every active region if even that's empty.
+        $regionIds = $portfolioRegionIds->isNotEmpty()
+            ? $portfolioRegionIds
+            : Auth::user()->regionSubscriptions()->pluck('region_id');
         $regions = Region::query()
             ->when(
                 $regionIds->isNotEmpty(),
@@ -38,6 +48,7 @@ class ThresholdConfigController extends Controller
         return view('thresholds.index', [
             'thresholds' => $thresholds,
             'regions' => $regions,
+            'portfolio' => $portfolio,
             'hasRegionCoverage' => $regionIds->isNotEmpty(),
             'indices' => ScoringIndex::all(),
             // Indices with a forecast lane — the only ones a probability rule can apply to.

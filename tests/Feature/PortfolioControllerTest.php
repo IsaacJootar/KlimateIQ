@@ -56,7 +56,7 @@ class PortfolioControllerTest extends TestCase
     {
         $user = $this->userWithAgency();
 
-        $this->actingAs($user)->get(route('portfolios.index'))->assertOk()->assertSee('No portfolios yet');
+        $this->actingAs($user)->get(route('portfolios.index'))->assertOk()->assertSee('Nothing under protection yet');
     }
 
     public function test_a_user_without_an_agency_cannot_create_a_portfolio(): void

@@ -2,9 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Models\Agency;
+use App\Models\Portfolio;
+use App\Models\PortfolioLocation;
 use App\Models\Region;
 use App\Models\SignalType;
 use App\Models\User;
+use App\Support\PortfolioType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -48,5 +52,25 @@ class ThresholdRegionPickerTest extends TestCase
             ->assertSee($active->name)
             ->assertDontSee("{$dormant->name}, {$dormant->state}", false)
             ->assertSee('Every active region');
+    }
+
+    public function test_an_agency_users_picker_is_scoped_to_their_portfolio_over_legacy_coverage(): void
+    {
+        $inPortfolio = Region::query()->orderBy('region_id')->first();
+        $notInPortfolio = Region::query()->orderBy('region_id')->skip(5)->first();
+
+        $agency = Agency::factory()->create(['portfolio_type' => PortfolioType::InsuranceReinsurance]);
+        $user = User::factory()->create(['agency_id' => $agency->agency_id]);
+        $portfolio = Portfolio::query()->create(['agency_id' => $agency->agency_id, 'name' => 'Insurance Book', 'type' => 'point_list']);
+        PortfolioLocation::query()->create(['portfolio_id' => $portfolio->portfolio_id, 'region_id' => $inPortfolio->region_id]);
+
+        // Legacy coverage, if it existed, must not win over the Portfolio.
+        $user->regionSubscriptions()->create(['region_id' => $notInPortfolio->region_id]);
+
+        $this->actingAs($user)->get(route('thresholds.index'))
+            ->assertOk()
+            ->assertSee($inPortfolio->name)
+            ->assertDontSee("{$notInPortfolio->name}, {$notInPortfolio->state}", false)
+            ->assertSee('Insurance Book');
     }
 }

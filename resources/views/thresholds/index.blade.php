@@ -1,10 +1,11 @@
 <x-app-layout title="Thresholds">
     <x-slot name="header">
+        <p class="text-xs font-semibold uppercase tracking-widest text-primary">Your Portfolio</p>
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            {{ __('Thresholds') }}
+            {{ __('Risk Thresholds') }}
         </h2>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Get notified the moment a region crosses a number you care about — no need to check the dashboard yourself.
+            Get notified the moment an asset in your portfolio crosses a number you care about — no need to check the dashboard yourself.
         </p>
     </x-slot>
 
@@ -29,7 +30,7 @@
                     <x-form-section title="What do you want to watch?"
                         description="Pick a region, then either a named index (the composite risk score) or one raw signal.">
                         <div>
-                            <x-input-label for="region_id">Region</x-input-label>
+                            <x-input-label for="region_id">Asset / region</x-input-label>
                             <x-select-input id="region_id" name="region_id" required>
                                 @forelse ($regions as $region)
                                     <option value="{{ $region->region_id }}">{{ $region->name }}, {{ $region->state }}</option>
@@ -38,7 +39,9 @@
                                 @endforelse
                             </x-select-input>
                             <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                @if ($hasRegionCoverage)
+                                @if ($portfolio)
+                                    The assets in "{{ $portfolio->name }}". <a href="{{ route('portfolios.show', $portfolio) }}" class="link-nav">Manage your portfolio</a> to add more.
+                                @elseif ($hasRegionCoverage)
                                     Your coverage regions. <a href="{{ route('coverage.edit') }}" class="link-nav">Change coverage</a> to add more.
                                 @else
                                     Every active region. <a href="{{ route('coverage.edit') }}" class="link-nav">Set your coverage</a> to shorten this list.
