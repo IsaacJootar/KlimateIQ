@@ -43,6 +43,7 @@
     color: #ffffff;
     position: relative;
     overflow: hidden;
+    min-width: 0;
 }
 .metric-card::after {
     content: '';
@@ -63,9 +64,10 @@
 .metric-card-value {
     font-size: 2rem;
     font-weight: 800;
-    line-height: 1;
+    line-height: 1.15;
     color: #ffffff;
     font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
 }
 .metric-card-sub {
     font-size: 0.72rem;
