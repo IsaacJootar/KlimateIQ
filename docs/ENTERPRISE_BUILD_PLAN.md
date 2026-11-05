@@ -34,7 +34,7 @@ entirely by `PortfolioType`.
 | 10 | Validation dossier (MRM-equivalent) | ongoing | Deferred (post-demo) | Credibility with regulated buyers |
 | — | Sectors #6/#7 (Public Finance, Pharma) | — | Deliberately unscheduled | Revisit after 1–9 |
 | 11 | Asset drill-down rework | S–M | **Done** | Pillar: Asset Risk |
-| 12 | Surface Portfolio Exposure, Signals & Alerts, API licensing | S | Not started | Pillar: Portfolio Exposure / Signals & Alerts |
+| 12 | Surface Portfolio Exposure, Signals & Alerts, API licensing | S | **Done** | Pillar: Portfolio Exposure / Signals & Alerts |
 | 13 | Scenario Testing MVP | M | Not started | Pillar: Scenario Testing |
 | 14 | Cross-portfolio Exposure rollup | S | Not started | One "Protected/At Risk" total across every portfolio |
 | 15 | Sidebar migration | L | Not started | Last — its own standalone pass, nothing else bundled in |
@@ -326,7 +326,7 @@ link through with `?portfolio=` so the context carries automatically.
 
 ---
 
-### Module 12 — Surface the Portfolio Exposure and Signals & Alerts pillars, and API licensing
+### Module 12 — Surface the Portfolio Exposure and Signals & Alerts pillars, and API licensing · Done
 
 **What it is:** Nothing new to build — the risk map, the value summary, Alerts, Thresholds, and
 the per-portfolio API token feature (Module 5) are all real today but under-surfaced: the map and
@@ -335,8 +335,13 @@ that same page behind a scroll. This module gives each of them a clearly-labeled
 navigate to directly, matching the pitch deck's own pillar names and its "Data / API licensing"
 revenue line (slide 8).
 
-**Touches:** Primarily navigation/entry-point work — minimal new view logic, mostly linking what
-already exists more visibly.
+**Shipped:** Alerts/Thresholds already had their own nav links (Signals & Alerts pillar — nothing
+to add there). The map/value pillar is inherently per-portfolio and already one click away via
+the Portfolios link; the real gap was the API feed, buried at the bottom of one portfolio's page.
+New `GET /api-access` page (`PortfolioController::apiAccess()`) lists every portfolio the agency
+has, each with its own issue/revoke panel — same `issueToken()`/`revokeToken()` routes per
+portfolio, no new token logic. New "API Access" nav link (enterprise accounts only, desktop +
+mobile). 5 new tests (`ApiAccessPageTest`). Full suite: 495/495 green.
 
 **Depends on:** Modules 1–5, the map/value work already shipped.
 

@@ -77,6 +77,30 @@ class PortfolioController extends Controller
         ]);
     }
 
+    /**
+     * Enterprise pivot, Module 12 (docs/ENTERPRISE_BUILD_PLAN.md) — the per-portfolio API token
+     * feature (Module 5) was only ever reachable by opening one portfolio and scrolling to the
+     * bottom. This gives it its own clearly-labeled home: every portfolio the agency has, each
+     * with its own issue/revoke panel, in one place — matching the pitch deck's "Data / API
+     * licensing" pillar. No new token logic; same issueToken()/revokeToken() routes per portfolio.
+     */
+    public function apiAccess(): View
+    {
+        $agencyId = Auth::user()->agency_id;
+
+        $portfolios = $agencyId
+            ? Portfolio::query()->where('agency_id', $agencyId)->orderBy('name')->get()
+            : collect();
+
+        return view('portfolios.api-access', [
+            'hasAgency' => $agencyId !== null,
+            'portfolios' => $portfolios->map(fn (Portfolio $portfolio) => [
+                'portfolio' => $portfolio,
+                'tokens' => $this->tokensForPortfolio($portfolio),
+            ]),
+        ]);
+    }
+
     public function destroy(Portfolio $portfolio): RedirectResponse
     {
         $this->authorizeAgency($portfolio);

@@ -45,6 +45,9 @@
                         <x-nav-link :href="route('thresholds.index')" :active="request()->routeIs('thresholds.*')">
                             {{ __('Thresholds') }}
                         </x-nav-link>
+                        <x-nav-link :href="route('api-access.index')" :active="request()->routeIs('api-access.*')">
+                            {{ __('API Access') }}
+                        </x-nav-link>
                     @else
                         <x-nav-link :href="route('regions.index')" :active="request()->routeIs('regions.*')">
                             {{ __('Regions') }}
@@ -178,6 +181,9 @@
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('thresholds.index')" :active="request()->routeIs('thresholds.*')">
                     {{ __('Thresholds') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('api-access.index')" :active="request()->routeIs('api-access.*')">
+                    {{ __('API Access') }}
                 </x-responsive-nav-link>
             @else
                 <x-responsive-nav-link :href="route('regions.index')" :active="request()->routeIs('regions.*')">
