@@ -14,11 +14,14 @@
                     &middot; {{ $rows->count() }} asset{{ $rows->count() === 1 ? '' : 's' }} under watch
                 </p>
             </div>
-            <form method="POST" action="{{ route('portfolios.destroy', $portfolio) }}"
-                  onsubmit="return confirm('Delete this portfolio? This cannot be undone.');">
-                @csrf @method('DELETE')
-                <button type="submit" class="text-xs text-red-600 hover:underline">Delete portfolio</button>
-            </form>
+            <div class="flex items-center gap-4">
+                <a href="{{ route('portfolios.stress-test', $portfolio) }}" class="link-nav text-xs">Stress test &rarr;</a>
+                <form method="POST" action="{{ route('portfolios.destroy', $portfolio) }}"
+                      onsubmit="return confirm('Delete this portfolio? This cannot be undone.');">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="text-xs text-red-600 hover:underline">Delete portfolio</button>
+                </form>
+            </div>
         </div>
     </x-slot>
 

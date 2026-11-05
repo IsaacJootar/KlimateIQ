@@ -9,6 +9,7 @@ use App\Models\ScoringIndex;
 use App\Support\AgencyIndexCoverage;
 use App\Support\LatestScore;
 use App\Support\NearestRegion;
+use App\Support\RiskBand;
 use Illuminate\Support\Collection;
 
 /**
@@ -29,6 +30,19 @@ use Illuminate\Support\Collection;
 class PortfolioRollupService
 {
     public const TOO_FAR_REASON = 'No seeded LGA is close enough to this coordinate to approximate from.';
+
+    /**
+     * Enterprise pivot, Module 13 (docs/ENTERPRISE_BUILD_PLAN.md) — Scenario Testing. Named,
+     * fixed presets only (no arbitrary user-entered percentage) — a stress scenario is a stated
+     * assumption to reason about, not a slider someone can tune into a nonsensical number.
+     *
+     * @var array<string, array{label: string, pct: float}>
+     */
+    public const STRESS_PRESETS = [
+        '10' => ['label' => 'Mild (+10%)', 'pct' => 0.10],
+        '20' => ['label' => 'Moderate (+20%)', 'pct' => 0.20],
+        '30' => ['label' => 'Severe (+30%)', 'pct' => 0.30],
+    ];
 
     /**
      * @return Collection<int, array{
@@ -68,18 +82,19 @@ class PortfolioRollupService
      * number. A location with no value entered contributes to neither total; "no figure given"
      * and "worth zero" are different things.
      *
-     * @param  Collection<int, array>  $rows  rollup() output
+     * @param  Collection<int, array>  $rows  rollup() (or applyStress()) output
+     * @param  string  $bandKey  'worst_band' for the real baseline, 'stressed_band' for a scenario
      * @return Collection<int, array{currency: string, symbol: string, total: float, atRisk: float}>
      */
-    public function valueSummary(Collection $rows): Collection
+    public function valueSummary(Collection $rows, string $bandKey = 'worst_band'): Collection
     {
         $symbols = ['NGN' => '₦', 'USD' => '$'];
 
         return $rows
             ->filter(fn (array $row) => $row['location']->value !== null && $row['location']->currency !== null)
             ->groupBy(fn (array $row) => $row['location']->currency)
-            ->map(function (Collection $group, string $currency) use ($symbols) {
-                $atRisk = $group->filter(fn (array $row) => in_array($row['worst_band'], ['red', 'amber'], true));
+            ->map(function (Collection $group, string $currency) use ($symbols, $bandKey) {
+                $atRisk = $group->filter(fn (array $row) => in_array($row[$bandKey], ['red', 'amber'], true));
 
                 return [
                     'currency' => $currency,
@@ -89,6 +104,31 @@ class PortfolioRollupService
                 ];
             })
             ->values();
+    }
+
+    /**
+     * Module 13's "real, small, honestly-labeled" stress test: a transparent multiplier on each
+     * location's already-computed worst score — never a new scoring pass, never a fabricated
+     * number. An unscored location stays unscored (null in, null out); a score is capped at 100,
+     * the scale's own ceiling, same as every other score in this app.
+     *
+     * @param  Collection<int, array>  $rows  rollup() output
+     * @param  float  $pct  one of self::STRESS_PRESETS's 'pct' values
+     * @return Collection<int, array> the same rows, each with 'stressed_score' and 'stressed_band' added
+     */
+    public function applyStress(Collection $rows, float $pct): Collection
+    {
+        return $rows->map(function (array $row) use ($pct) {
+            $stressedScore = $row['worst_score'] !== null
+                ? min(100.0, (float) $row['worst_score'] * (1 + $pct))
+                : null;
+
+            return [
+                ...$row,
+                'stressed_score' => $stressedScore,
+                'stressed_band' => RiskBand::forScore($stressedScore),
+            ];
+        });
     }
 
     /**

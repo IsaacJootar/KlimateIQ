@@ -101,6 +101,76 @@ class PortfolioController extends Controller
         ]);
     }
 
+    /**
+     * Enterprise pivot, Module 14 (docs/ENTERPRISE_BUILD_PLAN.md) — one "Protected"/"At Risk"
+     * total across every portfolio the agency has, not one at a time. Reuses
+     * PortfolioRollupService::valueSummary() per portfolio, then combines those into a single
+     * grand total per currency — never summed across currencies, same discipline as the
+     * per-portfolio summary this builds on.
+     */
+    public function exposure(PortfolioRollupService $rollup): View
+    {
+        $agencyId = Auth::user()->agency_id;
+
+        $portfolios = $agencyId
+            ? Portfolio::query()->where('agency_id', $agencyId)->orderBy('name')->get()
+            : collect();
+
+        $perPortfolio = $portfolios->map(fn (Portfolio $portfolio) => [
+            'portfolio' => $portfolio,
+            'summary' => $rollup->valueSummary($rollup->rollup($portfolio)),
+        ]);
+
+        $symbols = ['NGN' => '₦', 'USD' => '$'];
+        $combined = $perPortfolio
+            ->flatMap(fn (array $entry) => $entry['summary'])
+            ->groupBy('currency')
+            ->map(fn (Collection $group, string $currency) => [
+                'currency' => $currency,
+                'symbol' => $symbols[$currency] ?? $currency.' ',
+                'total' => (float) $group->sum('total'),
+                'atRisk' => (float) $group->sum('atRisk'),
+            ])
+            ->values();
+
+        return view('portfolios.exposure', [
+            'hasAgency' => $agencyId !== null,
+            'perPortfolio' => $perPortfolio,
+            'combined' => $combined,
+        ]);
+    }
+
+    /**
+     * Enterprise pivot, Module 13 (docs/ENTERPRISE_BUILD_PLAN.md) — Scenario Testing. A named,
+     * fixed preset only (never an arbitrary user-entered percentage) applied as a transparent
+     * multiplier over the real, already-computed scores — no new scoring pass, no fabricated
+     * data. Explicitly labelled illustrative, not a calibrated forecast, in the view itself.
+     */
+    public function stressTest(Request $request, Portfolio $portfolio, PortfolioRollupService $rollup): View
+    {
+        $this->authorizeAgency($portfolio);
+
+        $selected = $request->query('preset');
+        $preset = array_key_exists($selected, PortfolioRollupService::STRESS_PRESETS)
+            ? PortfolioRollupService::STRESS_PRESETS[$selected]
+            : null;
+
+        $rows = $rollup->rollup($portfolio);
+        $stressedRows = $preset !== null ? $rollup->applyStress($rows, $preset['pct']) : null;
+
+        return view('portfolios.stress-test', [
+            'portfolio' => $portfolio,
+            'presets' => PortfolioRollupService::STRESS_PRESETS,
+            'selected' => $selected,
+            'preset' => $preset,
+            'rows' => $stressedRows ?? $rows,
+            'baselineRedCount' => $rows->where('worst_band', 'red')->count(),
+            'stressedRedCount' => $stressedRows?->where('stressed_band', 'red')->count(),
+            'baselineSummary' => $rollup->valueSummary($rows),
+            'stressedSummary' => $stressedRows !== null ? $rollup->valueSummary($stressedRows, 'stressed_band') : null,
+        ]);
+    }
+
     public function destroy(Portfolio $portfolio): RedirectResponse
     {
         $this->authorizeAgency($portfolio);

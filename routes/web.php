@@ -56,9 +56,11 @@ Route::middleware(['auth', 'onboarded'])->group(function () {
     // Enterprise pivot, Module 2 (docs/ENTERPRISE_BUILD_PLAN.md) — portfolio definition + rollup.
     Route::get('/portfolios', [PortfolioController::class, 'index'])->name('portfolios.index');
     Route::get('/api-access', [PortfolioController::class, 'apiAccess'])->name('api-access.index');
+    Route::get('/exposure', [PortfolioController::class, 'exposure'])->name('exposure.index');
     Route::get('/portfolios/create', [PortfolioController::class, 'create'])->name('portfolios.create');
     Route::post('/portfolios', [PortfolioController::class, 'store'])->name('portfolios.store');
     Route::get('/portfolios/{portfolio}', [PortfolioController::class, 'show'])->name('portfolios.show');
+    Route::get('/portfolios/{portfolio}/stress-test', [PortfolioController::class, 'stressTest'])->name('portfolios.stress-test');
     Route::delete('/portfolios/{portfolio}', [PortfolioController::class, 'destroy'])->name('portfolios.destroy');
     Route::post('/portfolios/{portfolio}/locations', [PortfolioController::class, 'addLocation'])->name('portfolios.locations.store');
     Route::delete('/portfolios/{portfolio}/locations/{location}', [PortfolioController::class, 'removeLocation'])->name('portfolios.locations.destroy');

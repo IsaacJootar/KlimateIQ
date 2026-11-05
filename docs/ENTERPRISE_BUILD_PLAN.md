@@ -35,8 +35,8 @@ entirely by `PortfolioType`.
 | — | Sectors #6/#7 (Public Finance, Pharma) | — | Deliberately unscheduled | Revisit after 1–9 |
 | 11 | Asset drill-down rework | S–M | **Done** | Pillar: Asset Risk |
 | 12 | Surface Portfolio Exposure, Signals & Alerts, API licensing | S | **Done** | Pillar: Portfolio Exposure / Signals & Alerts |
-| 13 | Scenario Testing MVP | M | Not started | Pillar: Scenario Testing |
-| 14 | Cross-portfolio Exposure rollup | S | Not started | One "Protected/At Risk" total across every portfolio |
+| 13 | Scenario Testing MVP | M | **Done** | Pillar: Scenario Testing |
+| 14 | Cross-portfolio Exposure rollup | S | **Done** | One "Protected/At Risk" total across every portfolio |
 | 15 | Sidebar migration | L | Not started | Last — its own standalone pass, nothing else bundled in |
 
 ---
@@ -347,7 +347,7 @@ mobile). 5 new tests (`ApiAccessPageTest`). Full suite: 495/495 green.
 
 ---
 
-### Module 13 — Scenario Testing MVP
+### Module 13 — Scenario Testing MVP · Done
 
 **What it is:** The pitch deck's own words: *"portfolio overlays and scenario analysis are
 development priorities, not claims of completed functionality"* (slide 3). This builds a real,
@@ -357,6 +357,14 @@ transparent multiplier to each asset's *existing real score* (not a new scoring 
 fabricated data) — showing the resulting shift in red-band count and ₦ value at risk, before vs.
 after. Labeled clearly as an illustrative stress scenario, not a calibrated forecast, matching the
 honesty bar the deck itself holds to throughout.
+
+**Shipped:** `GET /portfolios/{id}/stress-test`, three fixed presets only (+10/+20/+30% — never an
+arbitrary user-entered number). `PortfolioRollupService::applyStress()` multiplies each location's
+real `worst_score`, capped at 100 (the scale's own ceiling); an unscored location stays unscored.
+`valueSummary()` generalized to take a `$bandKey` so the same per-currency Protected/At-Risk logic
+works for both the real baseline and a stressed scenario without duplicating it. A visible
+"illustrative only, not a calibrated forecast" banner on the page itself. Linked from the
+portfolio's own page. 7 new tests (`PortfolioStressTestTest`). Full suite: 502/502 green.
 
 **Touches:**
 - New read-only view + a small calculation pass over `PortfolioRollupService`'s output — no schema
@@ -368,12 +376,18 @@ honesty bar the deck itself holds to throughout.
 
 ---
 
-### Module 14 — Cross-portfolio Exposure rollup
+### Module 14 — Cross-portfolio Exposure rollup · Done
 
 **What it is:** `PortfolioRollupService::valueSummary()` already totals Protected/At-Risk value
 *per portfolio*. This adds one page totaling it *across every portfolio an agency has* — for an
 agency running more than one book (e.g. separate Insurance and Agri-Lending portfolios under one
 org), one number for "everything we're protecting," not one portfolio at a time.
+
+**Shipped:** `GET /exposure` — rolls up every portfolio the agency has via the existing
+`valueSummary()` per portfolio, then combines those into one grand total per currency (never
+summed across currencies). A "by portfolio" breakdown table underneath so the combined number is
+never a black box. New "Exposure" nav link next to "Portfolios". 4 new tests
+(`ExposurePageTest`). Full suite: 502/502 green before this module, confirmed again after.
 
 **Touches:** New controller method reusing the existing per-currency summary logic, one new view.
 

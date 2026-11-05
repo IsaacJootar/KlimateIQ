@@ -36,6 +36,9 @@
                         <x-nav-link :href="route('portfolios.index')" :active="request()->routeIs('portfolios.*')">
                             {{ __('Portfolios') }}
                         </x-nav-link>
+                        <x-nav-link :href="route('exposure.index')" :active="request()->routeIs('exposure.*')">
+                            {{ __('Exposure') }}
+                        </x-nav-link>
                         <x-nav-link :href="route('alerts.index')" :active="request()->routeIs('alerts.*')">
                             {{ __('Alerts') }}
                         </x-nav-link>
@@ -172,6 +175,9 @@
             @if ($isEnterprise)
                 <x-responsive-nav-link :href="route('portfolios.index')" :active="request()->routeIs('portfolios.*')">
                     {{ __('Portfolios') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('exposure.index')" :active="request()->routeIs('exposure.*')">
+                    {{ __('Exposure') }}
                 </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('alerts.index')" :active="request()->routeIs('alerts.*')">
                     {{ __('Alerts') }}
