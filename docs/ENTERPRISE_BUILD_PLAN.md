@@ -33,6 +33,11 @@ entirely by `PortfolioType`.
 | 9 | "Bring your own model" financial layer | M | Deferred (post-demo) | The Jupiter-parity endpoint — see note below |
 | 10 | Validation dossier (MRM-equivalent) | ongoing | Deferred (post-demo) | Credibility with regulated buyers |
 | — | Sectors #6/#7 (Public Finance, Pharma) | — | Deliberately unscheduled | Revisit after 1–9 |
+| 11 | Asset drill-down rework | S–M | **Done** | Pillar: Asset Risk |
+| 12 | Surface Portfolio Exposure, Signals & Alerts, API licensing | S | Not started | Pillar: Portfolio Exposure / Signals & Alerts |
+| 13 | Scenario Testing MVP | M | Not started | Pillar: Scenario Testing |
+| 14 | Cross-portfolio Exposure rollup | S | Not started | One "Protected/At Risk" total across every portfolio |
+| 15 | Sidebar migration | L | Not started | Last — its own standalone pass, nothing else bundled in |
 
 ---
 
@@ -272,6 +277,119 @@ per index.
 
 **Touches:** `docs/decisions/`, `docs/MODEL.md`, plus whatever the actual backtest produces.
 Runs in parallel with everything else, not gated on it.
+
+---
+
+## Phase 2 — Pitch-deck alignment & demo polish
+
+Driven by the user's own demo-feel feedback (nav/branding, then the risk map and value field) and
+grounded in `PrimeSafePath_Climate_Intelligence_NIGCOMSAT_Pitch_Deck.pptx` (read 2026-11-03) —
+the deck names four capability pillars (slide 3): **Asset Risk**, **Portfolio Exposure**,
+**Signals & Alerts**, **Scenario Testing**. The first three already exist in some form; this phase
+sharpens them and honestly builds the fourth, then reorganizes the whole app's navigation around
+them. Sidebar migration is deliberately last — it's the highest-blast-radius change (touches every
+page), done as its own pass once everything it needs to show is real.
+
+### Module 11 — Asset drill-down rework · Done
+
+**What it is:** `regions/show.blade.php` (reached by clicking a map marker or a portfolio row) is
+still written for the pre-pivot audience — "This week in Ikeja," a broken "← All regions" link for
+any enterprise account (that nav item is hidden for them), step 6's recommendations about crops
+and health facilities regardless of Portfolio Type, and no mention of the asset's ₦ value at all.
+
+**Shipped:** `RegionController` resolves an optional `?portfolio={id}` into a verified, agency-owned
+`portfolioContext` (the Portfolio + the specific asset, or silently `null` for a stray/forged id,
+a different agency's portfolio, or a region that isn't actually in it). When present: a breadcrumb
+back to that portfolio (not `/regions`), the asset's ₦/$ value shown next to its score, and step 6
+("what to do") resolves a **Portfolio-Type-scoped** recommendation first via a new
+`index_action_recommendations.portfolio_type` column (nullable — every pre-pivot row is the
+generic fallback), falling back to the original text for everyone else. Shelter-staging/crop-
+calendar advice (irrelevant to an underwriting/lending audience) is suppressed for Insurance &
+Reinsurance and Banking & Lending contexts. The portfolio's own map popups and locations table now
+link through with `?portfolio=` so the context carries automatically.
+
+**Found and fixed along the way:**
+- `ReferenceDataSeeder::seedActionRecommendations()`'s `updateOrCreate` didn't include
+  `portfolio_type` in its match key — on a fresh database, where the new portfolio-scoped rows get
+  seeded first, it could find and silently overwrite one of those instead of creating the generic
+  row, leaving the generic text (and the whole "what to do" section, including facilities) missing
+  entirely for ordinary users. Fixed by adding `portfolio_type: null` to the match key.
+- `Admin\ActionRecommendationController` assumed exactly one row per index/band; without scoping
+  its own read and write to `portfolio_type IS NULL`, editing a recommendation in the admin UI
+  could have landed on a type-scoped row instead of the generic one it displays.
+
+6 new tests (`RegionPortfolioContextTest`) plus 2 existing tests
+(`AgricultureStressIndexTest`, `RiverineFloodForecastIndexTest`) updated for the new
+`portfolio_type` dimension. Full suite: 489/489 green.
+
+**Depends on:** Modules 1–5 (Portfolio, value field) already shipped.
+
+---
+
+### Module 12 — Surface the Portfolio Exposure and Signals & Alerts pillars, and API licensing
+
+**What it is:** Nothing new to build — the risk map, the value summary, Alerts, Thresholds, and
+the per-portfolio API token feature (Module 5) are all real today but under-surfaced: the map and
+value totals only live inside one portfolio's page, and the API feed is buried at the bottom of
+that same page behind a scroll. This module gives each of them a clearly-labeled home a user can
+navigate to directly, matching the pitch deck's own pillar names and its "Data / API licensing"
+revenue line (slide 8).
+
+**Touches:** Primarily navigation/entry-point work — minimal new view logic, mostly linking what
+already exists more visibly.
+
+**Depends on:** Modules 1–5, the map/value work already shipped.
+
+---
+
+### Module 13 — Scenario Testing MVP
+
+**What it is:** The pitch deck's own words: *"portfolio overlays and scenario analysis are
+development priorities, not claims of completed functionality"* (slide 3). This builds a real,
+small, honestly-labeled v1 rather than a fake screen: a "Stress Test" view on a portfolio where
+the user picks a simple preset (e.g. "+20% drought severity," "+10% flood intensity") applied as a
+transparent multiplier to each asset's *existing real score* (not a new scoring pipeline, not
+fabricated data) — showing the resulting shift in red-band count and ₦ value at risk, before vs.
+after. Labeled clearly as an illustrative stress scenario, not a calibrated forecast, matching the
+honesty bar the deck itself holds to throughout.
+
+**Touches:**
+- New read-only view + a small calculation pass over `PortfolioRollupService`'s output — no schema
+  changes, no new ingestion.
+- Explicit "illustrative, not predictive" labeling, matching project-wide "never invent named
+  facts" discipline.
+
+**Depends on:** Module 2 (Portfolio), the value field.
+
+---
+
+### Module 14 — Cross-portfolio Exposure rollup
+
+**What it is:** `PortfolioRollupService::valueSummary()` already totals Protected/At-Risk value
+*per portfolio*. This adds one page totaling it *across every portfolio an agency has* — for an
+agency running more than one book (e.g. separate Insurance and Agri-Lending portfolios under one
+org), one number for "everything we're protecting," not one portfolio at a time.
+
+**Touches:** New controller method reusing the existing per-currency summary logic, one new view.
+
+**Depends on:** Module 2, the value field.
+
+---
+
+### Module 15 — Sidebar migration (last)
+
+**What it is:** Move from the current top horizontal nav to a left sidebar, organized around the
+deck's own four pillars (Asset Risk / Portfolio Exposure / Signals & Alerts / Scenario Testing)
+plus Reports and an Organization/Settings section. Every page extends the same layout, so this
+touches all of them — but page *content* (tables, forms, cards) doesn't need to change, only the
+chrome around it. Done as its own standalone pass, nothing else bundled in, verified page by page
+afterward.
+
+**Touches:** `resources/views/layouts/app.blade.php`, `resources/views/layouts/navigation.blade.php`
+(rebuilt as a vertical nav), a mobile slide-over drawer pattern to replace the current dropdown.
+
+**Depends on:** Modules 11–14 — the sidebar should organize around pillars that are actually
+sharp and real by the time it ships them.
 
 ---
 

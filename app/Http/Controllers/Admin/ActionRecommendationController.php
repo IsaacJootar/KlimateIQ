@@ -11,7 +11,11 @@ use Illuminate\View\View;
 
 /**
  * Edits the plain-English "what to do about it" text shown per index + risk band —
- * rule-based, not AI. Every index has exactly one row per band (green/amber/red).
+ * rule-based, not AI. Every index has exactly one generic (portfolio_type = null) row per
+ * band (green/amber/red); this admin page only ever reads/writes that generic row. A
+ * Portfolio-Type-scoped variant (Module 11, docs/ENTERPRISE_BUILD_PLAN.md — e.g. Insurance &
+ * Reinsurance's own FLOOD_RISK/red text) is seeded config, not something this UI edits, so it's
+ * explicitly excluded here rather than silently overwritten.
  */
 class ActionRecommendationController extends Controller
 {
@@ -24,6 +28,7 @@ class ActionRecommendationController extends Controller
 
         $actions = IndexActionRecommendation::query()
             ->where('index_id', $index->index_id)
+            ->whereNull('portfolio_type')
             ->get()
             ->keyBy('risk_band');
 
@@ -44,7 +49,7 @@ class ActionRecommendationController extends Controller
 
         foreach (self::BANDS as $band) {
             IndexActionRecommendation::query()->updateOrCreate(
-                ['index_id' => $index->index_id, 'risk_band' => $band],
+                ['index_id' => $index->index_id, 'risk_band' => $band, 'portfolio_type' => null],
                 ['action_text' => $validated['action_text'][$band]]
             );
         }

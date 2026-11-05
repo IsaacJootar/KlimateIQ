@@ -164,7 +164,11 @@
                             @forelse ($rows as $row)
                                 <tr>
                                     <td class="px-4 py-3 font-medium text-gray-800 dark:text-gray-200">
-                                        {{ $row['display_name'] }}
+                                        @if ($row['location']->region_id)
+                                            <a href="{{ route('regions.show', array_filter(['region' => $row['location']->region_id, 'index' => $row['worst_index_code'], 'portfolio' => $portfolio->portfolio_id])) }}" class="hover:text-primary hover:underline">{{ $row['display_name'] }}</a>
+                                        @else
+                                            {{ $row['display_name'] }}
+                                        @endif
                                         @if ($row['approximated'])
                                             <div class="text-xs font-normal text-amber-600 dark:text-amber-400 mt-0.5">
                                                 &asymp; nearest LGA: {{ $row['nearest_region_name'] }} ({{ $row['distance_km'] }} km away)

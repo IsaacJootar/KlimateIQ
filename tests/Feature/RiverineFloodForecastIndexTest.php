@@ -40,9 +40,11 @@ class RiverineFloodForecastIndexTest extends TestCase
 
     public function test_it_has_an_action_for_every_band_and_sits_in_the_water_and_emergency_sectors(): void
     {
+        // The generic (portfolio_type = null) row for every band — Module 11 adds an
+        // additional Insurance & Reinsurance-specific amber/red row alongside these, not instead.
         $this->assertEqualsCanonicalizing(
             ['green', 'amber', 'red'],
-            IndexActionRecommendation::query()->where('index_id', $this->index()->index_id)->pluck('risk_band')->all(),
+            IndexActionRecommendation::query()->where('index_id', $this->index()->index_id)->whereNull('portfolio_type')->pluck('risk_band')->all(),
         );
         $this->assertEqualsCanonicalizing(
             ['WATER_SANITATION', 'EMERGENCY_RESPONSE'],

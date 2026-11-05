@@ -8,6 +8,7 @@ use App\Models\RegionScoringConfig;
 use App\Models\ScoringCalibrationParameter;
 use App\Models\ScoringIndex;
 use App\Models\SignalType;
+use App\Support\PortfolioType;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
 
@@ -63,6 +64,7 @@ class AdditionalIndicesSeeder extends Seeder
         $this->deepenRespiratoryRiskWithSo2AndCo();
         $this->deepenHeatStressWithUv();
         $this->plantingWindowRisk();
+        $this->seedEnterprisePortfolioActions();
     }
 
     /**
@@ -712,13 +714,64 @@ class AdditionalIndicesSeeder extends Seeder
     /**
      * @param  array<string, string>  $bands
      */
-    private function seedActions(ScoringIndex $index, array $bands): void
+    private function seedActions(ScoringIndex $index, array $bands, ?string $portfolioType = null): void
     {
         foreach ($bands as $band => $text) {
             IndexActionRecommendation::query()->firstOrCreate(
-                ['index_id' => $index->index_id, 'risk_band' => $band],
+                ['index_id' => $index->index_id, 'risk_band' => $band, 'portfolio_type' => $portfolioType],
                 ['action_text' => $text]
             );
+        }
+    }
+
+    /**
+     * Enterprise pivot, Module 11 (docs/ENTERPRISE_BUILD_PLAN.md) — portfolio-type-scoped "what
+     * to do" text for the two focus sectors, on the indices each one's Portfolio Type bundle
+     * actually includes (App\Support\PortfolioType::defaultIndexCodes()). Added here, not
+     * ReferenceDataSeeder, so a normal `deploy.sh` idempotent reseed picks these up — the generic
+     * (portfolio_type = null) rows these sit alongside are untouched either way.
+     */
+    private function seedEnterprisePortfolioActions(): void
+    {
+        $byCode = fn (string $code) => ScoringIndex::query()->where('code', $code)->first();
+
+        $insurance = PortfolioType::InsuranceReinsurance->value;
+        $banking = PortfolioType::BankingLending->value;
+
+        if ($flood = $byCode('FLOOD_RISK')) {
+            $this->seedActions($flood, [
+                'amber' => 'Flood exposure is elevated. Flag this LGA for review ahead of the next underwriting or renewal cycle.',
+                'red' => 'Flood exposure is high. Review assumed loss ratios for cover written in this LGA and confirm claims-handling capacity is ready before the season peaks.',
+            ], $insurance);
+            $this->seedActions($flood, [
+                'amber' => 'Flood exposure is elevated for collateral or operations in this LGA. Consider flagging affected accounts for early engagement.',
+                'red' => 'Flood exposure is high. Collateral value and repayment capacity tied to this LGA are at elevated risk — consider flagging for early engagement before the season peaks.',
+            ], $banking);
+        }
+
+        if ($riverine = $byCode('RIVERINE_FLOOD_FORECAST')) {
+            $this->seedActions($riverine, [
+                'amber' => 'A moderate riverine flood is forecast. Review exposure concentration in this LGA ahead of the predicted peak.',
+                'red' => 'A severe riverine flood is forecast. Confirm claims-handling capacity and reserve adequacy for cover written in this LGA before the predicted peak.',
+            ], $insurance);
+        }
+
+        if ($drought = $byCode('DROUGHT_RISK')) {
+            $this->seedActions($drought, [
+                'amber' => 'Drought stress is elevated. Crop-failure-linked claims risk is rising for any agriculture-adjacent cover in this LGA.',
+                'red' => 'Drought stress is high. Crop-failure-linked claims risk is elevated for agriculture-adjacent cover in this LGA — review reserve adequacy.',
+            ], $insurance);
+            $this->seedActions($drought, [
+                'amber' => 'Drought stress is elevated. Borrowers with crop-dependent income in this LGA face rising repayment risk.',
+                'red' => 'Drought stress is high. Repayment risk is elevated for borrowers with crop-dependent income or agricultural collateral in this LGA.',
+            ], $banking);
+        }
+
+        if ($agri = $byCode('AGRICULTURE_STRESS')) {
+            $this->seedActions($agri, [
+                'amber' => 'Agricultural stress is elevated in this LGA. Monitor repayment performance for crop-dependent borrowers here.',
+                'red' => 'Agricultural stress is high. Loans secured against agricultural collateral or crop-dependent income in this LGA carry elevated risk of impairment this cycle.',
+            ], $banking);
         }
     }
 }

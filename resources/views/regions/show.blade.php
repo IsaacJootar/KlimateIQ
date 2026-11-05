@@ -25,10 +25,22 @@
 <x-app-layout :title="$region->name">
     <x-slot name="header">
         <div class="flex items-center justify-between">
-            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                {{ $region->name }}, {{ $region->state }}
-            </h2>
-            <a href="{{ route('regions.index', ['index' => $index->code]) }}" class="link-nav">&larr; All regions</a>
+            <div>
+                @if ($portfolioContext)
+                    <p class="text-xs font-semibold uppercase tracking-widest text-primary">Asset in {{ $portfolioContext['portfolio']->name }}</p>
+                @endif
+                <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+                    {{ $region->name }}, {{ $region->state }}
+                </h2>
+                @if ($portfolioContext && $portfolioContext['location']->formattedValue())
+                    <p class="mt-0.5 text-sm font-semibold text-slate-700 dark:text-slate-200">{{ $portfolioContext['location']->formattedValue() }} exposed here</p>
+                @endif
+            </div>
+            @if ($portfolioContext)
+                <a href="{{ route('portfolios.show', $portfolioContext['portfolio']) }}" class="link-nav">&larr; Back to {{ $portfolioContext['portfolio']->name }}</a>
+            @else
+                <a href="{{ route('regions.index', ['index' => $index->code]) }}" class="link-nav">&larr; All regions</a>
+            @endif
         </div>
     </x-slot>
 

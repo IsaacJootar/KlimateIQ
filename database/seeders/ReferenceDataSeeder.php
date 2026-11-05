@@ -151,8 +151,12 @@ class ReferenceDataSeeder extends Seeder
             }
 
             foreach ($bands as $band => $text) {
+                // portfolio_type must be in the match key, not just the update data — Module 11
+                // (docs/ENTERPRISE_BUILD_PLAN.md) adds portfolio-type-scoped rows for this same
+                // index_id/risk_band pair, and without it here, updateOrCreate() can find one of
+                // those instead of the generic row and silently overwrite its text.
                 IndexActionRecommendation::query()->updateOrCreate(
-                    ['index_id' => $index->index_id, 'risk_band' => $band],
+                    ['index_id' => $index->index_id, 'risk_band' => $band, 'portfolio_type' => null],
                     ['action_text' => $text]
                 );
             }

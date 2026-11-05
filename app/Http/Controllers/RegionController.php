@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\CropCalendar;
 use App\Models\IndexActionRecommendation;
+use App\Models\Portfolio;
+use App\Models\PortfolioLocation;
 use App\Models\Region;
 use App\Models\RegionForecastScore;
 use App\Models\RegionForecastSignal;
@@ -15,6 +17,7 @@ use App\Services\Ai\RegionScoreSummaryService;
 use App\Services\Facilities\FacilityProvider;
 use App\Support\IndexCalibration;
 use App\Support\IndexCoverage;
+use App\Support\PortfolioType;
 use App\Support\RiskBand;
 use App\Support\ScoreDiagnosis;
 use App\Support\SignalReading;
@@ -125,9 +128,10 @@ class RegionController extends Controller
     public function show(Region $region): View
     {
         ['available' => $indices, 'active' => $index, 'groups' => $indexGroups] = IndexCoverage::resolve(Auth::user(), request('index'));
+        $portfolioContext = $this->portfolioContext($region);
 
         if ($index->is_forecast) {
-            return $this->showForecast($region, $index, $indices, $indexGroups);
+            return $this->showForecast($region, $index, $indices, $indexGroups, $portfolioContext);
         }
 
         $scores = RegionScore::query()
@@ -178,7 +182,8 @@ class RegionController extends Controller
             'breakdown' => $latest?->breakdown ?? [],
             'signalNames' => $signalNames,
             'aiAvailable' => app(RegionScoreSummaryService::class)->isAvailable(),
-            'recommendedAction' => IndexActionRecommendation::textFor($index->index_id, $latest?->score),
+            'recommendedAction' => IndexActionRecommendation::textFor($index->index_id, $latest?->score, $portfolioContext['portfolioType'] ?? null),
+            'portfolioContext' => $portfolioContext,
             'diagnosis' => $diagnosis,
             'calibrationNote' => IndexCalibration::note($index),
             'trend' => $trend,
@@ -190,10 +195,10 @@ class RegionController extends Controller
             'forecastTrajectory' => $this->forecastTrajectory($index, $region, $latest?->score !== null ? (float) $latest->score : null),
             // Concrete crops in a water-sensitive stage here right now — only for the agriculture
             // indices, and only when the score is amber/red (there's nothing to act on below that).
-            'cropLine' => $this->cropLineFor($index, $region, $latest?->score !== null ? (float) $latest->score : null),
+            'cropLine' => $this->cropLineFor($index, $region, $latest?->score !== null ? (float) $latest->score : null, $portfolioContext),
             // A few named schools / health facilities in this LGA — for the public-health and
             // air-quality indices, same amber/red gate. Examples on record, not a full list.
-            'facilities' => $this->facilitiesFor($index, $region, $latest?->score !== null ? (float) $latest->score : null),
+            'facilities' => $this->facilitiesFor($index, $region, $latest?->score !== null ? (float) $latest->score : null, $portfolioContext),
         ]);
     }
 
@@ -202,7 +207,7 @@ class RegionController extends Controller
      * observed page — the score is a forecast peak with a lead time, "where it's heading" is
      * the real GloFAS daily curve rather than a linear extrapolation of past scores.
      */
-    private function showForecast(Region $region, ScoringIndex $index, Collection $indices, Collection $indexGroups): View
+    private function showForecast(Region $region, ScoringIndex $index, Collection $indices, Collection $indexGroups, ?array $portfolioContext = null): View
     {
         $forecast = RegionForecastScore::query()
             ->where('index_id', $index->index_id)
@@ -269,8 +274,9 @@ class RegionController extends Controller
             'pendingDischarge' => $pendingDischarge,
             'forecastReaches' => $forecastReaches,
             'drivingRiver' => $forecast?->breakdown['driving_river'] ?? null,
-            'recommendedAction' => IndexActionRecommendation::textFor($index->index_id, $peak),
-            'facilities' => $this->facilitiesFor($index, $region, $peak),
+            'recommendedAction' => IndexActionRecommendation::textFor($index->index_id, $peak, $portfolioContext['portfolioType'] ?? null),
+            'portfolioContext' => $portfolioContext,
+            'facilities' => $this->facilitiesFor($index, $region, $peak, $portfolioContext),
             // Shared shells (tab strip, description, the top @php block) still read these.
             'scores' => collect(),
             'latest' => null,
@@ -278,6 +284,59 @@ class RegionController extends Controller
             'signalNames' => SignalType::codeToName(),
             'forecastTrajectory' => null,
         ]);
+    }
+
+    /**
+     * Enterprise pivot, Module 11 (docs/ENTERPRISE_BUILD_PLAN.md) — when this region is reached
+     * via `?portfolio={id}` (a portfolio's map marker or asset row), resolve it to that Portfolio
+     * and the specific asset it represents here — but only if it genuinely belongs to the current
+     * user's own agency and that portfolio genuinely has an asset at this region. A stray or
+     * forged query param just silently falls back to the generic (non-portfolio) page, same as
+     * browsing here directly.
+     *
+     * @return array{portfolio: Portfolio, location: PortfolioLocation, portfolioType: ?PortfolioType}|null
+     */
+    private function portfolioContext(Region $region): ?array
+    {
+        $portfolioId = request()->integer('portfolio');
+
+        if (! $portfolioId) {
+            return null;
+        }
+
+        $portfolio = Portfolio::query()->find($portfolioId);
+
+        if ($portfolio === null || $portfolio->agency_id !== Auth::user()->agency_id) {
+            return null;
+        }
+
+        $location = PortfolioLocation::query()
+            ->where('portfolio_id', $portfolio->portfolio_id)
+            ->where('region_id', $region->region_id)
+            ->first();
+
+        if ($location === null) {
+            return null;
+        }
+
+        return [
+            'portfolio' => $portfolio,
+            'location' => $location,
+            'portfolioType' => $portfolio->agency->portfolio_type,
+        ];
+    }
+
+    /**
+     * Shelter-staging/health-facility suggestions and crop calendars are public-health/agri
+     * advice — not relevant when this region is being read as a financial asset (Insurance &
+     * Reinsurance, Banking & Lending). Step 6's recommendation text (IndexActionRecommendation)
+     * carries the financial-sector advice instead; see Module 11, docs/ENTERPRISE_BUILD_PLAN.md.
+     */
+    private function isFinancialPortfolio(?array $portfolioContext): bool
+    {
+        $type = $portfolioContext['portfolioType'] ?? null;
+
+        return in_array($type, [PortfolioType::InsuranceReinsurance, PortfolioType::BankingLending], true);
     }
 
     public function facilities(Region $region): View
@@ -291,9 +350,9 @@ class RegionController extends Controller
         ]);
     }
 
-    private function cropLineFor(ScoringIndex $index, Region $region, ?float $score): ?string
+    private function cropLineFor(ScoringIndex $index, Region $region, ?float $score, ?array $portfolioContext = null): ?string
     {
-        if ($score === null || $score < 34) {
+        if ($score === null || $score < 34 || $this->isFinancialPortfolio($portfolioContext)) {
             return null;
         }
 
@@ -305,9 +364,9 @@ class RegionController extends Controller
     /**
      * @return array{label: string, names: list<string>, attribution: string}|null
      */
-    private function facilitiesFor(ScoringIndex $index, Region $region, ?float $score): ?array
+    private function facilitiesFor(ScoringIndex $index, Region $region, ?float $score, ?array $portfolioContext = null): ?array
     {
-        if ($score === null || $score < 34) {
+        if ($score === null || $score < 34 || $this->isFinancialPortfolio($portfolioContext)) {
             return null;
         }
 

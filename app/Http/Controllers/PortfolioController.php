@@ -182,7 +182,7 @@ class PortfolioController extends Controller
                 'score' => $row['worst_score'],
                 'riskBand' => $row['worst_band'] ?? 'none',
                 'url' => $region
-                    ? route('regions.show', array_filter(['region' => $region->region_id, 'index' => $row['worst_index_code']]))
+                    ? route('regions.show', array_filter(['region' => $region->region_id, 'index' => $row['worst_index_code'], 'portfolio' => $portfolio->portfolio_id]))
                     : route('portfolios.show', $portfolio),
             ];
         })->values();
