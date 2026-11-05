@@ -37,7 +37,7 @@ entirely by `PortfolioType`.
 | 12 | Surface Portfolio Exposure, Signals & Alerts, API licensing | S | **Done** | Pillar: Portfolio Exposure / Signals & Alerts |
 | 13 | Scenario Testing MVP | M | **Done** | Pillar: Scenario Testing |
 | 14 | Cross-portfolio Exposure rollup | S | **Done** | One "Protected/At Risk" total across every portfolio |
-| 15 | Sidebar migration | L | Not started | Last — its own standalone pass, nothing else bundled in |
+| 15 | Sidebar migration | L | **Done** | Last — its own standalone pass, nothing else bundled in |
 
 ---
 
@@ -395,7 +395,7 @@ never a black box. New "Exposure" nav link next to "Portfolios". 4 new tests
 
 ---
 
-### Module 15 — Sidebar migration (last)
+### Module 15 — Sidebar migration (last) · Done
 
 **What it is:** Move from the current top horizontal nav to a left sidebar, organized around the
 deck's own four pillars (Asset Risk / Portfolio Exposure / Signals & Alerts / Scenario Testing)
@@ -403,6 +403,20 @@ plus Reports and an Organization/Settings section. Every page extends the same l
 touches all of them — but page *content* (tables, forms, cards) doesn't need to change, only the
 chrome around it. Done as its own standalone pass, nothing else bundled in, verified page by page
 afterward.
+
+**Shipped:** `layouts/app.blade.php`'s body is now a flex row (sidebar + content), not a stacked
+column. `layouts/navigation.blade.php` emits three things: a slim mobile top bar, a mobile
+slide-over drawer (Alpine, backdrop-dismissible), and the always-visible desktop `<aside>` —
+all three sharing one new partial, `layouts/sidebar-content.blade.php`, so the link list can never
+drift out of sync between desktop and mobile. Reused the existing `x-responsive-nav-link`
+component for every link (it was already styled exactly right for a vertical list) rather than
+building a new one. Account menu + theme toggle moved to the top of the sidebar, under the logo.
+Both the enterprise and legacy nav branches, dark mode, and the mobile drawer open/close were
+visually verified in a real browser before shipping. **Found along the way:** one pre-existing
+test (`CoverageSectorTest`) asserted the sector-switcher's old wide-dropdown text
+("Focus the workspace") — a sidebar has no room for that variant, so it now always renders the
+vertical-list one ("Focus"); the test's assertion was updated to match, not the app's behavior.
+Full suite: 506/506 green.
 
 **Touches:** `resources/views/layouts/app.blade.php`, `resources/views/layouts/navigation.blade.php`
 (rebuilt as a vertical nav), a mobile slide-over drawer pattern to replace the current dropdown.

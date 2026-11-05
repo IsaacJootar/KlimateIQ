@@ -356,12 +356,15 @@ class CoverageSectorTest extends TestCase
 
     public function test_the_switcher_shows_in_the_nav_only_when_more_than_one_sector_is_followed(): void
     {
+        // The sidebar (Module 15, docs/ENTERPRISE_BUILD_PLAN.md) has no room for the switcher's
+        // old wide-dropdown variant ("Focus the workspace") — it always renders the vertical
+        // list variant now, whose section label is just "Focus".
         $user = User::factory()->create();
 
         $this->saveWorkspace($user, ['sector_ids' => $this->sectorIds(['PUBLIC_HEALTH'])]);
-        $this->actingAs($user)->get(route('dashboard'))->assertOk()->assertDontSee('Focus the workspace');
+        $this->actingAs($user)->get(route('dashboard'))->assertOk()->assertDontSee('>Focus<', false);
 
         $this->saveWorkspace($user, ['sector_ids' => $this->sectorIds(['PUBLIC_HEALTH', 'AGRICULTURE'])]);
-        $this->actingAs($user)->get(route('dashboard'))->assertOk()->assertSee('Focus the workspace');
+        $this->actingAs($user)->get(route('dashboard'))->assertOk()->assertSee('>Focus<', false);
     }
 }
