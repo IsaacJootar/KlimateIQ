@@ -10,7 +10,7 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+        <div class="max-w-5xl px-4 sm:px-6 lg:px-8 space-y-6">
             <div class="section-card p-6">
                 <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-1">Configure a threshold</h3>
                 <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">Two decisions: what to watch, and when it should alert you.</p>

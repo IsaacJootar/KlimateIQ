@@ -9,7 +9,7 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+        <div class="max-w-5xl px-4 sm:px-6 lg:px-8 space-y-6">
             <div class="section-card p-6">
                 <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-1">Save a view</h3>
                 <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">e.g. "My malaria watchlist — 5 LGAs" — pick an index and the regions you actually cover, then reload it any time from below.</p>

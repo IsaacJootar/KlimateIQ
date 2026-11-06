@@ -10,7 +10,7 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-3xl mx-auto sm:px-6 lg:px-8 space-y-4">
+        <div class="max-w-5xl sm:px-6 lg:px-8 space-y-4">
             <div class="section-card divide-y divide-gray-100 dark:divide-gray-700">
                 @forelse ($notifications as $notification)
                     <form method="POST" action="{{ route('notifications.read', $notification->id) }}"

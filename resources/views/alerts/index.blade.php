@@ -9,7 +9,7 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-5xl px-4 sm:px-6 lg:px-8">
             <div class="section-card overflow-hidden">
                 <ul class="divide-y divide-gray-100 dark:divide-gray-700">
                     @forelse ($alerts as $alert)

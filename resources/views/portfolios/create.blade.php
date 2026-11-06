@@ -7,7 +7,7 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-xl mx-auto sm:px-6 lg:px-8 space-y-4">
+        <div class="max-w-xl sm:px-6 lg:px-8 space-y-4">
 
             @if ($agency->portfolio_type)
                 <div class="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 dark:bg-primary/10 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200">

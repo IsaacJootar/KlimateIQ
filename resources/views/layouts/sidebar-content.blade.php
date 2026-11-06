@@ -11,9 +11,26 @@
         </span>
     </a>
 
-    <!-- Account -->
-    <div class="flex items-center justify-between gap-2 px-4 py-3 border-b border-white/10 shrink-0">
-        <x-dropdown align="left" width="56">
+    @unless ($isEnterprise)
+        <x-sector-switcher responsive />
+    @endunless
+
+    <!-- Navigation Links -->
+    <nav class="flex-1 overflow-y-auto py-2 px-2 space-y-1">
+        @foreach ($navItems as $item)
+            <x-responsive-nav-link :href="$item['href']" :active="$item['active']" :icon="$item['icon']">
+                {{ __($item['label']) }}
+                @if (($item['badge'] ?? 0) > 0)
+                    <span class="ms-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold rounded-full bg-gano-500 text-white">{{ $item['badge'] }}</span>
+                @endif
+            </x-responsive-nav-link>
+        @endforeach
+    </nav>
+
+    <!-- Account — pinned to the bottom, menu opens upward, so it can never sit on top of the
+         nav links above it. -->
+    <div class="flex items-center justify-between gap-2 px-4 py-3 border-t border-white/10 shrink-0">
+        <x-dropdown align="left" direction="up" width="56">
             <x-slot name="trigger">
                 <button class="flex items-center gap-1.5 text-sm font-medium text-slate-200 hover:text-white min-w-0">
                     <span class="truncate max-w-[9rem]">{{ Auth::user()->name }}</span>
@@ -73,20 +90,4 @@
 
         <x-theme-toggle class="text-slate-400 hover:text-white shrink-0" />
     </div>
-
-    @unless ($isEnterprise)
-        <x-sector-switcher responsive />
-    @endunless
-
-    <!-- Navigation Links -->
-    <nav class="flex-1 overflow-y-auto py-2 px-2 space-y-1">
-        @foreach ($navItems as $item)
-            <x-responsive-nav-link :href="$item['href']" :active="$item['active']" :icon="$item['icon']">
-                {{ __($item['label']) }}
-                @if (($item['badge'] ?? 0) > 0)
-                    <span class="ms-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold rounded-full bg-gano-500 text-white">{{ $item['badge'] }}</span>
-                @endif
-            </x-responsive-nav-link>
-        @endforeach
-    </nav>
 </div>

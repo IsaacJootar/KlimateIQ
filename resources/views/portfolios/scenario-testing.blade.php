@@ -11,7 +11,7 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-3xl mx-auto sm:px-6 lg:px-8 space-y-4">
+        <div class="max-w-4xl sm:px-6 lg:px-8 space-y-4">
 
             @if (! $hasAgency)
                 <div class="section-card p-5 text-sm text-slate-500 dark:text-slate-400">

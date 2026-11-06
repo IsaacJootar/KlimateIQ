@@ -19,7 +19,7 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
+        <div class="max-w-5xl px-4 sm:px-6 lg:px-8 space-y-5">
 
             <div class="flex gap-2.5 rounded-xl bg-gano-50 dark:bg-gano-950/50 border border-gano-100 dark:border-gano-900 px-3.5 py-2.5">
                 <svg class="mt-0.5 h-4 w-4 shrink-0 text-gano-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

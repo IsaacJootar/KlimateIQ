@@ -9,7 +9,7 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-2xl mx-auto sm:px-6 lg:px-8 space-y-6">
+        <div class="max-w-3xl sm:px-6 lg:px-8 space-y-6">
             <div class="section-card p-6">
                 <form method="POST" action="{{ route('admin.settings.update') }}" class="space-y-5">
                     @csrf
