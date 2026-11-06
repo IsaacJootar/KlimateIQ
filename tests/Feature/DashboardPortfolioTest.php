@@ -112,7 +112,9 @@ class DashboardPortfolioTest extends TestCase
         $summary = $response->viewData('valueSummary')->firstWhere('currency', 'NGN');
         $this->assertSame(2000000.0, $summary['total']);
         $this->assertSame(2000000.0, $summary['atRisk']);
+        $this->assertSame(1700000.0, $summary['expectedLoss']); // 2,000,000 * (85 / 100)
         $response->assertSee('₦2,000,000', false);
+        $response->assertSee('Expected Loss');
     }
 
     public function test_the_most_recently_created_portfolio_is_shown_when_an_agency_has_several(): void

@@ -130,6 +130,7 @@ class PortfolioController extends Controller
                 'symbol' => $symbols[$currency] ?? $currency.' ',
                 'total' => (float) $group->sum('total'),
                 'atRisk' => (float) $group->sum('atRisk'),
+                'expectedLoss' => (float) $group->sum('expectedLoss'),
             ])
             ->values();
 

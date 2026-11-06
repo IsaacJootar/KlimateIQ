@@ -45,7 +45,7 @@
             </div>
 
             @if ($preset !== null)
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div class="metric-card metric-red">
                         <div class="metric-card-label">Red Locations</div>
                         <div class="metric-card-value">{{ $baselineRedCount }} &rarr; {{ $stressedRedCount }}</div>
@@ -60,6 +60,15 @@
                                 <x-money-value :symbol="$summary['symbol']" :amount="$summary['atRisk']" />
                             </div>
                             <div class="metric-card-sub">under {{ $preset['label'] }}</div>
+                        </div>
+                        <div class="metric-card metric-amber">
+                            <div class="metric-card-label">Expected Loss{{ $stressedSummary->count() > 1 ? " ({$summary['currency']})" : '' }}</div>
+                            <div class="metric-card-value">
+                                <x-money-value :symbol="$summary['symbol']" :amount="$baselineSummary[$i]['expectedLoss'] ?? 0" />
+                                &rarr;
+                                <x-money-value :symbol="$summary['symbol']" :amount="$summary['expectedLoss']" />
+                            </div>
+                            <div class="metric-card-sub">illustrative, under {{ $preset['label'] }}</div>
                         </div>
                     @endforeach
                 </div>

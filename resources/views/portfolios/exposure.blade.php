@@ -26,7 +26,7 @@
                         No asset in any portfolio has a value yet — add one from a portfolio's own page to see totals here.
                     </div>
                 @else
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         @foreach ($combined as $summary)
                             <div class="metric-card metric-teal">
                                 <div class="metric-card-label">Protected{{ $combined->count() > 1 ? " ({$summary['currency']})" : '' }}</div>
@@ -37,6 +37,11 @@
                                 <div class="metric-card-label">At Risk{{ $combined->count() > 1 ? " ({$summary['currency']})" : '' }}</div>
                                 <div class="metric-card-value"><x-money-value :symbol="$summary['symbol']" :amount="$summary['atRisk']" /></div>
                                 <div class="metric-card-sub">in red or amber locations</div>
+                            </div>
+                            <div class="metric-card metric-amber">
+                                <div class="metric-card-label">Expected Loss{{ $combined->count() > 1 ? " ({$summary['currency']})" : '' }}</div>
+                                <div class="metric-card-value"><x-money-value :symbol="$summary['symbol']" :amount="$summary['expectedLoss']" /></div>
+                                <div class="metric-card-sub">illustrative — value × risk score</div>
                             </div>
                         @endforeach
                     </div>
@@ -53,6 +58,7 @@
                                     <th class="px-4 py-3">Portfolio</th>
                                     <th class="px-4 py-3">Protected</th>
                                     <th class="px-4 py-3">At Risk</th>
+                                    <th class="px-4 py-3">Expected Loss</th>
                                     <th class="px-4 py-3"></th>
                                 </tr>
                             </thead>
@@ -74,13 +80,20 @@
                                                 &mdash;
                                             @endforelse
                                         </td>
+                                        <td class="px-4 py-3 text-sm text-gray-500">
+                                            @forelse ($entry['summary'] as $summary)
+                                                <x-money-value :symbol="$summary['symbol']" :amount="$summary['expectedLoss']" />@unless ($loop->last) <br> @endunless
+                                            @empty
+                                                &mdash;
+                                            @endforelse
+                                        </td>
                                         <td class="px-4 py-3 text-right">
                                             <a href="{{ route('portfolios.show', $entry['portfolio']) }}" class="link-nav text-sm">Open &rarr;</a>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4" class="px-4 py-8 text-center text-sm text-gray-500">No portfolios yet.</td>
+                                        <td colspan="5" class="px-4 py-8 text-center text-sm text-gray-500">No portfolios yet.</td>
                                     </tr>
                                 @endforelse
                             </tbody>

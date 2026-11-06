@@ -104,6 +104,54 @@ class PortfolioStressTestTest extends TestCase
         $this->assertSame(1000000.0, $underStress['atRisk']); // still at risk, now red
     }
 
+    public function test_value_summary_computes_expected_loss_as_value_times_score_over_100(): void
+    {
+        $agency = Agency::factory()->create(['portfolio_type' => PortfolioType::InsuranceReinsurance]);
+        $portfolio = Portfolio::query()->create(['agency_id' => $agency->agency_id, 'name' => 'Book', 'type' => 'point_list']);
+        $region = Region::query()->firstOrFail();
+        $this->score($region, 'FLOOD_RISK', 40);
+        PortfolioLocation::query()->create(['portfolio_id' => $portfolio->portfolio_id, 'region_id' => $region->region_id, 'value' => 1000000, 'currency' => 'NGN']);
+
+        $rollup = app(PortfolioRollupService::class);
+        $summary = $rollup->valueSummary($rollup->rollup($portfolio))->firstWhere('currency', 'NGN');
+
+        $this->assertSame(400000.0, $summary['expectedLoss']); // 1,000,000 * (40 / 100)
+    }
+
+    public function test_value_summary_expected_loss_is_zero_for_an_unscored_location(): void
+    {
+        $agency = Agency::factory()->create(['portfolio_type' => PortfolioType::InsuranceReinsurance]);
+        $portfolio = Portfolio::query()->create(['agency_id' => $agency->agency_id, 'name' => 'Book', 'type' => 'point_list']);
+        $region = Region::query()->firstOrFail();
+        PortfolioLocation::query()->create(['portfolio_id' => $portfolio->portfolio_id, 'region_id' => $region->region_id, 'value' => 500000, 'currency' => 'NGN']);
+
+        $rollup = app(PortfolioRollupService::class);
+        $summary = $rollup->valueSummary($rollup->rollup($portfolio))->firstWhere('currency', 'NGN');
+
+        // No score yet — "no data" must never be silently treated as either 0% or 100% risk by
+        // inflating or deflating the figure; it simply doesn't contribute.
+        $this->assertSame(0.0, $summary['expectedLoss']);
+    }
+
+    public function test_value_summary_expected_loss_respects_the_stressed_band_key(): void
+    {
+        $agency = Agency::factory()->create(['portfolio_type' => PortfolioType::InsuranceReinsurance]);
+        $portfolio = Portfolio::query()->create(['agency_id' => $agency->agency_id, 'name' => 'Book', 'type' => 'point_list']);
+        $region = Region::query()->firstOrFail();
+        $this->score($region, 'FLOOD_RISK', 40);
+        PortfolioLocation::query()->create(['portfolio_id' => $portfolio->portfolio_id, 'region_id' => $region->region_id, 'value' => 1000000, 'currency' => 'NGN']);
+
+        $rollup = app(PortfolioRollupService::class);
+        $rows = $rollup->rollup($portfolio);
+        $stressed = $rollup->applyStress($rows, 0.50); // 40 * 1.5 = 60
+
+        $baseline = $rollup->valueSummary($rows)->firstWhere('currency', 'NGN');
+        $underStress = $rollup->valueSummary($stressed, 'stressed_band')->firstWhere('currency', 'NGN');
+
+        $this->assertSame(400000.0, $baseline['expectedLoss']); // 1,000,000 * 0.40
+        $this->assertSame(600000.0, $underStress['expectedLoss']); // 1,000,000 * 0.60
+    }
+
     public function test_the_page_renders_the_baseline_with_no_preset_selected(): void
     {
         $user = $this->userWithAgency();
@@ -121,12 +169,13 @@ class PortfolioStressTestTest extends TestCase
         $portfolio = Portfolio::query()->create(['agency_id' => $user->agency_id, 'name' => 'Book', 'type' => 'point_list']);
         $region = Region::query()->firstOrFail();
         $this->score($region, 'FLOOD_RISK', 50);
-        PortfolioLocation::query()->create(['portfolio_id' => $portfolio->portfolio_id, 'region_id' => $region->region_id]);
+        PortfolioLocation::query()->create(['portfolio_id' => $portfolio->portfolio_id, 'region_id' => $region->region_id, 'value' => 1000000, 'currency' => 'NGN']);
 
         $this->actingAs($user)->get(route('portfolios.stress-test', [$portfolio, 'preset' => '30']))
             ->assertOk()
             ->assertSee('Severe (+30%)')
-            ->assertSee('65'); // 50 * 1.3
+            ->assertSee('65') // 50 * 1.3
+            ->assertSee('Expected Loss');
     }
 
     public function test_an_unrecognized_preset_falls_back_to_the_baseline(): void

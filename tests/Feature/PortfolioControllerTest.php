@@ -216,6 +216,7 @@ class PortfolioControllerTest extends TestCase
         $summary = $response->viewData('valueSummary')->firstWhere('currency', 'NGN');
         $this->assertSame(3000000.0, $summary['total']);
         $this->assertSame(2000000.0, $summary['atRisk']); // only the red-band location
+        $this->assertSame(1800000.0, $summary['expectedLoss']); // (2,000,000 * 0.85) + (1,000,000 * 0.10)
         $this->assertSame('₦', $summary['symbol']);
     }
 

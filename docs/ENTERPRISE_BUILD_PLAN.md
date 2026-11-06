@@ -466,6 +466,60 @@ same pattern as the existing API Access page. Also fixed the sector-switcher's m
 which still keyed off the app's light/dark toggle instead of the sidebar's now-fixed-dark chrome
 (would have rendered unreadable dark-on-dark text). Full suite: 511/511 green.
 
+**Account menu overlapping the sidebar, module pages floating off-center.** Two more real bugs
+from direct feedback. The account dropdown opened downward from the top of the sidebar and
+visually overlapped the nav links below it — root cause was a latent bug in `<x-dropdown>`'s
+width prop (`width="56"` fell through its `match()` to the unmatched default case and produced
+the literal, invalid class `56` instead of `w-56`, so the panel had no explicit width). Fixed the
+width-matching generally, added a `direction="up"` option, and moved the account menu + theme
+toggle to the bottom of the sidebar — the same place Linear/Vercel/Notion/Slack all put it — so
+its popup opens upward and can never collide with nav again. Separately: most module pages
+(Exposure, Scenario Testing, API Access, Thresholds, Reports, Alerts, Saved Views, Notifications,
+Portfolios index/create/show, Coverage, Facilities, two admin pages) centered their body content
+at a narrower max-width than the page header above it (`max-w-xl/2xl/3xl/4xl mx-auto` vs. the
+header's `max-w-7xl`), so the body floated in the middle of the page with symmetric dead space on
+both sides instead of sitting flush under its own header. Removed the centering, matched the
+body's left edge to the header's. Full suite: 511/511 green.
+
+---
+
+## Module 16 — Financial-metric translation (Jupiter benchmark gap #1)
+
+**What it is:** `docs/JUPITER_BENCHMARK.md`'s highest-leverage gap — `atRisk` was a binary bucket
+(full value counted the moment a location crosses into amber), coarser than what a credit/
+underwriting reader actually wants: how much is *expected* to be lost, not just "is any of it at
+risk." Added `expectedLoss` to `PortfolioRollupService::valueSummary()` — deliberately simple,
+transparent, score-weighted: `value × (score ÷ 100)`, linear, auditable, never a fitted or
+fabricated loss curve. An unscored location contributes 0 (same "no data isn't zero, but it isn't
+counted as loss either" discipline as the rest of this service). Always labeled illustrative,
+same discipline as Module 13's stress presets — never presented as a calibrated actuarial
+estimate.
+
+**Shipped:** new "Expected Loss" metric card (amber, third alongside Protected/At Risk) on the
+dashboard, a portfolio's own page, the Exposure page (both the combined cards and the by-portfolio
+table), and the Stress Test page (baseline → stressed, same arrow pattern as At Risk there). Value
+rows changed from a 2-card/4-col grid to a clean 3-card/3-col grid to fit. `exposure()` sums
+`expectedLoss` across portfolios the same way it already did for `total`/`atRisk`. New tests for
+the math (value × score ÷ 100, zero when unscored, respects the stressed band key) plus one
+assertion added to each existing page test (dashboard, portfolio show, exposure) confirming the
+figure renders correctly. Full suite: 511/511 green.
+
+**Touches:** `app/Services/Portfolio/PortfolioRollupService.php`, `app/Http/Controllers/PortfolioController.php`
+(`exposure()`), `resources/views/dashboard-portfolio.blade.php`, `resources/views/portfolios/{show,exposure,stress-test}.blade.php`.
+
+**Depends on:** nothing new — pure extension of Module 2/3's rollup and Module 13's stress test.
+
+---
+
+## Still open — Jupiter benchmark gaps #2–5 (not started)
+
+| # | Module | What it is |
+|---|---|---|
+| 17 | Long-horizon view | A coarse "this score in 10/20/30 years" projection, reusing existing scoring — not a new climate model |
+| 18 | Entity/counterparty roll-up | Aggregate risk by borrower/counterparty across portfolios, not just by portfolio |
+| 19 | Disclosure-shaped reports | One ISSB/IFRS-S2-or-TCFD-aligned export on the existing Reports page |
+| 20 | Adaptation pillar | Elevate `IndexActionRecommendation` into its own named "Recommended Actions" pillar |
+
 ---
 
 ## How we'll work through this

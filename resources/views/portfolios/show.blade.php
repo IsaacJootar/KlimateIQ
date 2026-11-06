@@ -26,10 +26,10 @@
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-6">
+        <div class="max-w-5xl sm:px-6 lg:px-8 space-y-6">
 
             @if ($valueSummary->isNotEmpty())
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     @foreach ($valueSummary as $summary)
                         <div class="metric-card metric-teal">
                             <div class="metric-card-label">Protected{{ $valueSummary->count() > 1 ? " ({$summary['currency']})" : '' }}</div>
@@ -40,6 +40,11 @@
                             <div class="metric-card-label">At Risk{{ $valueSummary->count() > 1 ? " ({$summary['currency']})" : '' }}</div>
                             <div class="metric-card-value"><x-money-value :symbol="$summary['symbol']" :amount="$summary['atRisk']" /></div>
                             <div class="metric-card-sub">in red or amber locations</div>
+                        </div>
+                        <div class="metric-card metric-amber">
+                            <div class="metric-card-label">Expected Loss{{ $valueSummary->count() > 1 ? " ({$summary['currency']})" : '' }}</div>
+                            <div class="metric-card-value"><x-money-value :symbol="$summary['symbol']" :amount="$summary['expectedLoss']" /></div>
+                            <div class="metric-card-sub">illustrative — value × risk score</div>
                         </div>
                     @endforeach
                 </div>

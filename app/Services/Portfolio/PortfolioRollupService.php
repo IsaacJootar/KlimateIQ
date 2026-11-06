@@ -82,18 +82,29 @@ class PortfolioRollupService
      * number. A location with no value entered contributes to neither total; "no figure given"
      * and "worth zero" are different things.
      *
+     * Enterprise pivot, Module 16 (docs/ENTERPRISE_BUILD_PLAN.md) — `atRisk` is a binary bucket
+     * (full value counted the moment a location crosses into amber), which is a coarser signal
+     * than what a credit/underwriting reader actually wants: how much of this is expected to be
+     * lost, not just "is any of it at risk." `expectedLoss` is a deliberately simple, transparent,
+     * score-weighted translation — value × (score ÷ 100), linear, auditable, never a fitted or
+     * fabricated loss curve. An unscored location contributes 0, same "no data is not zero risk,
+     * but it also isn't counted as loss" discipline as everywhere else in this service. Always
+     * presented as illustrative, never as a calibrated actuarial estimate — same labeling
+     * discipline as Module 13's stress presets.
+     *
      * @param  Collection<int, array>  $rows  rollup() (or applyStress()) output
      * @param  string  $bandKey  'worst_band' for the real baseline, 'stressed_band' for a scenario
-     * @return Collection<int, array{currency: string, symbol: string, total: float, atRisk: float}>
+     * @return Collection<int, array{currency: string, symbol: string, total: float, atRisk: float, expectedLoss: float}>
      */
     public function valueSummary(Collection $rows, string $bandKey = 'worst_band'): Collection
     {
         $symbols = ['NGN' => '₦', 'USD' => '$'];
+        $scoreKey = str_replace('_band', '_score', $bandKey);
 
         return $rows
             ->filter(fn (array $row) => $row['location']->value !== null && $row['location']->currency !== null)
             ->groupBy(fn (array $row) => $row['location']->currency)
-            ->map(function (Collection $group, string $currency) use ($symbols, $bandKey) {
+            ->map(function (Collection $group, string $currency) use ($symbols, $bandKey, $scoreKey) {
                 $atRisk = $group->filter(fn (array $row) => in_array($row[$bandKey], ['red', 'amber'], true));
 
                 return [
@@ -101,6 +112,11 @@ class PortfolioRollupService
                     'symbol' => $symbols[$currency] ?? $currency.' ',
                     'total' => (float) $group->sum(fn (array $row) => (float) $row['location']->value),
                     'atRisk' => (float) $atRisk->sum(fn (array $row) => (float) $row['location']->value),
+                    'expectedLoss' => (float) $group->sum(function (array $row) use ($scoreKey) {
+                        $score = $row[$scoreKey] ?? null;
+
+                        return $score !== null ? (float) $row['location']->value * ($score / 100) : 0.0;
+                    }),
                 ];
             })
             ->values();

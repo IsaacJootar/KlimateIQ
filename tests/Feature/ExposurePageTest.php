@@ -71,8 +71,9 @@ class ExposurePageTest extends TestCase
         $combined = $response->viewData('combined')->firstWhere('currency', 'NGN');
         $this->assertSame(3000000.0, $combined['total']);
         $this->assertSame(2000000.0, $combined['atRisk']); // only Book A's red-band asset
+        $this->assertSame(1800000.0, $combined['expectedLoss']); // (2,000,000 * 0.85) + (1,000,000 * 0.10)
 
-        $response->assertSee('Book A')->assertSee('Book B');
+        $response->assertSee('Book A')->assertSee('Book B')->assertSee('Expected Loss');
     }
 
     public function test_only_the_agencys_own_portfolios_are_totaled(): void
