@@ -36,6 +36,41 @@
     --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
 }
 
+/* ── Sidebar — always-dark chrome, independent of the light/dark content toggle (same pattern
+   as the reference app's nav rail: the content theme changes, this doesn't) ── */
+.app-sidebar {
+    background: linear-gradient(180deg, var(--color-navy), var(--color-navy-deep));
+}
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    border-radius: 10px;
+    padding: 0.5rem 0.7rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #8B9AAE;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+.sidebar-link:hover {
+    background: rgba(255,255,255,0.05);
+    color: #E2E8F0;
+}
+.sidebar-link-active {
+    background: var(--color-gano-600);
+    color: #ffffff;
+    font-weight: 600;
+}
+.sidebar-link-active:hover {
+    background: var(--color-gano-600);
+    color: #ffffff;
+}
+.sidebar-icon {
+    width: 1.15rem;
+    height: 1.15rem;
+    flex-shrink: 0;
+}
+
 /* ── Stat cards — gradient style, colour signals meaning at a glance ── */
 .metric-card {
     border-radius: 14px;
@@ -64,10 +99,10 @@
 .metric-card-value {
     font-size: 2rem;
     font-weight: 800;
-    line-height: 1.15;
+    line-height: 1;
     color: #ffffff;
     font-variant-numeric: tabular-nums;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
 }
 .metric-card-sub {
     font-size: 0.72rem;

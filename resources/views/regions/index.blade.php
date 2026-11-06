@@ -40,7 +40,7 @@
                 </div>
                 <div class="metric-card metric-amber">
                     <div class="metric-card-label">Population at Risk</div>
-                    <div class="metric-card-value"><x-count-up :value="$populationAtRisk" comma /></div>
+                    <div class="metric-card-value"><x-count-up :value="$populationAtRisk" comma abbreviate /></div>
                     <div class="metric-card-sub">in high-risk regions</div>
                 </div>
                 <div class="metric-card metric-slate">

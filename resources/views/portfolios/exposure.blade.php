@@ -30,12 +30,12 @@
                         @foreach ($combined as $summary)
                             <div class="metric-card metric-teal">
                                 <div class="metric-card-label">Protected{{ $combined->count() > 1 ? " ({$summary['currency']})" : '' }}</div>
-                                <div class="metric-card-value">{{ $summary['symbol'] }}{{ number_format($summary['total']) }}</div>
+                                <div class="metric-card-value"><x-money-value :symbol="$summary['symbol']" :amount="$summary['total']" /></div>
                                 <div class="metric-card-sub">across every portfolio</div>
                             </div>
                             <div class="metric-card metric-red">
                                 <div class="metric-card-label">At Risk{{ $combined->count() > 1 ? " ({$summary['currency']})" : '' }}</div>
-                                <div class="metric-card-value">{{ $summary['symbol'] }}{{ number_format($summary['atRisk']) }}</div>
+                                <div class="metric-card-value"><x-money-value :symbol="$summary['symbol']" :amount="$summary['atRisk']" /></div>
                                 <div class="metric-card-sub">in red or amber locations</div>
                             </div>
                         @endforeach
@@ -62,14 +62,14 @@
                                         <td class="px-4 py-3 font-medium text-gray-800 dark:text-gray-200">{{ $entry['portfolio']->name }}</td>
                                         <td class="px-4 py-3 text-sm text-gray-500">
                                             @forelse ($entry['summary'] as $summary)
-                                                {{ $summary['symbol'] }}{{ number_format($summary['total']) }}@unless ($loop->last) <br> @endunless
+                                                <x-money-value :symbol="$summary['symbol']" :amount="$summary['total']" />@unless ($loop->last) <br> @endunless
                                             @empty
                                                 <span class="text-xs text-gray-400">No value entered</span>
                                             @endforelse
                                         </td>
                                         <td class="px-4 py-3 text-sm text-gray-500">
                                             @forelse ($entry['summary'] as $summary)
-                                                {{ $summary['symbol'] }}{{ number_format($summary['atRisk']) }}@unless ($loop->last) <br> @endunless
+                                                <x-money-value :symbol="$summary['symbol']" :amount="$summary['atRisk']" />@unless ($loop->last) <br> @endunless
                                             @empty
                                                 &mdash;
                                             @endforelse

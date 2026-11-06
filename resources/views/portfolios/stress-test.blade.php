@@ -55,9 +55,9 @@
                         <div class="metric-card metric-red">
                             <div class="metric-card-label">At Risk{{ $stressedSummary->count() > 1 ? " ({$summary['currency']})" : '' }}</div>
                             <div class="metric-card-value">
-                                {{ $summary['symbol'] }}{{ number_format($baselineSummary[$i]['atRisk'] ?? 0) }}
+                                <x-money-value :symbol="$summary['symbol']" :amount="$baselineSummary[$i]['atRisk'] ?? 0" />
                                 &rarr;
-                                {{ $summary['symbol'] }}{{ number_format($summary['atRisk']) }}
+                                <x-money-value :symbol="$summary['symbol']" :amount="$summary['atRisk']" />
                             </div>
                             <div class="metric-card-sub">under {{ $preset['label'] }}</div>
                         </div>

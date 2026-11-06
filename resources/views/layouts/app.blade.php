@@ -34,8 +34,8 @@
                     </header>
                 @endisset
 
-                <!-- Page Content -->
-                <main>
+                <!-- Page Content — bottom padding clears the fixed mobile tab bar -->
+                <main class="pb-20 sm:pb-0">
                     {{ $slot }}
                 </main>
             </div>

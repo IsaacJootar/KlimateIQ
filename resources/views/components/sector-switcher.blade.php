@@ -26,14 +26,16 @@
     @endphp
 
     @if ($responsive)
-        <div class="border-t border-gray-200 pt-2 dark:border-gray-600">
-            <div class="px-4 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">Focus</div>
+        {{-- The sidebar is always-dark chrome (independent of the app's light/dark toggle), so
+             this uses fixed light-on-dark colors rather than the dark: variant. --}}
+        <div class="border-t border-white/10 pt-2">
+            <div class="px-4 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Focus</div>
             <form method="POST" action="{{ route('preferences.sector') }}" class="px-2 pb-1">
                 @csrf
                 @foreach ($rows as [$id, $label, $isActive])
                     <button type="submit" name="sector_id" value="{{ $id }}"
-                            class="flex w-full items-center gap-2 rounded px-2 py-2 text-start text-base {{ $isActive ? 'font-semibold text-primary' : 'text-gray-600 dark:text-gray-300' }} hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <span class="h-1.5 w-1.5 rounded-full {{ $isActive ? 'bg-primary' : 'bg-transparent' }}"></span>
+                            class="flex w-full items-center gap-2 rounded px-2 py-2 text-start text-sm {{ $isActive ? 'font-semibold text-gano-400' : 'text-slate-400' }} hover:bg-white/5 hover:text-white">
+                        <span class="h-1.5 w-1.5 rounded-full {{ $isActive ? 'bg-gano-400' : 'bg-transparent' }}"></span>
                         {{ $label }}
                     </button>
                 @endforeach

@@ -57,6 +57,7 @@ Route::middleware(['auth', 'onboarded'])->group(function () {
     Route::get('/portfolios', [PortfolioController::class, 'index'])->name('portfolios.index');
     Route::get('/api-access', [PortfolioController::class, 'apiAccess'])->name('api-access.index');
     Route::get('/exposure', [PortfolioController::class, 'exposure'])->name('exposure.index');
+    Route::get('/scenario-testing', [PortfolioController::class, 'scenarioTesting'])->name('scenario-testing.index');
     Route::get('/portfolios/create', [PortfolioController::class, 'create'])->name('portfolios.create');
     Route::post('/portfolios', [PortfolioController::class, 'store'])->name('portfolios.store');
     Route::get('/portfolios/{portfolio}', [PortfolioController::class, 'show'])->name('portfolios.show');

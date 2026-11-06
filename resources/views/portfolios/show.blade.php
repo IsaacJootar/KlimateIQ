@@ -33,12 +33,12 @@
                     @foreach ($valueSummary as $summary)
                         <div class="metric-card metric-teal">
                             <div class="metric-card-label">Protected{{ $valueSummary->count() > 1 ? " ({$summary['currency']})" : '' }}</div>
-                            <div class="metric-card-value">{{ $summary['symbol'] }}{{ number_format($summary['total']) }}</div>
+                            <div class="metric-card-value"><x-money-value :symbol="$summary['symbol']" :amount="$summary['total']" /></div>
                             <div class="metric-card-sub">total value under watch</div>
                         </div>
                         <div class="metric-card metric-red">
                             <div class="metric-card-label">At Risk{{ $valueSummary->count() > 1 ? " ({$summary['currency']})" : '' }}</div>
-                            <div class="metric-card-value">{{ $summary['symbol'] }}{{ number_format($summary['atRisk']) }}</div>
+                            <div class="metric-card-value"><x-money-value :symbol="$summary['symbol']" :amount="$summary['atRisk']" /></div>
                             <div class="metric-card-sub">in red or amber locations</div>
                         </div>
                     @endforeach

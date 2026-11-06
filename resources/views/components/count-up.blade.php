@@ -1,4 +1,4 @@
-@props(['value', 'decimals' => 0, 'comma' => false])
+@props(['value', 'decimals' => 0, 'comma' => false, 'abbreviate' => false])
 
 {{--
     Purely cosmetic — animates from 0 to the real server-computed value on mount. Never used to
@@ -15,7 +15,11 @@
         display: (0).toFixed({{ (int) $decimals }}),
         target: {{ (float) $value }},
         comma: {{ $comma ? 'true' : 'false' }},
+        abbreviate: {{ $abbreviate ? 'true' : 'false' }},
         format(n) {
+            if (this.abbreviate) {
+                return new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(n);
+            }
             const fixed = n.toFixed({{ (int) $decimals }});
             return this.comma ? Number(fixed).toLocaleString(undefined, { minimumFractionDigits: {{ (int) $decimals }}, maximumFractionDigits: {{ (int) $decimals }} }) : fixed;
         },
@@ -36,4 +40,6 @@
     }"
     x-init="animate()"
     x-text="display"
->{{ number_format((float) $value, (int) $decimals) }}</span>
+    @if ($abbreviate) title="{{ number_format((float) $value) }}" @endif
+    @if ($abbreviate) style="white-space: nowrap" @endif
+>{{ $abbreviate ? \Illuminate\Support\Number::abbreviate((float) $value, maxPrecision: 1) : number_format((float) $value, (int) $decimals) }}</span>

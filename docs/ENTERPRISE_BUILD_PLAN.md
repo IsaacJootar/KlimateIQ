@@ -426,6 +426,48 @@ sharp and real by the time it ships them.
 
 ---
 
+## Post-launch polish pass (post-Module 15, pitch-deck feedback)
+
+Driven by direct user feedback after seeing Module 15 live: the sidebar didn't visibly carry the
+deck's four named pillars, metric cards broke/overflowed on real currency values, and a
+benchmark against Jupiter Intelligence (jupiterintel.com) was requested to find real gaps.
+
+**Jupiter Intelligence benchmark** — written up in `docs/JUPITER_BENCHMARK.md`: their product
+line (ClimateScore Global, RiskSignal, Adaptation Hub, Entity Modeling, MetricEngine, Compliance
+Hub, MRM Accelerator), a side-by-side capability table against what we have, where we're already
+ahead (live Signals & Alerts, live API Access — neither is publicly advertised on their site),
+and five ranked gaps to close (financial-metric translation beyond Protected/At-Risk, a
+long-horizon/scenario-over-time view, counterparty/entity roll-up, disclosure-framework-shaped
+reports, naming Recommended Actions as an Adaptation-equivalent pillar).
+
+**Metric card overflow — fixed for real this time.** The first attempt (Module 15 polish) made
+large numbers wrap onto a second line instead of overflowing; direct feedback was that wrapping
+still "looks funny" — a currency figure must stay on one line no matter the magnitude. Fixed by
+abbreviating (`₦2.3bn`, via `Illuminate\Support\Number::abbreviate`) instead of showing every
+digit, with the exact full figure always available on hover/tap via a `title` attribute. New
+`<x-money-value>` component used everywhere a currency total renders (dashboard, portfolio show,
+exposure, stress test); `<x-count-up>` gained a matching `abbreviate` prop for the one
+non-currency spot with the same risk (Population at Risk on the legacy dashboard).
+
+**Sidebar redesign, benchmarked against a reference app's design.** Pulled up a real local
+reference app (a separate Next.js/Django project), inspected its actual CSS custom properties
+(not a guess from a screenshot), and rebuilt KlimateIQ's sidebar to match that structural style
+while keeping KlimateIQ's own teal as the one accent color: always-dark charcoal/navy chrome
+(independent of the app's own light/dark content toggle — reuses the already-defined-but-unused
+`--color-navy`/`--color-navy-deep` tokens), icon + label nav links with a solid pill highlight on
+the active item, and on mobile a bottom tab bar (3 primary destinations + "More") replacing the
+old slide-over drawer, with a full-screen sheet for the remaining links — matching the reference
+app's mobile pattern exactly. Nav labels now literally match the deck's four pillar names (Asset
+Risk, Portfolio Exposure, Signals & Alerts, Scenario Testing) instead of generic app terms.
+**Found along the way:** Scenario Testing (Module 13) had no sidebar entry at all — it was only
+reachable via a small link on each portfolio's own page. Gave it one: a new
+`scenario-testing.index` page listing every portfolio with a "Run stress test →" link into each,
+same pattern as the existing API Access page. Also fixed the sector-switcher's mobile variant,
+which still keyed off the app's light/dark toggle instead of the sidebar's now-fixed-dark chrome
+(would have rendered unreadable dark-on-dark text). Full suite: 511/511 green.
+
+---
+
 ## How we'll work through this
 
 One module at a time: build it, test it, commit, push (and deploy, for anything that touches the

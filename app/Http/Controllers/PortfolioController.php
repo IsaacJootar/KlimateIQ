@@ -141,6 +141,33 @@ class PortfolioController extends Controller
     }
 
     /**
+     * Scenario Testing's own home in the nav — the deck's fourth pillar was only ever reachable
+     * via a small link on each portfolio's own page. Lists every portfolio with its current red
+     * count, linking straight into that portfolio's stress test.
+     */
+    public function scenarioTesting(PortfolioRollupService $rollup): View
+    {
+        $agencyId = Auth::user()->agency_id;
+
+        $portfolios = $agencyId
+            ? Portfolio::query()->where('agency_id', $agencyId)->orderBy('name')->get()
+            : collect();
+
+        return view('portfolios.scenario-testing', [
+            'hasAgency' => $agencyId !== null,
+            'portfolios' => $portfolios->map(function (Portfolio $portfolio) use ($rollup) {
+                $rows = $rollup->rollup($portfolio);
+
+                return [
+                    'portfolio' => $portfolio,
+                    'locationCount' => $rows->count(),
+                    'redCount' => $rows->where('worst_band', 'red')->count(),
+                ];
+            }),
+        ]);
+    }
+
+    /**
      * Enterprise pivot, Module 13 (docs/ENTERPRISE_BUILD_PLAN.md) — Scenario Testing. A named,
      * fixed preset only (never an arbitrary user-entered percentage) applied as a transparent
      * multiplier over the real, already-computed scores — no new scoring pass, no fabricated
